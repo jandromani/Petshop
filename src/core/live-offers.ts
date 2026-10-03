@@ -19,6 +19,7 @@ export type LiveCatalogRow={
   cancellation?:string|null;
   taxesIncluded?:boolean|null;
   silverScore?:number|null;
+  silverBreakdown?:Array<{label:string;points:number;max:number}>;
   photoUrls?:string[];
   facilities?:string[];
   description?:string|null;
