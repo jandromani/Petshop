@@ -5,11 +5,10 @@ import type { Hotel } from "@/src/data/hotels";
 import { adjustedMonthly, buildPlan, planTotals, type Party, type PlanMode } from "@/src/core/planner";
 import { growthEvent } from "@/src/growth/client";
 import { encodePlanToken, type SharedPlanInput } from "@/src/core/share";
-import { HERO_VARIANTS, type HeroVariant } from "@/src/growth/experiments";
 
 const euro = (n: number) => "€" + Math.round(n).toLocaleString("en-US");
 
-export default function Planner({ hotels, initial, heroVariant="freedom" }: { hotels: Hotel[]; initial?: Partial<SharedPlanInput>; heroVariant?: HeroVariant }) {
+export default function Planner({ hotels, initial }: { hotels: Hotel[]; initial?: Partial<SharedPlanInput> }) {
   const [pension, setPension] = useState(initial?.pension ?? 1700);
   const [rent, setRent] = useState(initial?.rent ?? 1300);
   const [other, setOther] = useState(initial?.other ?? 200);
@@ -27,7 +26,6 @@ export default function Planner({ hotels, initial, heroVariant="freedom" }: { ho
   const [thinking, setThinking] = useState(false);
   const [shareLabel, setShareLabel] = useState("Share this life");
 
-  const hero=HERO_VARIANTS[heroVariant];
   const income = pension + rent + other;
   const livingBudget = Math.round(income * share / 100);
   const plan = useMemo(() => buildPlan(hotels, livingBudget, party, duration, mode), [hotels, livingBudget, party, duration, mode]);
@@ -35,7 +33,7 @@ export default function Planner({ hotels, initial, heroVariant="freedom" }: { ho
   const avg = Math.round(totals.total / Math.max(1, totals.days / 30));
 
   useEffect(() => {
-    growthEvent("planner_loaded", { catalogue_size: hotels.length, hero_variant:heroVariant });
+    growthEvent("planner_loaded", { catalogue_size: hotels.length });
   }, [hotels.length]);
 
   const visible = useMemo(() => {
@@ -105,11 +103,6 @@ export default function Planner({ hotels, initial, heroVariant="freedom" }: { ho
           <div className="heroActions">
             <a className="btn" href="#planner">See what my retirement buys →</a>
             <a className="btn ghost" href="#explore">Browse 30 places</a>
-          </div>
-          <div className="actions" style={{marginTop:18}}>
-            <a className="btn ghost" href="/discover/under-1500-month">Under €1,500</a>
-            <a className="btn ghost" href="/discover/winter-sun">Winter sun</a>
-            <a className="btn ghost" href="/discover/all-inclusive">All inclusive</a>
           </div>
           <div className="proof">
             <div className="proofCard"><b>30–180 days</b><span>the unit is a season, not a night</span></div>
