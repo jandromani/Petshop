@@ -1,8 +1,9 @@
 const base=(process.env.DEPLOYMENT_URL||process.argv[2]||"").replace(/\/$/,"");
+const expectedSha=process.env.EXPECTED_SHA||"";
 if(!base)throw new Error("DEPLOYMENT_URL or URL argument is required");
 
 async function get(path,expected=200){
-  const res=await fetch(base+path,{redirect:"manual"});
+  const res=await fetch(base+path,{redirect:"manual",cache:"no-store"});
   if(res.status!==expected)throw new Error(path+" returned "+res.status+" expected "+expected);
   return res;
 }
@@ -18,6 +19,10 @@ if(!(await system.text()).includes("FULL SYSTEM PROOF"))throw new Error("system 
 
 const health=await (await get("/api/health")).json();
 if(health.softwareProof!==true)throw new Error("software proof failed");
+if(health.proofKind!=="synthetic-software-circuit")throw new Error("health proof kind is not explicit");
+if(expectedSha&&health?.deployment?.commitSha!==expectedSha){
+  throw new Error("deployment SHA mismatch: "+String(health?.deployment?.commitSha)+" != "+expectedSha);
+}
 
 const status=await (await get("/api/system/status")).json();
 if(status?.proof?.pass!==true)throw new Error("system status proof failed");
@@ -28,7 +33,8 @@ if(!Array.isArray(catalog.offers))throw new Error("live catalog contract invalid
 await get("/api/ops/access",404);
 
 console.log(JSON.stringify({
-  ok:true,base,databaseConfigured:health.databaseConfigured,agentConfigured:health.agentConfigured,
+  ok:true,base,commitSha:health?.deployment?.commitSha||null,
+  databaseConfigured:health.databaseConfigured,agentConfigured:health.agentConfigured,
   configuredProviders:(health.providers||[]).filter(p=>p.configured).map(p=>p.provider),
   liveOffers:catalog.offers.length,
 },null,2));
