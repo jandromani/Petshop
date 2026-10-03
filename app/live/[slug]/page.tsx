@@ -5,6 +5,7 @@ import { evaluateSellability } from "@/src/core/truth";
 import { listSellableOffers } from "@/src/db/catalog";
 import { canonicalSiteUrl } from "@/src/system/site-url";
 import LiveStructuredData from "@/components/LiveStructuredData";
+import LiveOfferCard from "@/components/LiveOfferCard";
 
 export const dynamic="force-dynamic";
 const money=(n:number,currency:string)=>new Intl.NumberFormat("en-US",{style:"currency",currency,maximumFractionDigits:0}).format(n);
@@ -51,16 +52,8 @@ export default async function LifePage({params}:{params:Promise<{slug:string}>})
         <p style={{fontSize:20,maxWidth:760}}>{first.name} · {first.country}. Every offer below has a current verified commercial path; no LLM-generated price is shown.</p>
       </section>
       <div className="hotels">
-        {live.map((o,index)=><article className="hotel liveHotel" key={o.offerId}>
-          <div className="hotelVisual"><span className="flag">✓</span><span className="score">LIVE {Math.round(o.confidence*100)}%</span></div>
-          <div className="hotelBody">
-            <h3>{o.name}</h3>
-            <div className="loc">{o.city}, {o.country} · {o.provider}</div>
-            <div className="chips"><span className="chip">{o.nights} nights</span><span className="chip">{o.occupancy} adult{o.occupancy===1?"":"s"}</span>{o.board&&<span className="chip">{o.board}</span>}</div>
-            <div className="priceRow">
-              <div><b>{money(o.monthlyEquivalent,o.currency)}</b><small>/30-day equivalent · total {money(o.displayPrice,o.currency)}</small></div>
-              <a className="linkbtn" href={"/api/referral?offer="+encodeURIComponent(o.offerId)+"&from="+encodeURIComponent("/live/"+slug)+"&pos="+(index+1)}>Open verified offer →</a>
-            </div>
+        {live.map((o,index)=><LiveOfferCard key={o.offerId} offer={o} href={"/api/referral?offer="+encodeURIComponent(o.offerId)+"&from="+encodeURIComponent("/live/"+slug)+"&pos="+(index+1)}/>)}
+      </div>
           </div>
         </article>)}
       </div>
