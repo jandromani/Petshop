@@ -1,0 +1,22 @@
+import { z } from "zod";
+import { start } from "workflow/api";
+import { liveSupplyControlWorkflow } from "@/workflows/live-supply-control";
+
+const Input=z.object({
+  checkIn:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  durations:z.array(z.union([z.literal(30),z.literal(60),z.literal(90),z.literal(120),z.literal(180)])).max(5).optional(),
+  adults:z.array(z.union([z.literal(1),z.literal(2)])).max(2).optional(),
+  maxDestinations:z.number().int().min(1).max(30).optional(),
+  maxMappedHotels:z.number().int().min(1).max(200).optional(),
+});
+function authorized(req:Request){
+  const secret=process.env.OPS_ACCESS_KEY;
+  return Boolean(secret&&req.headers.get("authorization")==="Bearer "+secret);
+}
+export async function POST(req:Request){
+  if(!authorized(req))return new Response("Unauthorized",{status:401});
+  const parsed=Input.safeParse(await req.json().catch(()=>({})));
+  if(!parsed.success)return Response.json({error:"invalid-live-control",issues:parsed.error.issues},{status:400});
+  const run=await start(liveSupplyControlWorkflow,[parsed.data]);
+  return Response.json({accepted:true,runId:run.runId},{status:202});
+}
