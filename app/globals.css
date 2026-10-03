@@ -215,3 +215,19 @@ input[type=range]{width:100%;accent-color:var(--lime)}
   .liveMedia{height:190px}
   .liveOfferCard .hotelMeta{grid-template-columns:1fr}
 }
+
+
+/* Independent adjacency marketplace */
+.adjacencyBand{padding:76px 0;background:#0a1630;color:white}
+.adjacencyBand .sectionTitle p{color:#a7b5cf}
+.adjacencyGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.adjacencyCard{border-radius:18px;padding:20px;min-height:220px;display:flex;flex-direction:column;border:1px solid rgba(255,255,255,.13);background:#102449}
+.adjacencyCard.active{background:linear-gradient(160deg,#16305f,#0f2448)}
+.adjacencyCard.inactive{opacity:.72}
+.adjacencyCard h3{font-size:21px;margin:15px 0 8px;letter-spacing:-.035em}
+.adjacencyCard p{font-size:13px;line-height:1.5;color:#b6c2d8;flex:1}
+.adjacencyCard .btn{align-self:flex-start;margin-top:14px}
+.adjacencyState{font-size:11px;color:#98a6bf;margin-top:14px}
+.adjacencyDisclosure{font-size:11px;color:#8191ad;margin-top:18px;max-width:900px}
+@media(max-width:1100px){.adjacencyGrid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:720px){.adjacencyGrid{grid-template-columns:1fr}}
