@@ -3,6 +3,7 @@ import { AGENTS, agentSystemPrompt } from "@/src/agents/registry";
 import { deterministicBrandJudge, deterministicTruthJudge } from "@/src/judges/rules";
 import { finishPersistedAgentRun, getAgentUsageToday, persistExternalJudge, persistJudgeReview, startPersistedAgentRun } from "@/src/db/agents";
 import { databaseConfigured } from "@/src/db/client";
+import { auditOpsEvent } from "@/src/db/governance";
 
 import { opsAuthorized } from "@/src/security/ops-auth";
 export const runtime = "nodejs";
@@ -85,12 +86,14 @@ export async function POST(req: Request) {
           artifact:actor.text,
           externalJudge:judge.text,
           deterministic,
-          approved:deterministic.every(x=>x.verdict==="PASS")&&judge.text.trim().toUpperCase().startsWith("PASS"),
+          approved,
         },
         usage:{actor:actor.usage,judge:judge.usage},
       }),
     ]);
 
+    const approved=deterministic.every(x=>x.verdict==="PASS")&&judge.text.trim().toUpperCase().startsWith("PASS");
+    await auditOpsEvent({actor:"ops",action:"agent.run",resourceType:"agent-run",resourceId:runId,outcome:approved?"APPROVED_ARTIFACT":"REVIEW_REQUIRED",detail:{agent:policy.key,model:actor.model}});
     console.log(JSON.stringify({
       level:"info",event:"agent_run",runId,agent:policy.key,model:actor.model,
       actorUsage:actor.usage,judgeUsage:judge.usage,deterministic
