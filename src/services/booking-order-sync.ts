@@ -34,6 +34,22 @@ function currencyValue(order:Record<string,any>){
   return typeof order.currency==="string"?order.currency:undefined;
 }
 
+export function normalizeBookingOrder(rawOrder:unknown,detail?:unknown){
+  const order=record(rawOrder);
+  const orderId=String(order.id||"");
+  if(!orderId)return null;
+  const label=findLabel(order)||findLabel(detail);
+  return{
+    orderId,
+    label,
+    commission:numberValue(record(order.commission).actual),
+    bookingValue:numberValue(record(order.price).total??order.price),
+    currency:currencyValue(order),
+    status:statusValue(order.status),
+    occurredAt:String(order.updated||order.created||new Date().toISOString()),
+  };
+}
+
 export async function syncBookingOrders(input:{from?:string;to?:string}={}){
   if(!databaseConfigured())return{configured:false,status:"WAITING_EXTERNAL",processed:0,attributed:0,unattributed:[] as string[]};
   const client=new BookingOrdersClient();
@@ -65,18 +81,14 @@ export async function syncBookingOrders(input:{from?:string;to?:string}={}){
       const orderId=String(order.id||"");
       if(!orderId)continue;
       const detail=detailById.get(orderId);
-      const label=findLabel(order)||findLabel(detail);
-      if(!label){unattributed.push(orderId);continue;}
-      const referral=await findReferralByTrackingId(label);
+      const normalized=normalizeBookingOrder(order,detail);
+      if(!normalized?.label){unattributed.push(orderId);continue;}
+      const referral=await findReferralByTrackingId(normalized.label);
       if(!referral){unattributed.push(orderId);continue;}
-      const commission=numberValue(record(order.commission).actual);
-      const bookingValue=numberValue(record(order.price).total??order.price);
-      const currency=currencyValue(order);
-      const status=statusValue(order.status);
-      const occurredAt=String(order.updated||order.created||to);
       const result=await persistConversion({
-        clickId:referral.click_id,provider:"booking",providerConversionId:orderId,bookingValue,commission,currency,status,occurredAt,
-        rawPayload:{order,accommodation:detail,label},
+        clickId:referral.click_id,provider:"booking",providerConversionId:orderId,bookingValue:normalized.bookingValue,
+        commission:normalized.commission,currency:normalized.currency,status:normalized.status,occurredAt:normalized.occurredAt,
+        rawPayload:{order,accommodation:detail,label:normalized.label},
       });
       if(result.persisted)attributed++;
     }
