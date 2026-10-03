@@ -2,6 +2,7 @@ import { afterEach,describe,expect,it } from "vitest";
 import { usageCostCents } from "@/src/db/agents";
 import { filterLiveDiscovery,liveDiscoveryMode } from "@/src/seo/live";
 import { legalIdentity } from "@/src/system/legal";
+import { hasAnalyticsConsent } from "@/src/privacy/consent";
 import type { LiveCatalogOffer } from "@/src/core/live-offers";
 
 const offer=(overrides:Partial<LiveCatalogOffer>={}):LiveCatalogOffer=>({
@@ -33,6 +34,12 @@ describe("R9-R11 governance contracts",()=>{
     expect(filterLiveDiscovery("under-1500-month",[offer(),offer({offerId:"2",monthlyEquivalent:1700})])).toHaveLength(1);
     expect(filterLiveDiscovery("all-inclusive",[offer({board:"ALL-INCLUSIVE"})])).toHaveLength(1);
     expect(filterLiveDiscovery("best-value-asia",[offer({region:"Asia"})])).toHaveLength(1);
+  });
+
+  it("requires explicit analytics consent before persistent measurement",()=>{
+    expect(hasAnalyticsConsent("")).toBe(false);
+    expect(hasAnalyticsConsent("rv_consent=essential")).toBe(false);
+    expect(hasAnalyticsConsent("foo=1; rv_consent=analytics; bar=2")).toBe(true);
   });
 
   it("blocks commercial activation until operator identity is configured",()=>{
