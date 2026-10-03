@@ -4,6 +4,7 @@ import { hotelBySlug } from "@/src/data/hotels";
 import { evaluateSellability } from "@/src/core/truth";
 import { listSellableOffers } from "@/src/db/catalog";
 import { canonicalSiteUrl } from "@/src/system/site-url";
+import { seoAutopilotEnabled } from "@/src/seo/live";
 import LiveStructuredData from "@/components/LiveStructuredData";
 import LiveOfferCard from "@/components/LiveOfferCard";
 
@@ -19,13 +20,12 @@ export async function generateMetadata({params}:{params:Promise<{slug:string}>})
   const seed=hotelBySlug(slug);
   if(live.length){
     const first=live[0];
-    const index=process.env.SEO_LIVE_INDEXING==="true";
     const canonical=canonicalSiteUrl()+"/live/"+slug;
     return{
       title:first.city+" long stay · verified live offers",
       description:"Current truth-gated long-stay offers in "+first.city+", framed by monthly living cost.",
       alternates:{canonical},
-      robots:{index,follow:true},
+      robots:{index:seoAutopilotEnabled(),follow:true},
       openGraph:{title:"Live in "+first.city+" for a season",description:"Verified long-stay inventory with current commercial paths.",type:"website"},
     };
   }
