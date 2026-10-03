@@ -8,7 +8,10 @@ import { syncIncidents } from "@/src/db/governance";
 import { runDataRetention } from "@/src/db/retention";
 import { runGovernedAgent } from "@/src/services/governed-agent";
 import { agentForSignal,objectiveForSignal } from "@/src/agents/router";
-import { createAgentTask } from "@/src/db/agent-tasks";
+import { createAgentTask,recordAgentTaskExecution } from "@/src/db/agent-tasks";
+import { agentModelConfigured } from "@/src/agents/llm";
+import { executeSafeAgentAction } from "@/src/agents/actions";
+import { optimizeHeroExperiment } from "@/src/growth/autopilot";
 
 export type ControlSignal={key:string;severity:"info"|"warning"|"critical";message:string};
 
@@ -27,7 +30,7 @@ export async function collectControlSignals():Promise<ControlSignal[]>{
   if(failedWaves.length)signals.push({key:"supply.waves",severity:"warning",message:failedWaves.length+" recent acquisition waves have errors"});
   const failedAgents=ops.agentRuns.filter(r=>r.status==="FAILED");
   if(failedAgents.length)signals.push({key:"agents.failures",severity:"warning",message:failedAgents.length+" recent agent runs failed"});
-  signals.push({key:"agents.authority",severity:"info",message:Object.keys(AGENTS).length+" bounded agent roles; 0 have contract or price publication authority"});
+  signals.push({key:"agents.authority",severity:"info",message:Object.keys(AGENTS).length+" bounded roles; only allowlisted read-only/idempotent actions can auto-execute"});
   return signals;
 }
 
@@ -56,18 +59,23 @@ export async function applyDataRetention(){
   return runDataRetention();
 }
 
+export async function runGrowthAutopilot(){
+  "use step";
+  return optimizeHeroExperiment(30);
+}
+
 export async function runDailyAdvisor(context:Record<string,unknown>){
   "use step";
   return runGovernedAgent({
     agent:"orchestrator",
-    objective:"Prioritize at most five operational actions for the next human review. Use only supplied facts. Do not publish, spend, sign, or claim execution. Separate urgent incidents from optional optimization.",
+    objective:"Prioritize the next operational review using only supplied facts. If a safe read-only action would reduce uncertainty, propose exactly one allowlisted action. Never publish, spend, sign, contact third parties or claim execution.",
     context,
   });
 }
 
 export async function dispatchSpecialistAgents(signals:ControlSignal[]){
   "use step";
-  if(!process.env.OPENROUTER_API_KEY||process.env.AGENT_RUNTIME_ENABLED==="false")return{configured:false,tasks:[]};
+  if(!agentModelConfigured()||process.env.AGENT_RUNTIME_ENABLED==="false")return{configured:false,tasks:[]};
   const actionable=signals.filter(x=>x.severity!=="info").slice(0,5);
   const tasks=[];
   for(const signal of actionable){
@@ -75,6 +83,7 @@ export async function dispatchSpecialistAgents(signals:ControlSignal[]){
     const objective=objectiveForSignal(signal);
     const run=await runGovernedAgent({agent,objective,context:{signal}});
     if(run.ok){
+      const action=run.proposal?.proposedAction||null;
       const taskId=await createAgentTask({
         sourceSignal:signal.key,
         agentKey:agent,
@@ -82,11 +91,23 @@ export async function dispatchSpecialistAgents(signals:ControlSignal[]){
         context:{signal},
         agentRunId:run.runId,
         artifact:run.artifact,
-        judgeSummary:{externalJudge:run.externalJudge,deterministic:run.deterministic,approved:run.approved},
+        judgeSummary:{externalJudge:run.externalJudge,deterministic:run.deterministic,approved:run.approved,independentJudge:run.independentJudge},
+        actionKind:action?.kind,
+        actionPayload:action?.payload,
       });
-      tasks.push({taskId,agent,approvedByJudges:run.approved,runId:run.runId});
+      let execution:unknown=null;
+      if(taskId&&run.promotionAllowed&&run.proposal){
+        try{
+          execution=await executeSafeAgentAction(agent,run.proposal);
+          await recordAgentTaskExecution({id:taskId,ok:Boolean((execution as any)?.executed),result:execution});
+        }catch(error){
+          execution={executed:false,error:String(error)};
+          await recordAgentTaskExecution({id:taskId,ok:false,result:execution});
+        }
+      }
+      tasks.push({taskId,agent,approvedByJudges:run.approved,promotionAllowed:run.promotionAllowed,runId:run.runId,execution});
     }else{
-      tasks.push({taskId:null,agent,approvedByJudges:false,error:run.error});
+      tasks.push({taskId:null,agent,approvedByJudges:false,promotionAllowed:false,error:run.error});
     }
   }
   return{configured:true,tasks};
@@ -100,7 +121,9 @@ export async function reconcileDailyRevenue(){
 export async function dailyControlWorkflow(){
   "use workflow";
   const [signals,bookingOrders]=await Promise.all([collectControlSignals(),syncProviderRevenue()]);
-  const [revenue,incidents,retention,specialists]=await Promise.all([reconcileDailyRevenue(),persistControlIncidents(signals),applyDataRetention(),dispatchSpecialistAgents(signals)]);
+  const [revenue,incidents,retention,specialists,growthAutopilot]=await Promise.all([
+    reconcileDailyRevenue(),persistControlIncidents(signals),applyDataRetention(),dispatchSpecialistAgents(signals),runGrowthAutopilot(),
+  ]);
   const advisor=await runDailyAdvisor({
     signals,
     bookingOrders:{
@@ -114,7 +137,8 @@ export async function dailyControlWorkflow(){
       anomalyCount:Array.isArray((revenue as any)?.anomalies)?(revenue as any).anomalies.length:0,
     },
     incidents,
+    growthAutopilot,
   });
   const agenda=await buildHumanAgenda(signals);
-  return{runType:"daily-control",signals,bookingOrders,revenue,incidents,retention,specialists,advisor,agenda,generatedAt:new Date().toISOString()};
+  return{runType:"daily-control",signals,bookingOrders,revenue,incidents,retention,specialists,growthAutopilot,advisor,agenda,generatedAt:new Date().toISOString()};
 }
