@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createDirectRate } from "@/src/db/direct-supply";
 
+import { opsAuthorized } from "@/src/security/ops-auth";
 const Input=z.object({
   hotelLeadId:z.string().uuid(),
   rateCode:z.string().min(2).max(80),
@@ -16,9 +17,8 @@ const Input=z.object({
   contractReference:z.string().max(200).optional(),
   contractVerified:z.boolean().optional(),
 });
-function authorized(req:Request){const s=process.env.OPS_ACCESS_KEY;return Boolean(s&&req.headers.get("authorization")==="Bearer "+s);}
 export async function POST(req:Request){
-  if(!authorized(req)) return new Response("Unauthorized",{status:401});
+  if(!(await opsAuthorized(req))) return new Response("Unauthorized",{status:401});
   const parsed=Input.safeParse(await req.json().catch(()=>null));
   if(!parsed.success) return Response.json({error:"invalid-rate",issues:parsed.error.issues},{status:400});
   const id=await createDirectRate(parsed.data);
