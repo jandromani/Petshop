@@ -2,6 +2,7 @@ import { databaseConfigured } from "@/src/db/client";
 import { liveProviderStatuses } from "@/src/providers/live/registry";
 import { getOpsSnapshot } from "@/src/db/ops";
 import { canonicalSiteUrl,publicSiteConfigured } from "@/src/system/site-url";
+import { legalIdentity } from "@/src/system/legal";
 
 export type ActivationState="ACTIVE"|"READY"|"ACTIVATION_REQUIRED"|"OPTIONAL";
 
@@ -10,6 +11,7 @@ export async function activationManifest(){
   const ops=await getOpsSnapshot();
   const providerConfigured=providers.some(p=>p.configured);
   const supplyActive=ops.liveOffers>0;
+  const legal=legalIdentity();
 
   const items=[
     {
@@ -31,6 +33,11 @@ export async function activationManifest(){
       key:"canonical-site",
       state:(publicSiteConfigured()?"ACTIVE":"ACTIVATION_REQUIRED") as ActivationState,
       detail:publicSiteConfigured()?canonicalSiteUrl():"Set NEXT_PUBLIC_SITE_URL or deploy on Vercel production.",
+    },
+    {
+      key:"legal-operator",
+      state:(legal.configured?"ACTIVE":"ACTIVATION_REQUIRED") as ActivationState,
+      detail:legal.configured?legal.operator+" · "+legal.country:"Set LEGAL_OPERATOR_NAME, LEGAL_CONTACT_EMAIL and LEGAL_COUNTRY before commercial launch.",
     },
     {
       key:"hotel-supply",
