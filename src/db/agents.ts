@@ -30,3 +30,17 @@ export async function persistExternalJudge(input:{runId:string;text:string}){
   await sql`insert into judge_reviews (agent_run_id,judge_key,verdict,score,reasons) values (${input.runId}::uuid,'external-llm',${verdict},null,${sql.json([input.text.slice(0,2000)])})`;
   return true;
 }
+
+
+export async function getAgentUsageToday(agentKey:string){
+  const sql=getDatabase();
+  if(!sql) return null;
+  const rows=await sql<{runs:number;cost_cents:number}[]>`
+    select count(*)::int as runs,coalesce(sum(estimated_cost_cents),0)::int as cost_cents
+    from agent_runs
+    where agent_key=${agentKey}
+      and started_at>=date_trunc('day',now())
+  `;
+  const row=rows[0];
+  return{runs:Number(row?.runs||0),costCents:Number(row?.cost_cents||0)};
+}
