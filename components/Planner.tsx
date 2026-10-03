@@ -91,7 +91,7 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
     try{
       const res=await fetch("/api/agent",{
         method:"POST",headers:{"content-type":"application/json"},
-        body:JSON.stringify({prompt,livingBudget,party,duration,mode,checkIn,flexibleDays,query}),
+        body:JSON.stringify({prompt,livingBudget,party,duration,mode,checkIn,flexibleDays,query,region}),
       });
       const data=await res.json();
       setChat(v=>[...v,{role:"ai",text:data.answer||data.error||"Agent temporarily unavailable."}]);
