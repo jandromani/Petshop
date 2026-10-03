@@ -46,6 +46,7 @@ async function liveReferral(url:URL,jar:Awaited<ReturnType<typeof cookies>>){
 }
 
 export async function GET(req: Request) {
+  if(process.env.REFERRAL_RUNTIME_ENABLED==="false") return new Response("Referral runtime disabled",{status:503,headers:{"Cache-Control":"no-store"}});
   const url=new URL(req.url);
   const jar=await cookies();
   if(url.searchParams.has("offer")){
