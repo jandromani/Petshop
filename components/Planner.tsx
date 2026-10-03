@@ -8,6 +8,7 @@ import { encodePlanToken, type SharedPlanInput } from "@/src/core/share";
 import { HERO_VARIANTS, type HeroVariant } from "@/src/growth/experiments";
 import WorldMap from "@/components/WorldMap";
 import LiveOffers from "@/components/LiveOffers";
+import VerifiedRoute from "@/components/VerifiedRoute";
 
 const euro = (n: number) => "€" + Math.round(n).toLocaleString("en-US");
 
@@ -180,11 +181,12 @@ export default function Planner({ hotels, initial, heroVariant="freedom" }: { ho
                 </div>)}
               </div>
               <div className="label" style={{marginTop:14}}>
-                <span>{totals.days} nights · transport estimate {euro(totals.transportTotal)}</span>
+                <span>{totals.days} nights · mobility estimate {euro(totals.transportTotal)}</span>
                 <b>{euro(totals.total)} total</b>
               </div>
             </div>
           </div>
+          <VerifiedRoute monthlyBudget={livingBudget} />
         </div>
       </section>
 
