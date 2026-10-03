@@ -77,6 +77,7 @@ export async function createDirectRate(input: {
       contract_reference = null,
       contract_verified = false,
       approved_booking_host = null,
+      tracking_query_param = null,
       verified_at = null,
       published_at = null,
       revoked_at = null,
@@ -103,17 +104,20 @@ export async function verifyDirectRate(input: {
   id: string;
   contractReference: string;
   bookingUrl: string;
+  trackingQueryParam: string;
   reviewNotes?: string;
 }) {
   const sql = getDatabase();
   if (!sql) return null;
   const host = approvedHttpsHost(input.bookingUrl);
+  if(!/^[A-Za-z][A-Za-z0-9_-]{0,39}$/.test(input.trackingQueryParam)) throw new Error("invalid-tracking-query-param");
   const rows = await sql<{ id: string }[]>`
     update direct_rate_offers set
       booking_url = ${input.bookingUrl},
       contract_reference = ${input.contractReference},
       contract_verified = true,
       approved_booking_host = ${host},
+      tracking_query_param = ${input.trackingQueryParam},
       verified_at = now(),
       publication_state = 'READY_FOR_REVIEW',
       review_notes = ${input.reviewNotes ?? null},
@@ -146,6 +150,7 @@ export type DirectPublishRow = {
   contract_reference: string | null;
   contract_verified: boolean;
   approved_booking_host: string | null;
+  tracking_query_param: string | null;
 };
 
 async function directRateForReview(id: string): Promise<DirectPublishRow | null> {
@@ -172,7 +177,8 @@ async function directRateForReview(id: string): Promise<DirectPublishRow | null>
       r.booking_url,
       r.contract_reference,
       r.contract_verified,
-      r.approved_booking_host
+      r.approved_booking_host,
+      r.tracking_query_param
     from direct_rate_offers r
     join hotel_leads l on l.id = r.hotel_lead_id
     where r.id = ${id}::uuid
@@ -187,6 +193,7 @@ export function directPublicationChecks(row: DirectPublishRow, now = new Date())
   if (!row.contract_reference) reasons.push("missing_contract_reference");
   if (!row.booking_url) reasons.push("missing_booking_url");
   if (!row.approved_booking_host) reasons.push("missing_approved_booking_host");
+  if (!row.tracking_query_param) reasons.push("missing_tracking_query_param");
   if (!row.valid_from || !row.valid_to) reasons.push("missing_validity_window");
   if (row.valid_from && row.valid_to && row.valid_from > row.valid_to) reasons.push("invalid_validity_window");
   if (row.valid_to && new Date(row.valid_to + "T23:59:59Z").getTime() <= now.getTime()) reasons.push("rate_expired");
@@ -337,9 +344,9 @@ export async function listSellableDirectOffers(input: DirectCatalogQuery = {}): 
         h.region,
         h.lat,
         h.lng,
-        coalesce(${requestedCheckIn}::date, greatest(current_date, r.valid_from))::text as check_in,
+        greatest(coalesce(${requestedCheckIn}::date,current_date), r.valid_from)::text as check_in,
         (
-          coalesce(${requestedCheckIn}::date, greatest(current_date, r.valid_from))
+          greatest(coalesce(${requestedCheckIn}::date,current_date), r.valid_from)
           + coalesce(${requestedNights}::int, r.min_nights)
         )::date::text as check_out,
         coalesce(${requestedNights}::int, r.min_nights)::int as nights,
@@ -369,7 +376,7 @@ export async function listSellableDirectOffers(input: DirectCatalogQuery = {}): 
         ))
         and (${requestedCheckIn}::date is null or (
           ${requestedCheckIn} between r.valid_from - ${flexibleDays} and r.valid_to
-          and (${requestedCheckIn} + coalesce(${requestedNights}::int, r.min_nights)) <= r.valid_to + 1
+          and (greatest(${requestedCheckIn}::date,r.valid_from) + coalesce(${requestedNights}::int, r.min_nights)) <= r.valid_to + 1
         ))
     )
     select * from candidates
@@ -400,6 +407,7 @@ export async function getSellableDirectOfferForReferral(id: string) {
     verified_at: string;
     booking_url: string;
     approved_booking_host: string;
+    tracking_query_param: string;
   }>>`
     select
       r.id::text as offer_id,
@@ -418,7 +426,8 @@ export async function getSellableDirectOfferForReferral(id: string) {
       r.valid_to::text,
       coalesce(r.verified_at, r.updated_at)::text as verified_at,
       r.booking_url,
-      r.approved_booking_host
+      r.approved_booking_host,
+      r.tracking_query_param
     from direct_rate_offers r
     join canonical_hotels h on h.id = r.canonical_hotel_id
     where r.id = ${id}::uuid
@@ -426,14 +435,14 @@ export async function getSellableDirectOfferForReferral(id: string) {
       and r.contract_verified = true
       and r.booking_url is not null
       and r.approved_booking_host is not null
-      and r.valid_from <= current_date
       and r.valid_to >= current_date
     limit 1
   `;
   const r = rows[0];
   if (!r) return null;
 
-  const checkIn = new Date().toISOString().slice(0, 10);
+  const today = new Date().toISOString().slice(0, 10);
+  const checkIn = r.valid_to && today ? today : today;
   const checkOut = addDays(checkIn, Number(r.min_nights));
   const offer = normalizeLiveCatalogRow({
     offerId: r.offer_id,
