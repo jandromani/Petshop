@@ -4,6 +4,8 @@ export type LiveProviderStatus = {
   environment: "sandbox" | "production";
   missingEnv: string[];
   notes: string[];
+  commercialReady?: boolean;
+  blockers?: string[];
 };
 
 export type LiveSearchHit = {
