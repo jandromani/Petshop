@@ -1,4 +1,6 @@
+import { cookies } from "next/headers";
 import { hotelBySlug } from "@/src/data/hotels";
+import { createReferralClick, referralLog } from "@/src/services/referral";
 
 export const runtime = "nodejs";
 
@@ -9,25 +11,36 @@ export async function GET(req: Request) {
   const hotel = hotelBySlug(slug);
   if (!hotel) return Response.json({ error: "Unknown hotel" }, { status: 404 });
 
-  const clickId = crypto.randomUUID();
-  const provider = ["booking","ratehawk","hbx"].includes(requestedProvider) ? requestedProvider : hotel.provider;
+  const jar = await cookies();
+  const provider = ["booking","ratehawk","hbx"].includes(requestedProvider)
+    ? requestedProvider
+    : hotel.provider;
 
-  console.log(JSON.stringify({
-    level:"info",
-    event:"referral_click",
-    clickId,
-    hotelId:hotel.id,
-    hotelSlug:hotel.slug,
+  const click = createReferralClick({
+    visitorId: jar.get("rv_vid")?.value,
+    sessionId: jar.get("rv_sid")?.value,
+    hotelSlug: hotel.slug,
     provider,
-    prototypePrice:hotel.monthly,
-    ts:new Date().toISOString()
-  }));
+    source: jar.get("rv_src")?.value || jar.get("rv_ref")?.value || "direct",
+    campaign: jar.get("rv_campaign")?.value,
+    pagePath: url.searchParams.get("from") || undefined,
+    position: Number(url.searchParams.get("pos")) || undefined,
+  });
 
-  // Until commercial credentials are attached, send to a generic public hotel search.
-  // This endpoint already gives us one place to insert affiliate IDs/subIDs later.
+  console.log(referralLog(click));
+
+  // Bootstrap fallback. Production provider adapters will replace this
+  // with attributed partner deep links and subID=click.clickId.
   const target = new URL("https://www.booking.com/searchresults.html");
   target.searchParams.set("ss", hotel.city + ", " + hotel.country);
-  target.searchParams.set("label", "atlas-prototype-" + clickId.slice(0,8));
+  target.searchParams.set("label", "atlas-" + click.clickId.slice(0, 12));
 
-  return Response.redirect(target, 302);
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: target.toString(),
+      "Cache-Control": "no-store",
+      "X-Referral-Click": click.clickId,
+    },
+  });
 }
