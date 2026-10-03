@@ -6,6 +6,7 @@ export type ReferralClick = {
   canonicalHotelId?: string;
   offerSnapshotId?: string;
   expectedCommission?: number;
+  providerTrackingId: string;
   provider: string;
   source?: string;
   campaign?: string;
@@ -15,10 +16,12 @@ export type ReferralClick = {
 };
 
 export function createReferralClick(input: Omit<ReferralClick, "clickId" | "createdAt">): ReferralClick {
+  const clickId=crypto.randomUUID();
   return {
     ...input,
-    clickId: crypto.randomUUID(),
-    createdAt: new Date().toISOString(),
+    clickId,
+    providerTrackingId:"atlas_click-"+clickId.replaceAll("-",""),
+    createdAt:new Date().toISOString(),
   };
 }
 
