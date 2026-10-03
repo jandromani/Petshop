@@ -6,6 +6,7 @@ export type CanonicalHotelInput={
   name:string;
   city:string;
   country:string;
+  region?:string;
   lat?:number;
   lng?:number;
   silverScore?:number;
@@ -15,12 +16,13 @@ export async function upsertCanonicalHotel(input:CanonicalHotelInput){
   const sql=getDatabase();
   if(!sql) return null;
   const rows=await sql<{id:string}[]>`
-    insert into canonical_hotels (slug,name,city,country,lat,lng,silver_score,updated_at)
+    insert into canonical_hotels (slug,name,city,country,region,lat,lng,silver_score,updated_at)
     values (
       ${input.slug},
       ${input.name},
       ${input.city},
       ${input.country},
+      ${input.region ?? null},
       ${input.lat ?? null},
       ${input.lng ?? null},
       ${input.silverScore ?? null},
@@ -30,6 +32,7 @@ export async function upsertCanonicalHotel(input:CanonicalHotelInput){
       name=excluded.name,
       city=excluded.city,
       country=excluded.country,
+      region=coalesce(excluded.region,canonical_hotels.region),
       lat=coalesce(excluded.lat,canonical_hotels.lat),
       lng=coalesce(excluded.lng,canonical_hotels.lng),
       updated_at=now()
@@ -104,6 +107,9 @@ export async function persistOfferSnapshot(input:{
   checkOut:string;
   occupancy:number;
   board?:string;
+  roomType?:string;
+  taxesIncluded?:boolean;
+  fulfillmentType?:"REDIRECT"|"API_BOOKING"|"DIRECT";
   totalPrice:number;
   displayPrice?:number;
   currency:string;
@@ -118,7 +124,7 @@ export async function persistOfferSnapshot(input:{
   const rows=await sql<{id:string}[]>`
     insert into offer_snapshots (
       hotel_id,provider,provider_offer_id,provider_request_id,
-      check_in,check_out,occupancy,board,total_price,display_price,currency,
+      check_in,check_out,occupancy,board,room_type,taxes_included,fulfillment_type,total_price,display_price,currency,
       evidence,evidence_hash,deep_link,verified_at,expires_at,source_mode
     ) values (
       ${input.hotelId}::uuid,
@@ -129,6 +135,9 @@ export async function persistOfferSnapshot(input:{
       ${input.checkOut},
       ${input.occupancy},
       ${input.board ?? null},
+      ${input.roomType ?? null},
+      ${input.taxesIncluded ?? null},
+      ${input.fulfillmentType ?? "REDIRECT"},
       ${input.totalPrice},
       ${input.displayPrice ?? null},
       ${input.currency},
