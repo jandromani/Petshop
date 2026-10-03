@@ -9,10 +9,16 @@ export type LiveProviderStatus = {
 export type LiveSearchHit = {
   provider: string;
   providerHotelId: string;
+  providerOfferId?: string;
+  providerRequestId?: string;
   totalPrice?: number;
+  displayPrice?: number;
   currency?: string;
   board?: string;
   deepLink?: string;
+  verifiedAt?: string;
+  stage?: "search" | "availability" | "prebook";
+  commercialFulfillment?: "redirect" | "api" | "none";
   raw: unknown;
 };
 
@@ -60,7 +66,7 @@ export async function fetchJson<T>(
           continue;
         }
         throw new ProviderHttpError(
-          `${provider} HTTP ${res.status}`,
+          provider + " HTTP " + res.status,
           res.status,
           provider,
           text.slice(0, 1200),
@@ -81,5 +87,17 @@ export async function fetchJson<T>(
 export function finiteNumber(value: unknown): number | undefined {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string" && value.trim() && Number.isFinite(Number(value))) return Number(value);
+  return undefined;
+}
+
+export function localizedText(value: unknown, preferred = "en-gb"): string | undefined {
+  if (typeof value === "string" && value.trim()) return value.trim();
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const record = value as Record<string, unknown>;
+  const preferredValue = record[preferred];
+  if (typeof preferredValue === "string" && preferredValue.trim()) return preferredValue.trim();
+  for (const candidate of Object.values(record)) {
+    if (typeof candidate === "string" && candidate.trim()) return candidate.trim();
+  }
   return undefined;
 }
