@@ -19,6 +19,17 @@ export function filterLiveDiscovery(slug:string,offers:LiveCatalogOffer[]){
   return[];
 }
 
+function narrativeKey(page:{headline:string;description:string}){
+  return (page.headline+" "+page.description).toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+}
+
+export function uniqueDiscoveryNarrative(slug:string){
+  const page=discoveryBySlug(slug);
+  if(!page)return false;
+  const key=narrativeKey(page);
+  return DISCOVERY_PAGES.filter(p=>narrativeKey(p)===key).length===1&&page.description.trim().length>=40;
+}
+
 export async function liveDiscoveryEvidence(slug:string){
   const page=discoveryBySlug(slug);
   if(!page)return null;
@@ -31,7 +42,7 @@ export async function liveDiscoveryEvidence(slug:string){
     sellableHotels:new Set(offers.map(o=>o.hotelId)).size,
     uniqueCountries:countries.size,
     hasFreshProviderEvidence:offers.length>0&&offers.every(o=>new Date(o.expiresAt||0).getTime()>Date.now()),
-    uniqueNarrative:true,
+    uniqueNarrative:uniqueDiscoveryNarrative(slug),
   });
   if(mode==="unsupported"&&gate.index){
     return{page,offers,mode,gate:{index:false,reasons:["intent lacks normalized live evidence dimensions"]}};
