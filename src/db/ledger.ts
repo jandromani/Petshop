@@ -38,10 +38,11 @@ export async function persistReferralClick(click:ReferralClick):Promise<PersistR
   try{
     await sql`
       insert into referral_clicks (
-        click_id,visitor_id,session_id,hotel_id,provider,offer_snapshot_id,
+        click_id,provider_tracking_id,visitor_id,session_id,hotel_id,provider,offer_snapshot_id,
         source,campaign,page_path,position,expected_commission,created_at
       ) values (
         ${click.clickId},
+        ${click.providerTrackingId},
         ${click.visitorId ?? null},
         ${click.sessionId ?? null},
         ${click.canonicalHotelId ?? null}::uuid,
