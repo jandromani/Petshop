@@ -239,3 +239,32 @@ export async function finishAcquisitionRun(input:{
   `;
   return true;
 }
+
+export type CanonicalCandidate={
+  id:string;slug:string;name:string;city:string;country:string;region:string|null;lat:number|null;lng:number|null;
+};
+
+export async function findCanonicalCandidates(input:{city:string;country:string;limit?:number}):Promise<CanonicalCandidate[]>{
+  const sql=getDatabase();if(!sql)return[];
+  const limit=Math.max(1,Math.min(100,input.limit??40));
+  return sql<CanonicalCandidate[]>`
+    select id::text,slug,name,city,country,region,lat,lng
+    from canonical_hotels
+    where lower(country)=lower(${input.country})
+      and lower(city)=lower(${input.city})
+    order by updated_at desc
+    limit ${limit}
+  `;
+}
+
+export async function listProviderHotels(provider:string,limit=100){
+  const sql=getDatabase();if(!sql)return[];
+  const bounded=Math.max(1,Math.min(500,limit));
+  return sql<Array<{hotel_id:string;slug:string;name:string;city:string;country:string;region:string|null;lat:number|null;lng:number|null;provider_hotel_id:string}>>`
+    select h.id::text as hotel_id,h.slug,h.name,h.city,h.country,h.region,h.lat,h.lng,p.provider_hotel_id
+    from provider_hotels p join canonical_hotels h on h.id=p.hotel_id
+    where p.provider=${provider} and p.status='ACTIVE'
+    order by coalesce(p.last_verified_at,p.last_seen_at) asc nulls first
+    limit ${bounded}
+  `;
+}
