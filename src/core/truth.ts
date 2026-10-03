@@ -21,6 +21,7 @@ export type CommercialOfferEvidence = {
   verifiedAt: string;
   expiresAt?: string;
   deepLink?: string;
+  apiBookingCapable?: boolean;
   rawHash?: string;
 };
 
@@ -52,7 +53,7 @@ export function evaluateCommercialOffer(
   if (!Number.isFinite(evidence.totalPrice) || evidence.totalPrice <= 0) reasons.push("invalid_price");
   if (!/^[A-Z]{3}$/.test(evidence.currency)) reasons.push("invalid_currency");
   if (!evidence.rawHash) reasons.push("missing_raw_evidence_hash");
-  if (!evidence.deepLink) reasons.push("missing_commercial_deep_link");
+  if (!evidence.deepLink && !evidence.apiBookingCapable) reasons.push("missing_commercial_fulfillment_path");
 
   const verified = new Date(evidence.verifiedAt);
   if (Number.isNaN(verified.getTime())) reasons.push("invalid_verified_at");

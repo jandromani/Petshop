@@ -41,6 +41,24 @@ describe("truth v2",()=>{
     },new Date("2027-01-01T12:00:00Z"));
     expect(result.state).toBe("QUARANTINED");
     expect(result.reasons).toContain("missing_raw_evidence_hash");
+    expect(result.reasons).toContain("missing_commercial_fulfillment_path");
+  });
+
+  it("accepts B2B API booking capability instead of a deep link",()=>{
+    const result=evaluateCommercialOffer({
+      hotelId:"h2",
+      sourceMode:"live",
+      provider:"hbx",
+      providerOfferId:"rate-key",
+      totalPrice:3000,
+      currency:"EUR",
+      checkIn:"2027-02-01",
+      checkOut:"2027-03-01",
+      verifiedAt:"2027-01-01T11:55:00Z",
+      apiBookingCapable:true,
+      rawHash:"hash",
+    },new Date("2027-01-01T12:00:00Z"));
+    expect(result.state).toBe("SELLABLE");
   });
 
   it("marks expired complete evidence stale",()=>{
