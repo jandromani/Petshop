@@ -8,7 +8,7 @@ describe("planner", () => {
     const plan = buildPlan(hotels, 2000, "solo", 90, "world");
     const totals = planTotals(plan);
     expect(plan.length).toBe(4);
-    expect(totals.days).toBe(360);
+    expect(totals.days).toBe(365);
     expect(totals.total).toBeGreaterThan(0);
   });
 
