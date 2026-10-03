@@ -1,4 +1,5 @@
 import type { Hotel } from "@/src/data/hotels";
+import { providerFreshUntil } from "@/src/core/provider-policy";
 
 export type SellabilityState = "DEMO" | "SELLABLE" | "STALE" | "QUARANTINED";
 
@@ -58,11 +59,12 @@ export function evaluateCommercialOffer(
   const verified = new Date(evidence.verifiedAt);
   if (Number.isNaN(verified.getTime())) reasons.push("invalid_verified_at");
 
-  const expires = evidence.expiresAt ? new Date(evidence.expiresAt) : null;
+  const effectiveExpiresAt=evidence.expiresAt||providerFreshUntil(evidence.provider,evidence.verifiedAt);
+  const expires = effectiveExpiresAt ? new Date(effectiveExpiresAt) : null;
   if (evidence.expiresAt && (!expires || Number.isNaN(expires.getTime()))) reasons.push("invalid_expires_at");
 
   if (evidence.sourceMode === "live" && reasons.length === 0) {
-    if (expires && expires.getTime() <= now.getTime()) {
+    if (!expires || Number.isNaN(expires.getTime()) || expires.getTime() <= now.getTime()) {
       return {
         hotelId: evidence.hotelId,
         state: "STALE",
