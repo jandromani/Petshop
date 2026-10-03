@@ -2,6 +2,7 @@ import { hotels, type Hotel } from "@/src/data/hotels";
 import { BookingDemandClient } from "@/src/providers/live/booking";
 import { evaluateCommercialOffer } from "@/src/core/truth";
 import { stableEvidenceHash } from "@/src/services/evidence";
+import { providerFreshUntil } from "@/src/core/provider-policy";
 import { databaseConfigured } from "@/src/db/client";
 import {
   finishAcquisitionRun,
@@ -157,6 +158,7 @@ export async function runBookingLiveWave(input:BookingLiveWaveInput):Promise<Boo
           name:displayName,
           city:anchor.city,
           country:anchor.country,
+          region:anchor.region,
           lat:detail?.latitude,
           lng:detail?.longitude,
         }) : null;
@@ -215,6 +217,8 @@ export async function runBookingLiveWave(input:BookingLiveWaveInput):Promise<Boo
               deepLink:hit.deepLink,
               evidence:evidencePayload,
               verifiedAt,
+              expiresAt:providerFreshUntil("booking",verifiedAt),
+              fulfillmentType:"REDIRECT",
             });
           }
 
