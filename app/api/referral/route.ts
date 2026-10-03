@@ -36,6 +36,7 @@ async function liveReferral(url:URL,jar:Awaited<ReturnType<typeof cookies>>){
   });
 
   if(offer.provider==="booking") target.searchParams.set("label",click.providerTrackingId);
+  if(offer.provider==="direct"&&offer.trackingParam) target.searchParams.set(offer.trackingParam,click.providerTrackingId);
 
   console.log(referralLog(click));
   after(async()=>{await Promise.allSettled([persistReferralClick(click),publishBusEvent(busEvent("referral.clicked",click,click.clickId,click.clickId))]);});
