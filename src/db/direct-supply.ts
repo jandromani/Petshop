@@ -254,6 +254,7 @@ export async function revokeDirectRate(id: string) {
 export type DirectCatalogQuery = {
   limit?: number;
   q?: string;
+  slug?: string;
   maxMonthly?: number;
   checkIn?: string;
   flexibleDays?: number;
@@ -316,6 +317,7 @@ export async function listSellableDirectOffers(input: DirectCatalogQuery = {}): 
 
   const limit = Math.max(1, Math.min(50, input.limit ?? 12));
   const q = input.q?.trim() ? "%" + input.q.trim() + "%" : null;
+  const slug = input.slug?.trim() || null;
   const maxMonthly = input.maxMonthly && input.maxMonthly > 0 ? input.maxMonthly : null;
   const requestedCheckIn = input.checkIn || null;
   const flexibleDays = Math.max(0, Math.min(30, input.flexibleDays ?? 0));
@@ -358,6 +360,7 @@ export async function listSellableDirectOffers(input: DirectCatalogQuery = {}): 
         and r.valid_to >= current_date
         and r.max_guests >= ${occupancy}
         and (${q}::text is null or h.name ilike ${q} or h.city ilike ${q} or h.country ilike ${q})
+        and (${slug}::text is null or h.slug = ${slug})
         and (${region}::text is null or h.region = ${region})
         and (${maxMonthly}::float is null or r.monthly_price <= ${maxMonthly})
         and (${requestedNights}::int is null or (
