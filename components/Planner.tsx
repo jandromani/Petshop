@@ -139,23 +139,23 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
             <div className="label"><span>{String(label)}</span><b>{euro(Number(value))}</b></div>
             <input type="range" min={Number(min)} max={Number(max)} step="50" value={Number(value)} onChange={e=>(setter as (x:number)=>void)(Number(e.target.value))}/>
           </div>)}
-          <div className="financeSummary">
+          <div className="financeSummary" data-testid="monthly-resources">
             <div><span>MONTHLY RESOURCES</span><b>{euro(finances.monthlyResources)}</b></div>
             <div className="financePlus">pension + home + other</div>
           </div>
           <div className="control">
             <div className="label"><span>Keep untouched every month</span><b>{euro(finances.reserve)}</b></div>
-            <input type="range" min="0" max={Math.max(0,finances.monthlyResources)} step="50" value={Math.min(reserve,finances.monthlyResources)} onChange={e=>setReserve(Number(e.target.value))}/>
+            <input data-testid="reserve-slider" type="range" min="0" max={Math.max(0,finances.monthlyResources)} step="50" value={Math.min(reserve,finances.monthlyResources)} onChange={e=>setReserve(Number(e.target.value))}/>
           </div>
-          <div className="financeBudget"><span>MAXIMUM AVAILABLE TO LIVE</span><b>{euro(livingBudget)}<small>/month</small></b></div>
+          <div className="financeBudget" data-testid="living-budget"><span>MAXIMUM AVAILABLE TO LIVE</span><b>{euro(livingBudget)}<small>/month</small></b></div>
           <div className="control"><div className="label"><span>Travelling as</span><b>{party}</b></div><div className="segment"><button className={party==="solo"?"active":""} onClick={()=>setParty("solo")}>Solo</button><button className={party==="couple"?"active":""} onClick={()=>setParty("couple")}>Couple</button></div></div>
           <div className="control"><div className="label"><span>Stay cadence</span><b>{duration} days</b></div><div className="segment">{([30,60,90,120,180] as StayDuration[]).map(d=><button key={d} className={duration===d?"active":""} onClick={()=>setDuration(d)}>{d}d</button>)}</div></div>
         </div>
 
         <div className="card">
           <div className="moneyline">
-            <div><div className="label"><span>ACTUAL ROUTE COST</span></div><div className="money">{plan.length?euro(avg):"—"}<small>/month est.</small></div></div>
-            <div className="surplus"><span>left after route</span><b>{plan.length?euro(headroom.totalMonthlyHeadroom):"—"}</b></div>
+            <div data-testid="route-cost"><div className="label"><span>ACTUAL ROUTE COST</span></div><div className="money">{plan.length?euro(avg):"—"}<small>/month est.</small></div></div>
+            <div className="surplus" data-testid="total-headroom"><span>left after route</span><b>{plan.length?euro(headroom.totalMonthlyHeadroom):"—"}</b></div>
           </div>
           <div className="budgetBreakdown">
             <div><span>Maximum living budget</span><b>{euro(livingBudget)}</b></div>
