@@ -12,6 +12,7 @@ import {
   persistSellabilityAudit,
   startAcquisitionRun,
   upsertProviderHotel,
+  upsertHotelContent,
 } from "@/src/db/supply";
 
 export type BookingLiveWaveInput={
@@ -202,6 +203,16 @@ export async function runBookingLiveWave(input:BookingLiveWaveInput):Promise<Boo
             rawHash:evidenceHash,
             verifiedAt,
           });
+          if(detail){
+            await upsertHotelContent({
+              hotelId:canonicalId,
+              provider:"booking",
+              description:detail.description,
+              photoUrls:detail.photoUrls,
+              facilities:detail.facilities,
+              sourceHash:evidenceHash,
+            });
+          }
 
           let snapshotId:string|null=null;
           if(price>0 && hit.currency){
