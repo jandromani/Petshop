@@ -1,3 +1,6 @@
+alter table referral_clicks
+  add column if not exists provider_tracking_id text unique;
+
 alter table conversions
   add column if not exists raw_payload jsonb not null default '{}'::jsonb,
   add column if not exists updated_at timestamptz not null default now(),
