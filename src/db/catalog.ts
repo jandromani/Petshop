@@ -1,5 +1,6 @@
 import { getDatabase } from "@/src/db/client";
 import { normalizeLiveCatalogRow,type LiveCatalogOffer,type LiveCatalogRow } from "@/src/core/live-offers";
+import { getSellableDirectOfferForReferral,listSellableDirectOffers } from "@/src/db/direct-supply";
 
 type DbOfferRow={
   offer_id:string;hotel_id:string;slug:string;name:string;city:string;country:string;region:string|null;
@@ -10,7 +11,7 @@ type DbOfferRow={
 
 function normalizeDbRow(row:DbOfferRow):LiveCatalogOffer{
   const base:LiveCatalogRow={
-    offerId:row.offer_id,hotelId:row.hotel_id,slug:row.slug,name:row.name,city:row.city,country:row.country,
+    offerId:row.offer_id,offerKind:"snapshot",hotelId:row.hotel_id,slug:row.slug,name:row.name,city:row.city,country:row.country,
     region:row.region,lat:row.lat,lng:row.lng,provider:row.provider,checkIn:String(row.check_in).slice(0,10),
     checkOut:String(row.check_out).slice(0,10),nights:Number(row.nights),occupancy:Number(row.occupancy),board:row.board,
     roomType:row.room_type,displayPrice:Number(row.display_price),currency:row.currency,
@@ -83,7 +84,11 @@ export async function listSellableOffers(input:LiveCatalogQuery={}):Promise<Live
     order by display_price asc,confidence desc
     limit ${limit}
   `;
-  return rows.map(normalizeDbRow);
+  const providerOffers=rows.map(normalizeDbRow);
+  const directOffers=await listSellableDirectOffers(input);
+  return [...providerOffers,...directOffers]
+    .sort((a,b)=>a.monthlyEquivalent-b.monthlyEquivalent||b.confidence-a.confidence)
+    .slice(0,limit);
 }
 
 export async function getSellableOfferForReferral(offerId:string){
@@ -117,6 +122,6 @@ export async function getSellableOfferForReferral(offerId:string){
     limit 1
   `;
   const row=rows[0];
-  if(!row||!row.deep_link)return null;
-  return{...normalizeDbRow(row),deepLink:row.deep_link};
+  if(row?.deep_link)return{...normalizeDbRow(row),deepLink:row.deep_link,approvedHost:undefined};
+  return getSellableDirectOfferForReferral(offerId);
 }
