@@ -35,9 +35,7 @@ async function liveReferral(url:URL,jar:Awaited<ReturnType<typeof cookies>>){
     position:Number(url.searchParams.get("pos")) || undefined,
   });
 
-  if(offer.provider==="booking" && !target.searchParams.has("label")){
-    target.searchParams.set("label","rv-"+click.clickId.slice(0,12));
-  }
+  if(offer.provider==="booking") target.searchParams.set("label",click.providerTrackingId);
 
   console.log(referralLog(click));
   after(async()=>{await Promise.allSettled([persistReferralClick(click),publishBusEvent(busEvent("referral.clicked",click,click.clickId,click.clickId))]);});
@@ -75,6 +73,6 @@ export async function GET(req: Request) {
 
   const target=new URL("https://www.booking.com/searchresults.html");
   target.searchParams.set("ss",hotel.city+", "+hotel.country);
-  target.searchParams.set("label","atlas-"+click.clickId.slice(0,12));
+  target.searchParams.set("label",click.providerTrackingId);
   return new Response(null,{status:302,headers:{Location:target.toString(),"Cache-Control":"no-store","X-Referral-Click":click.clickId}});
 }
