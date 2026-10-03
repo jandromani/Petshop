@@ -1,6 +1,7 @@
 import { getDatabase } from "@/src/db/client";
 import { normalizeLiveCatalogRow,type LiveCatalogOffer,type LiveCatalogRow } from "@/src/core/live-offers";
 import { getSellableDirectOfferForReferral,listSellableDirectOffers } from "@/src/db/direct-supply";
+import { computeSilverFit } from "@/src/core/silver-score";
 
 type DbOfferRow={
   offer_id:string;hotel_id:string;slug:string;name:string;city:string;country:string;region:string|null;
@@ -15,13 +16,19 @@ function stringArray(value:unknown){
 }
 
 function normalizeDbRow(row:DbOfferRow):LiveCatalogOffer{
+  const photos=stringArray(row.photo_urls);
+  const facilities=stringArray(row.facilities);
+  const silver=computeSilverFit({
+    nights:Number(row.nights),board:row.board,roomType:row.room_type,cancellation:row.cancellation,
+    taxesIncluded:row.taxes_included,facilities,photoUrls:photos,description:row.description,confidence:Number(row.confidence),
+  });
   const base:LiveCatalogRow={
     offerId:row.offer_id,offerKind:"snapshot",hotelId:row.hotel_id,slug:row.slug,name:row.name,city:row.city,country:row.country,
     region:row.region,lat:row.lat,lng:row.lng,provider:row.provider,checkIn:String(row.check_in).slice(0,10),
     checkOut:String(row.check_out).slice(0,10),nights:Number(row.nights),occupancy:Number(row.occupancy),board:row.board,
     roomType:row.room_type,cancellation:row.cancellation,taxesIncluded:row.taxes_included,
-    silverScore:row.silver_score===null?null:Number(row.silver_score),
-    photoUrls:stringArray(row.photo_urls),facilities:stringArray(row.facilities),description:row.description,
+    silverScore:silver.score,silverBreakdown:silver.breakdown,
+    photoUrls:photos,facilities,description:row.description,
     displayPrice:Number(row.display_price),currency:row.currency,
     verifiedAt:new Date(row.verified_at).toISOString(),expiresAt:row.expires_at?new Date(row.expires_at).toISOString():null,
     confidence:Number(row.confidence),
