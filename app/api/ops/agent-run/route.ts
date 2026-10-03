@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { AGENTS, agentSystemPrompt } from "@/src/agents/registry";
 import { deterministicBrandJudge, deterministicTruthJudge } from "@/src/judges/rules";
-import { finishPersistedAgentRun, getAgentUsageToday, persistExternalJudge, persistJudgeReview, startPersistedAgentRun } from "@/src/db/agents";
+import { finishPersistedAgentRun, persistExternalJudge, persistJudgeReview, reserveAgentRunSlot, startPersistedAgentRun, usageCostCents } from "@/src/db/agents";
 import { databaseConfigured } from "@/src/db/client";
 import { auditOpsEvent } from "@/src/db/governance";
 
@@ -45,13 +45,9 @@ export async function POST(req: Request) {
   if(!databaseConfigured()){
     return Response.json({error:"agent-governance-database-required"},{status:503});
   }
-  const usage=await getAgentUsageToday(policy.key);
-  if(!usage){
-    return Response.json({error:"agent-governance-unavailable"},{status:503});
-  }
-  if(usage.runs>=policy.maxRunsPerDay){
-    return Response.json({error:"agent-daily-run-cap-reached",agent:policy.key,limit:policy.maxRunsPerDay,used:usage.runs},{status:429});
-  }
+  const budget=await reserveAgentRunSlot(policy.key,policy.maxRunsPerDay);
+  if(!budget) return Response.json({error:"agent-governance-unavailable"},{status:503});
+  if(!budget.allowed) return Response.json({error:"agent-daily-run-cap-reached",agent:policy.key,limit:budget.limit,used:budget.used},{status:429});
   const runId = crypto.randomUUID();
   await Promise.allSettled([startPersistedAgentRun({id:runId,agentKey:policy.key,objective:parsed.data.objective,payload:parsed.data.context || {}})]);
 
@@ -91,6 +87,7 @@ export async function POST(req: Request) {
           approved,
         },
         usage:{actor:actor.usage,judge:judge.usage},
+        costCents:usageCostCents(actor.usage)+usageCostCents(judge.usage),
       }),
     ]);
 
@@ -109,7 +106,7 @@ export async function POST(req: Request) {
       externalJudge:judge.text,
       approved,
       promotionAllowed:false,
-      usageBeforeRun:usage,
+      quota:budget,
       model:actor.model,
     });
   } catch (error) {
