@@ -4,14 +4,14 @@ import { getOpsSnapshot } from "@/src/db/ops";
 import { canonicalSiteUrl,publicSiteConfigured } from "@/src/system/site-url";
 import { legalIdentity } from "@/src/system/legal";
 import { adjacencyPartners } from "@/src/adjacency/registry";
-import { agentModelConfigured,agentRuntimeProvider } from "@/src/agents/llm";
+import { agentRuntimeCredentialsAvailable,agentRuntimeProvider } from "@/src/agents/llm";
 import { seoAutopilotEnabled } from "@/src/seo/live";
 
 export type ActivationState="ACTIVE"|"READY"|"ACTIVATION_REQUIRED"|"OPTIONAL";
 
 export async function activationManifest(){
   const providers=liveProviderStatuses();
-  const ops=await getOpsSnapshot();
+  const [ops,agentCredentials]=await Promise.all([getOpsSnapshot(),agentRuntimeCredentialsAvailable()]);
   const providerConfigured=providers.some(p=>p.configured);
   const supplyActive=ops.liveOffers>0;
   const legal=legalIdentity();
@@ -19,7 +19,8 @@ export async function activationManifest(){
   const activeAdjacencies=adjacencies.filter(x=>x.configured);
   const db=databaseConfigured();
   const deployedOnVercel=process.env.VERCEL==="1"||Boolean(process.env.VERCEL_PROJECT_ID);
-  const agentActive=agentModelConfigured()&&process.env.AGENT_RUNTIME_ENABLED!=="false";
+  const agentActive=agentCredentials&&process.env.AGENT_RUNTIME_ENABLED!=="false";
+  const runtimeProvider=agentActive?agentRuntimeProvider():"none";
   const seoAuto=seoAutopilotEnabled();
 
   const items=[
@@ -78,10 +79,10 @@ export async function activationManifest(){
     },
     {
       key:"agent-runtime",
-      state:(agentActive&&db?"ACTIVE":agentModelConfigured()?"READY":"OPTIONAL") as ActivationState,
+      state:(agentActive&&db?"ACTIVE":agentActive?"READY":"OPTIONAL") as ActivationState,
       detail:agentActive
-        ?"Governed runtime available via "+agentRuntimeProvider()+"; DB activates durable quotas, judges and actuation."
-        :"Vercel AI Gateway/OIDC is preferred; OpenRouter remains an optional fallback.",
+        ?"Governed runtime credential probe succeeded via "+runtimeProvider+"; DB activates durable quotas, judges and actuation."
+        :"No usable AI runtime credential was observed. Vercel OIDC is preferred; OpenRouter remains an optional fallback.",
     },
     {
       key:"seo-indexing",
