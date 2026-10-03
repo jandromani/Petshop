@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { hotels } from "@/src/data/hotels";
 import { DISCOVERY_PAGES,discoveryBySlug } from "@/src/seo/catalog";
 import { liveDiscoveryEvidence } from "@/src/seo/live";
+import { canonicalSiteUrl } from "@/src/system/site-url";
 
 export const dynamic="force-dynamic";
 const euro=(n:number,currency="EUR")=>new Intl.NumberFormat("en-US",{style:"currency",currency,maximumFractionDigits:0}).format(n);
@@ -16,9 +17,11 @@ export async function generateMetadata({params}:{params:Promise<{slug:string}>})
   const result=await liveDiscoveryEvidence(slug);
   const page=result?.page||discoveryBySlug(slug);
   if(!page)return{};
+  const canonical=canonicalSiteUrl()+"/discover/"+slug;
   return{
     title:page.title,
     description:page.description,
+    alternates:{canonical},
     robots:{index:Boolean(result?.gate.index),follow:true},
     openGraph:{title:page.headline,description:page.description,type:"website"},
   };
@@ -34,7 +37,25 @@ export default async function Discovery({params}:{params:Promise<{slug:string}>}
   const offers=live?.offers||[];
   const indexed=Boolean(live?.gate.index);
 
-  return <main className="seoPage"><div className="shell">
+  const canonical=canonicalSiteUrl()+"/discover/"+slug;
+  const jsonLd=offers.length?{
+    "@context":"https://schema.org",
+    "@type":"ItemList",
+    name:page.title,
+    url:canonical,
+    numberOfItems:offers.length,
+    itemListElement:offers.slice(0,12).map((o,index)=>({
+      "@type":"ListItem",
+      position:index+1,
+      item:{
+        "@type":"Hotel",
+        name:o.name,
+        address:{"@type":"PostalAddress",addressLocality:o.city,addressCountry:o.country},
+        offers:{"@type":"Offer",price:o.displayPrice,priceCurrency:o.currency,url:canonical},
+      },
+    })),
+  }:null;
+  return <main className="seoPage">{jsonLd&&<script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(jsonLd)}}/>}<div className="shell">
     <a href="/" className="eyebrow">← WORLD EXPLORER</a>
     <section className="seoHero" style={{marginTop:20}}>
       <div className="eyebrow">{page.intent.toUpperCase().replaceAll("-"," ")}</div>
