@@ -74,9 +74,10 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
       if(!res.ok||!data?.url) throw new Error(data?.error||"share-unavailable");
       const url=new URL(data.url,window.location.origin).toString();
       growthEvent("route_shared",{mode,party,duration,budget:livingBudget});
-      if(navigator.share) await navigator.share({title:"Could you live like this?",text:"My Atlas long-stay route",url});
+      const canNativeShare="share" in navigator&&typeof navigator.share==="function";
+      if(canNativeShare) await navigator.share({title:"Could you live like this?",text:"My Atlas long-stay route",url});
       else await navigator.clipboard.writeText(url);
-      setShareLabel(navigator.share?"Shared ✓":"Link copied ✓");
+      setShareLabel(canNativeShare?"Shared ✓":"Link copied ✓");
     }catch{
       setShareLabel("Sharing activates with DB");
     }
