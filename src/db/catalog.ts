@@ -22,7 +22,7 @@ function normalizeDbRow(row:DbOfferRow):LiveCatalogOffer{
 }
 
 export type LiveCatalogQuery={
-  limit?:number;q?:string;maxMonthly?:number;checkIn?:string;flexibleDays?:number;nights?:number;occupancy?:number;region?:string;
+  limit?:number;q?:string;slug?:string;maxMonthly?:number;checkIn?:string;flexibleDays?:number;nights?:number;occupancy?:number;region?:string;
 };
 
 export async function listSellableOffers(input:LiveCatalogQuery={}):Promise<LiveCatalogOffer[]>{
@@ -30,6 +30,7 @@ export async function listSellableOffers(input:LiveCatalogQuery={}):Promise<Live
   if(!sql) return[];
   const limit=Math.max(1,Math.min(50,input.limit??12));
   const q=input.q?.trim()?"%"+input.q.trim()+"%":null;
+  const slug=input.slug?.trim()||null;
   const maxMonthly=input.maxMonthly&&input.maxMonthly>0?input.maxMonthly:null;
   const checkIn=input.checkIn||null;
   const flexibleDays=Math.max(0,Math.min(30,input.flexibleDays??0));
@@ -69,6 +70,7 @@ export async function listSellableOffers(input:LiveCatalogQuery={}):Promise<Live
           end
         ) > now()
         and (${q}::text is null or h.name ilike ${q} or h.city ilike ${q} or h.country ilike ${q})
+        and (${slug}::text is null or h.slug=${slug})
         and (${region}::text is null or h.region=${region})
         and (${checkIn}::date is null or abs(o.check_in-${checkIn}::date)<=${flexibleDays})
         and (${nights}::int is null or (o.check_out-o.check_in)::int=${nights})
