@@ -17,6 +17,9 @@ export type LiveSearchHit = {
   displayPrice?: number;
   currency?: string;
   board?: string;
+  roomType?: string;
+  cancellation?: string;
+  taxesIncluded?: boolean;
   deepLink?: string;
   verifiedAt?: string;
   stage?: "search" | "availability" | "prebook";
