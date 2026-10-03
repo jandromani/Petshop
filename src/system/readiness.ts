@@ -3,7 +3,7 @@ import { liveProviderStatuses } from "@/src/providers/live/registry";
 import { AGENTS } from "@/src/agents/registry";
 import { getOpsSnapshot } from "@/src/db/ops";
 import { runSoftwareProof } from "@/src/system/proof";
-import { agentModelConfigured,agentRuntimeProvider } from "@/src/agents/llm";
+import { agentRuntimeCredentialsAvailable,agentRuntimeProvider } from "@/src/agents/llm";
 
 export type LayerState="LIVE"|"READY"|"WAITING_EXTERNAL"|"DEGRADED";
 
@@ -11,10 +11,11 @@ export async function getSystemReadiness(){
   const providers=liveProviderStatuses();
   const configuredProviders=providers.filter(p=>p.configured);
   const db=databaseConfigured();
-  const ops=await getOpsSnapshot();
+  const [ops,agentCredentials]=await Promise.all([getOpsSnapshot(),agentRuntimeCredentialsAvailable()]);
   const proof=runSoftwareProof();
   const productionObserved=process.env.VERCEL_ENV==="production";
-  const agentConfigured=agentModelConfigured()&&process.env.AGENT_RUNTIME_ENABLED!=="false";
+  const agentConfigured=agentCredentials&&process.env.AGENT_RUNTIME_ENABLED!=="false";
+  const runtimeProvider=agentConfigured?agentRuntimeProvider():"none";
 
   const experienceState:LayerState=productionObserved?"LIVE":"READY";
   const experience={
@@ -49,7 +50,7 @@ export async function getSystemReadiness(){
   const autonomy={
     state:autonomyState,
     score:autonomyState==="READY"?92:autonomyState==="WAITING_EXTERNAL"?72:55,
-    detail:String(Object.keys(AGENTS).length)+" bounded roles, durable workflows, independent-judge enforcement and allowlisted actuation. Runtime provider: "+agentRuntimeProvider()+". Persistent DB is required for governed execution.",
+    detail:String(Object.keys(AGENTS).length)+" bounded roles, durable workflows, independent-judge enforcement and allowlisted actuation. Runtime provider: "+runtimeProvider+". Persistent DB is required for governed execution.",
   };
 
   return{
@@ -60,7 +61,7 @@ export async function getSystemReadiness(){
       deploymentCommitSha:process.env.VERCEL_GIT_COMMIT_SHA||null,
       databaseConfigured:db,
       agentConfigured,
-      agentRuntimeProvider:agentRuntimeProvider(),
+      agentRuntimeProvider:runtimeProvider,
       configuredProviders:configuredProviders.map(p=>p.provider),
       providers:providers.map(p=>({provider:p.provider,configured:p.configured,environment:p.environment})),
     },
