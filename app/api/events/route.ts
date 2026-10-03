@@ -3,6 +3,7 @@ import { after } from "next/server";
 import { track } from "@vercel/analytics/server";
 import { z } from "zod";
 import { persistGrowthEvent } from "@/src/db/ledger";
+import { enforceRateLimit,requestFingerprint } from "@/src/security/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -14,6 +15,8 @@ const EventInput = z.object({
 });
 
 export async function POST(req: Request) {
+  const gate=await enforceRateLimit({key:requestFingerprint(req,"growth-events"),limit:180,windowSeconds:60});
+  if(!gate.allowed) return Response.json({ok:false,error:"rate-limited"},{status:429});
   const parsed = EventInput.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return Response.json({ ok: false }, { status: 400 });
 
