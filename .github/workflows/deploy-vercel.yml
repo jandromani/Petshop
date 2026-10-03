@@ -74,9 +74,6 @@ jobs:
 
       - name: Smoke test
         if: steps.auth.outputs.configured == 'true'
-        shell: bash
-        run: |
-          URL="${{ steps.deploy.outputs.url }}"
-          curl --fail --silent --show-error --location "$URL/" >/dev/null
-          curl --fail --silent --show-error --location "$URL/api/health" >/tmp/health.json
-          cat /tmp/health.json
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+        run: npm run smoke:production
