@@ -7,6 +7,7 @@ import { databaseConfigured } from "@/src/db/client";
 import { getOpsSnapshot } from "@/src/db/ops";
 import { listOpenIncidents } from "@/src/db/governance";
 import { growthFunnel,heroExperimentReadout } from "@/src/db/growth";
+import { listAgentTasks } from "@/src/db/agent-tasks";
 
 export const metadata={title:"Control Tower",robots:{index:false,follow:false}};
 
@@ -15,7 +16,7 @@ export default async function ControlTower(){
   if(!verifyOpsSession(jar.get(OPS_COOKIE)?.value)) notFound();
 
   const providers=liveProviderStatuses();
-  const [ops,incidents,funnel,heroExperiment]=await Promise.all([getOpsSnapshot(),listOpenIncidents(20),growthFunnel(30),heroExperimentReadout(30)]);
+  const [ops,incidents,funnel,heroExperiment,agentTasks]=await Promise.all([getOpsSnapshot(),listOpenIncidents(20),growthFunnel(30),heroExperimentReadout(30),listAgentTasks(30)]);
   const db=databaseConfigured();
   const agentConfigured=Boolean(process.env.OPENROUTER_API_KEY);
 
@@ -75,6 +76,13 @@ export default async function ControlTower(){
         {Object.values(AGENTS).map(a=><div className="tr" key={a.key}>
           <b>{a.key}</b><span>{a.reduces}</span><span>{a.requiredJudges.join(", ")}</span><span className="amber">€{a.maxExternalSpendEur} authority</span>
         </div>)}
+      </div>
+
+      <h2 style={{marginTop:36}}>Agent proposal inbox</h2>
+      <div className="table">
+        {agentTasks.length?agentTasks.map(t=><div className="tr" key={t.id}>
+          <b>{t.agentKey}</b><span>{t.sourceSignal}</span><span className={t.status==="PROPOSED"?"amber":"green"}>{t.status}</span><span>{t.objective}</span>
+        </div>):<div className="tr"><b>No agent proposals</b><span>—</span><span className="green">CLEAR</span><span>Daily Control will place specialist proposals here when signals require review.</span></div>}
       </div>
 
       <h2 style={{marginTop:36}}>Recent agent runs</h2>
