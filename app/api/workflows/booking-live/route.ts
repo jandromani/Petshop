@@ -19,6 +19,7 @@ const Input=z.object({
 
 
 export async function POST(req:Request){
+  if(process.env.SUPPLY_RUNTIME_ENABLED==="false") return Response.json({error:"supply-runtime-disabled"},{status:503});
   if(!(await opsAuthorized(req))) return new Response("Unauthorized",{status:401});
   const parsed=Input.safeParse(await req.json().catch(()=>null));
   if(!parsed.success) return Response.json({error:"invalid-live-wave",issues:parsed.error.issues},{status:400});
