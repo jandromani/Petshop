@@ -22,7 +22,7 @@ Required:
 - canonical Vercel project is linked
 - production env can be pulled by Vercel CLI
 - production DATABASE_URL exists
-- migrations 001–008 apply successfully
+- migrations 001–011 apply successfully
 - exact CI-tested master SHA is built and deployed
 - production smoke passes
 
