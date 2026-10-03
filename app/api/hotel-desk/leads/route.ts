@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createHotelLead } from "@/src/db/direct-supply";
 
+import { opsAuthorized } from "@/src/security/ops-auth";
 const Input=z.object({
   hotelName:z.string().min(2).max(200),
   city:z.string().min(2).max(120),
@@ -12,9 +13,8 @@ const Input=z.object({
   source:z.string().max(120).optional(),
   notes:z.record(z.string(),z.unknown()).optional(),
 });
-function authorized(req:Request){const s=process.env.OPS_ACCESS_KEY;return Boolean(s&&req.headers.get("authorization")==="Bearer "+s);}
 export async function POST(req:Request){
-  if(!authorized(req)) return new Response("Unauthorized",{status:401});
+  if(!(await opsAuthorized(req))) return new Response("Unauthorized",{status:401});
   const parsed=Input.safeParse(await req.json().catch(()=>null));
   if(!parsed.success) return Response.json({error:"invalid-lead",issues:parsed.error.issues},{status:400});
   const id=await createHotelLead(parsed.data);
