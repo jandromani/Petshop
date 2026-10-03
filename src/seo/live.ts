@@ -5,6 +5,10 @@ import type { LiveCatalogOffer } from "@/src/core/live-offers";
 
 export type LiveDiscoveryMode="budget"|"board"|"region"|"unsupported";
 
+export function seoAutopilotEnabled(){
+  return process.env.SEO_LIVE_INDEXING!=="false";
+}
+
 export function liveDiscoveryMode(slug:string):LiveDiscoveryMode{
   if(slug==="under-1500-month")return"budget";
   if(slug==="all-inclusive")return"board";
@@ -38,7 +42,7 @@ export async function liveDiscoveryEvidence(slug:string){
   const offers=filterLiveDiscovery(slug,source);
   const countries=new Set(offers.map(o=>o.country));
   const gate=seoGate({
-    liveIndexingEnabled:process.env.SEO_LIVE_INDEXING==="true",
+    liveIndexingEnabled:seoAutopilotEnabled(),
     sellableHotels:new Set(offers.map(o=>o.hotelId)).size,
     uniqueCountries:countries.size,
     hasFreshProviderEvidence:offers.length>0&&offers.every(o=>new Date(o.expiresAt||0).getTime()>Date.now()),

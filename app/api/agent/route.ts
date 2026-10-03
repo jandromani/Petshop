@@ -5,6 +5,7 @@ import { databaseConfigured } from "@/src/db/client";
 import { filterDemoHotels } from "@/src/core/search";
 import { deterministicBrandJudge,deterministicTruthJudge } from "@/src/judges/rules";
 import { enforceRateLimit,requestFingerprint } from "@/src/security/rate-limit";
+import { agentModelConfigured,llmCompletion } from "@/src/agents/llm";
 
 export const runtime="nodejs";
 
@@ -26,8 +27,7 @@ export async function POST(req:Request){
 
   const parsed=Input.safeParse(await req.json().catch(()=>null));
   if(!parsed.success)return Response.json({error:"Invalid request"},{status:400});
-  const key=process.env.OPENROUTER_API_KEY;
-  if(!key)return Response.json({answer:"The deterministic planner is live, but the concierge model is not configured on this deployment yet."});
+  if(!agentModelConfigured())return Response.json({answer:"The deterministic planner is live, but the concierge model is not configured on this deployment yet."});
 
   let liveOffers:Awaited<ReturnType<typeof listSellableOffers>>=[];
   if(databaseConfigured()){
@@ -58,30 +58,17 @@ export async function POST(req:Request){
   ].join(" ");
 
   try{
-    const upstream=await fetch("https://openrouter.ai/api/v1/chat/completions",{
-      method:"POST",
-      headers:{Authorization:"Bearer "+key,"Content-Type":"application/json","HTTP-Referer":process.env.NEXT_PUBLIC_SITE_URL||"https://vercel.app","X-Title":"Atlas Long Stay"},
-      body:JSON.stringify({
-        model:process.env.OPENROUTER_MODEL||"openrouter/free",
-        messages:[
-          {role:"system",content:system},
-          {role:"user",content:JSON.stringify({search:parsed.data,catalogue:context,request:parsed.data.prompt})},
-        ],
-        temperature:.3,max_tokens:550,
-      }),
-    });
-    if(!upstream.ok){
-      console.error(JSON.stringify({level:"error",event:"agent_upstream_failed",status:upstream.status}));
-      return Response.json({answer:"The concierge model is temporarily unavailable. The deterministic planner is unaffected."});
-    }
-    const data=await upstream.json();
-    const answer=String(data?.choices?.[0]?.message?.content||"");
+    const completion=await llmCompletion([
+      {role:"system",content:system},
+      {role:"user",content:JSON.stringify({search:parsed.data,catalogue:context,request:parsed.data.prompt})},
+    ],{role:"public",maxTokens:550,temperature:.3});
+    const answer=completion.text;
     const checks=[deterministicTruthJudge(answer),deterministicBrandJudge(answer)];
     if(checks.some(x=>x.verdict!=="PASS")){
       console.warn(JSON.stringify({level:"warning",event:"public_agent_judge_block",checks}));
       return Response.json({answer:"I can suggest destinations and explain trade-offs, but I cannot present an unsupported price or availability claim. Use the verified-offer lane for bookable facts.",catalogueMode:liveOffers.length?"live_verified":"demo",judged:true});
     }
-    return Response.json({answer:answer||"No agent response.",catalogueMode:liveOffers.length?"live_verified":"demo",judged:true});
+    return Response.json({answer:answer||"No agent response.",catalogueMode:liveOffers.length?"live_verified":"demo",judged:true,provider:completion.provider});
   }catch(error){
     console.error(JSON.stringify({level:"error",event:"agent_error",error:String(error)}));
     return Response.json({answer:"The concierge model is temporarily unavailable. The deterministic planner is unaffected."});

@@ -1,4 +1,4 @@
-# Atlas delivery state — R0 to R6 closure
+# Atlas delivery state — R0 to R12
 
 This document distinguishes software closure from external commercial activation.
 
@@ -210,3 +210,48 @@ A production release is successful only after:
 `tested master SHA → production migrations → prebuilt Vercel deploy → production smoke`
 
 READY never means LIVE. ACTIVATION_REQUIRED is not converted into green by mock data, missing credentials or skipped deployment steps.
+
+
+## R12 · ACTUATION OS — SOFTWARE CLOSED WHEN CI GATE IS GREEN
+- Vercel AI Gateway/OIDC is the preferred autonomous runtime; no long-lived model key is required on Vercel
+- OpenRouter remains an optional non-Vercel fallback
+- actor and judge model independence is enforced by default
+- actor output is strict JSON with one bounded proposed action or no action
+- every role has an explicit action allowlist
+- only read-only/idempotent action classes can auto-execute:
+  - `ops.snapshot`
+  - `growth.audit`
+  - `seo.audit`
+  - `revenue.reconcile`
+- material action classes never auto-execute:
+  - supply refreshes that consume partner quota
+  - direct-rate publication
+  - hotel outreach
+  - SEM spend
+  - code changes
+- every proposed action is persisted in the agent task ledger
+- auto-execution result/state is persisted separately from the LLM artifact
+- per-role daily run caps are reduced to bounded production values
+- a global daily agent-cost ceiling is configurable with `AGENT_DAILY_BUDGET_CENTS`
+- Daily Control can dispatch governed specialists and execute only policy-approved safe actions
+- Growth Autopilot can promote an existing hero variant only after:
+  - at least 100 exposed visitors per compared variant
+  - at least 5 referral visitors for the winner
+  - at least 1 percentage point absolute referral-rate improvement
+  - at least 15% relative uplift
+- Growth Autopilot uses consent-gated observed data and stores the decision + evidence in `runtime_config`
+- home rendering consumes the deterministic hero override when one exists
+- SEO indexing mode supports `auto`: live pages remain NOINDEX until Truth + freshness + inventory + uniqueness gates pass
+- synthetic system proof now labels itself explicitly and cannot masquerade as production/commercial proof
+- readiness distinguishes implemented, deployed, externally observed and commercially live states
+- Vercel Git Integration is the primary production delivery path
+- production verification waits until the exact CI-tested Git SHA appears at the stable production alias
+- `vercel-build` applies migrations automatically when `DATABASE_URL` exists, then builds the application
+- migration 012 adds durable runtime config and agent action execution state
+
+External activation:
+- production Postgres/Neon `DATABASE_URL`
+- legal operator name + contact email
+- first verified direct hotel contract or optional OTA/provider credentials
+- real user traffic before Growth Autopilot can choose a winner
+- final custom domain
