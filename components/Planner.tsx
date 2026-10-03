@@ -94,6 +94,7 @@ export default function Planner({ hotels, initial, heroVariant="freedom" }: { ho
             <a href="#planner">Build my year</a>
             <a href="#explore">Explore</a>
             <a href="#agent">AI concierge</a>
+            <a href="/system">System proof</a>
             <a className="btn" href="#planner">Build my year →</a>
           </nav>
         </div>
