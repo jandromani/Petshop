@@ -9,7 +9,8 @@ alter table direct_rate_offers
   add column if not exists verified_at timestamptz,
   add column if not exists published_at timestamptz,
   add column if not exists revoked_at timestamptz,
-  add column if not exists review_notes text;
+  add column if not exists review_notes text,
+  add column if not exists tracking_query_param text;
 
 create index if not exists direct_rates_live
   on direct_rate_offers(publication_state,valid_from,valid_to)
