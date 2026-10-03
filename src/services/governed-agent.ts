@@ -1,5 +1,5 @@
 import { AGENTS,agentSystemPrompt,type AgentKey } from "@/src/agents/registry";
-import { deterministicBrandJudge,deterministicTruthJudge } from "@/src/judges/rules";
+import { runRequiredJudges } from "@/src/judges/rules";
 import { databaseConfigured } from "@/src/db/client";
 import { auditOpsEvent } from "@/src/db/governance";
 import { finishPersistedAgentRun,persistExternalJudge,persistJudgeReview,reserveAgentRunSlot,startPersistedAgentRun,usageCostCents } from "@/src/db/agents";
@@ -42,7 +42,7 @@ export async function runGovernedAgent(input:{agent:AgentKey;objective:string;co
       {role:"user",content:JSON.stringify({objective:input.objective,context:input.context||{}})},
     ],actorModel);
 
-    const deterministic=[deterministicTruthJudge(actor.text),deterministicBrandJudge(actor.text)];
+    const deterministic=runRequiredJudges(policy.requiredJudges,actor.text);
     const judge=await openRouter([
       {role:"system",content:[
         "You are an independent external judge. You did not create the artifact.",
