@@ -6,6 +6,7 @@ import { persistReferralClick } from "@/src/db/ledger";
 import { getSellableOfferForReferral } from "@/src/db/catalog";
 import { safeCommercialUrl } from "@/src/core/live-offers";
 import { busEvent, publishBusEvent } from "@/src/events/bus";
+import { estimateExpectedCommission } from "@/src/db/revenue";
 
 export const runtime = "nodejs";
 
@@ -19,6 +20,7 @@ async function liveReferral(url:URL,jar:Awaited<ReturnType<typeof cookies>>){
   const target=safeCommercialUrl(offer.provider,offer.deepLink);
   if(!target) return new Response("Commercial destination blocked",{status:409,headers:{"Cache-Control":"no-store"}});
 
+  const expectedCommission=await estimateExpectedCommission({provider:offer.provider,bookingValue:offer.displayPrice,currency:offer.currency});
   const click=createReferralClick({
     visitorId:jar.get("rv_vid")?.value,
     sessionId:jar.get("rv_sid")?.value,
@@ -26,6 +28,7 @@ async function liveReferral(url:URL,jar:Awaited<ReturnType<typeof cookies>>){
     canonicalHotelId:offer.hotelId,
     offerSnapshotId:offer.offerId,
     provider:offer.provider,
+    expectedCommission:expectedCommission ?? undefined,
     source:jar.get("rv_src")?.value || jar.get("rv_ref")?.value || "direct",
     campaign:jar.get("rv_campaign")?.value,
     pagePath:url.searchParams.get("from") || undefined,
@@ -56,7 +59,7 @@ export async function GET(req: Request) {
   const requestedProvider=url.searchParams.get("provider") || "booking";
   const hotel=hotelBySlug(slug);
   if(!hotel) return Response.json({error:"Unknown hotel"},{status:404});
-  const provider=["booking","ratehawk","hbx"].includes(requestedProvider) ? requestedProvider : hotel.provider;
+  const provider="booking-demo-search";
   const click=createReferralClick({
     visitorId:jar.get("rv_vid")?.value,
     sessionId:jar.get("rv_sid")?.value,
