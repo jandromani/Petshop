@@ -10,7 +10,7 @@ const valid:DirectPublishRow={
   min_nights:30,max_nights:180,max_guests:2,monthly_price:1500,currency:"EUR",
   valid_from:"2027-01-01",valid_to:"2027-12-31",cancellation:"30 days",
   booking_url:"https://hotel.example/book",contract_reference:"CTR-1",contract_verified:true,
-  approved_booking_host:"hotel.example",
+  approved_booking_host:"hotel.example",tracking_query_param:"atlas_click",
 };
 
 describe("direct long-stay commercial gates",()=>{
@@ -27,6 +27,7 @@ describe("direct long-stay commercial gates",()=>{
     expect(directPublicationChecks(valid,new Date("2027-06-01T00:00:00Z"))).toEqual([]);
     expect(directPublicationChecks({...valid,contract_verified:false},new Date("2027-06-01T00:00:00Z"))).toContain("contract_not_verified");
     expect(directPublicationChecks({...valid,cancellation:null},new Date("2027-06-01T00:00:00Z"))).toContain("missing_cancellation_terms");
+    expect(directPublicationChecks({...valid,tracking_query_param:null},new Date("2027-06-01T00:00:00Z"))).toContain("missing_tracking_query_param");
   });
 
   it("pins direct redirects to the server-approved host",()=>{
