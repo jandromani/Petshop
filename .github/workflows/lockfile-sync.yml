@@ -4,6 +4,7 @@ on:
     branches: ["build/r0-r6-closure"]
     paths:
       - "package.json"
+      - ".npmrc"
       - ".github/workflows/lockfile-sync.yml"
 
 permissions:
