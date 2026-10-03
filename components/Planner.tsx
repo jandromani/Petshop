@@ -9,6 +9,9 @@ import { HERO_VARIANTS, type HeroVariant } from "@/src/growth/experiments";
 import WorldMap from "@/components/WorldMap";
 import LiveOffers from "@/components/LiveOffers";
 import VerifiedRoute from "@/components/VerifiedRoute";
+import SilverSearch from "@/components/SilverSearch";
+import SilverHotelCard from "@/components/SilverHotelCard";
+import SilverPromise from "@/components/SilverPromise";
 
 const euro = (n: number) => "€" + Math.round(n).toLocaleString("en-US");
 
@@ -36,6 +39,7 @@ export default function Planner({ hotels, initial, heroVariant="freedom" }: { ho
   const plan = useMemo(() => buildPlan(hotels, livingBudget, party, duration, mode), [hotels, livingBudget, party, duration, mode]);
   const totals = useMemo(() => planTotals(plan), [plan]);
   const avg = Math.round(totals.total / Math.max(1, totals.days / 30));
+  const affordableCount = useMemo(() => hotels.filter(h => adjustedMonthly(h,party) <= livingBudget).length, [hotels,livingBudget,party]);
 
   useEffect(() => {
     growthEvent("planner_loaded", { catalogue_size: hotels.length, hero_variant:heroVariant });
@@ -46,6 +50,11 @@ export default function Planner({ hotels, initial, heroVariant="freedom" }: { ho
     const list = hotels.filter(h => (region === "All" || h.region === region) && (!q || [h.name,h.city,h.country,...h.tags].join(" ").toLowerCase().includes(q)));
     return list.sort((a,b) => sort === "price" ? adjustedMonthly(a,party)-adjustedMonthly(b,party) : sort === "score" ? b.score-a.score : (b.score / adjustedMonthly(b,party)) - (a.score / adjustedMonthly(a,party)));
   }, [hotels, query, region, sort, party]);
+
+  function jumpToExplore(){
+    growthEvent("hero_search",{query,region,party,duration,budget:livingBudget});
+    document.getElementById("explore")?.scrollIntoView({behavior:"smooth"});
+  }
 
   async function sharePlan() {
     const token=encodePlanToken({pension,rent,other,share,party,duration,mode});
@@ -90,37 +99,36 @@ export default function Planner({ hotels, initial, heroVariant="freedom" }: { ho
     <>
       <header className="nav">
         <div className="shell navin">
-          <a className="brand" href="#">ATLAS<span>LAB</span></a>
+          <a className="brand" href="#">ATLAS<span>LONG STAY</span></a>
           <nav className="navlinks">
+            <a href="#explore">Stays</a>
             <a href="#planner">Build my year</a>
-            <a href="#explore">Explore</a>
-            <a href="#agent">AI concierge</a>
-            <a href="/system">System proof</a>
-            <a className="btn" href="#planner">Build my year →</a>
+            <a href="#agent">Ask Atlas</a>
+            <a className="btn" href="#explore">Find a stay →</a>
           </nav>
         </div>
       </header>
 
-      <section className="hero">
+      <section className="hero silverHero">
         <div className="shell">
-          <div className="eyebrow"><i className="dot"/> {hero.eyebrow}</div>
-          <h1>{hero.line1}<br/><em>{hero.line2}</em></h1>
-          <p>{hero.lead}</p>
-          <div className="heroActions">
-            <a className="btn" href="#planner">See what my retirement buys →</a>
-            <a className="btn ghost" href="#explore">Browse 30 places</a>
+          <div className="eyebrow"><i className="dot"/> LONG-STAY HOTEL LIVING · 30–180 DAYS</div>
+          <h1>Live somewhere better.<br/><em>Stay for a season.</em></h1>
+          <p className="heroLead">Compare long-stay hotels by monthly cost, not nightly rate. Build a flexible life around the budget you already have.</p>
+          <SilverSearch query={query} setQuery={setQuery} region={region} setRegion={setRegion} duration={duration} setDuration={setDuration} party={party} setParty={setParty} count={affordableCount} onSearch={jumpToExplore}/>
+          <div className="proof silverProof">
+            <div className="proofCard"><b>€ / month</b><span>compare living cost, not a weekend</span></div>
+            <div className="proofCard"><b>30–180 days</b><span>one month, one season or longer</span></div>
+            <div className="proofCard"><b>Silver Score</b><span>comfort and value signals</span></div>
+            <div className="proofCard"><b>Truth-gated</b><span>verified offers stay separate from demos</span></div>
           </div>
-          <div className="actions" style={{marginTop:18}}>
-            <a className="btn ghost" href="/discover/under-1500-month">Under €1,500</a>
-            <a className="btn ghost" href="/discover/winter-sun">Winter sun</a>
-            <a className="btn ghost" href="/discover/all-inclusive">All inclusive</a>
-          </div>
-          <div className="proof">
-            <div className="proofCard"><b>30–180 days</b><span>the unit is a season, not a night</span></div>
-            <div className="proofCard"><b>30 places</b><span>seed catalogue across 4 regions</span></div>
-            <div className="proofCard"><b>1 click ledger</b><span>every outbound offer is attributable</span></div>
-            <div className="proofCard"><b>Truth-gated</b><span>nothing sells just because an agent says so</span></div>
-          </div>
+        </div>
+      </section>
+
+      <section className="howBand">
+        <div className="shell howGrid">
+          <div><span>01</span><b>Set your monthly reality</b><p>Tell Atlas how much you want to spend and how long you want to stay.</p></div>
+          <div><span>02</span><b>Compare months, not nights</b><p>Filter by climate, food, walkability, sea, pool and healthcare access.</p></div>
+          <div><span>03</span><b>Live there. Then move.</b><p>Build the year one 30–90 day stay at a time.</p></div>
         </div>
       </section>
 
