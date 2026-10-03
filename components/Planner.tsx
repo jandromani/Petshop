@@ -6,6 +6,7 @@ import { adjustedMonthly, buildPlan, planTotals, type Party, type PlanMode } fro
 import { growthEvent } from "@/src/growth/client";
 import { encodePlanToken, type SharedPlanInput } from "@/src/core/share";
 import { HERO_VARIANTS, type HeroVariant } from "@/src/growth/experiments";
+import WorldMap from "@/components/WorldMap";
 
 const euro = (n: number) => "€" + Math.round(n).toLocaleString("en-US");
 
@@ -99,9 +100,9 @@ export default function Planner({ hotels, initial, heroVariant="freedom" }: { ho
 
       <section className="hero">
         <div className="shell">
-          <div className="eyebrow"><i className="dot"/> retirement-as-a-service · live prototype</div>
-          <h1>You retired from work.<br/><em>Not from the world.</em></h1>
-          <p>Turn pension + home income into months of life around the world. Explore first. Dream freely. Book only when the numbers make sense.</p>
+          <div className="eyebrow"><i className="dot"/> {hero.eyebrow}</div>
+          <h1>{hero.line1}<br/><em>{hero.line2}</em></h1>
+          <p>{hero.lead}</p>
           <div className="heroActions">
             <a className="btn" href="#planner">See what my retirement buys →</a>
             <a className="btn ghost" href="#explore">Browse 30 places</a>
@@ -126,6 +127,7 @@ export default function Planner({ hotels, initial, heroVariant="freedom" }: { ho
             <h2>What does your<br/>retirement buy?</h2>
             <p>The planner is deterministic. AI can explain and suggest; it cannot invent a price or mark an offer sellable.</p>
           </div>
+          <WorldMap hotels={hotels} route={plan.map(s=>s.hotel)} />
           <div className="grid2">
             <div className="card">
               {[
@@ -198,11 +200,11 @@ export default function Planner({ hotels, initial, heroVariant="freedom" }: { ho
               return <article className="hotel" key={h.id}>
                 <div className="hotelVisual"><span className="flag">{h.flag}</span><span className="score">SILVER {h.score}</span></div>
                 <div className="hotelBody">
-                  <h3>{h.name}</h3><div className="loc">{h.city}, {h.country} · verified seed {h.verifiedHoursAgo}h ago</div>
+                  <h3>{h.name}</h3><div className="loc">{h.city}, {h.country} · demo scenario · not a live quote</div>
                   <div className="chips">{h.tags.slice(0,4).map(t=><span className="chip" key={t}>{t}</span>)}</div>
                   <div className="priceRow">
                     <div><b>{euro(p)}</b><small>/month · {h.board}</small></div>
-                    <a className="linkbtn" href={"/api/referral?hotel="+encodeURIComponent(h.slug)+"&provider="+h.provider+"&from=%2Fexplore"}>View offer →</a>
+                    <a className="linkbtn" href={"/api/referral?hotel="+encodeURIComponent(h.slug)+"&provider="+h.provider+"&from=%2Fexplore"}>Search externally →</a>
                   </div>
                   <div className="actions"><a className="btn ghost" href={"/live/"+h.slug}>Life page</a></div>
                 </div>
