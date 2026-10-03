@@ -24,7 +24,7 @@ jobs:
       - name: Commit lockfile
         shell: bash
         run: |
-          if git diff --quiet -- package-lock.json; then
+          if [ -z "$(git status --porcelain -- package-lock.json)" ]; then
             echo "package-lock.json already synchronized"
             exit 0
           fi
