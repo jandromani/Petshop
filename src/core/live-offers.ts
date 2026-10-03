@@ -5,16 +5,20 @@ export type LiveCatalogRow={
   name:string;
   city:string;
   country:string;
+  region:string|null;
   lat:number|null;
   lng:number|null;
   provider:string;
   checkIn:string;
   checkOut:string;
   nights:number;
+  occupancy:number;
   board:string|null;
+  roomType:string|null;
   displayPrice:number;
   currency:string;
   verifiedAt:string;
+  expiresAt:string|null;
   confidence:number;
 };
 
