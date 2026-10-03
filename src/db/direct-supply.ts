@@ -403,6 +403,7 @@ export async function getSellableDirectOfferForReferral(id: string) {
     board: string | null;
     monthly_price: number;
     currency: string;
+    valid_from: string;
     valid_to: string;
     verified_at: string;
     booking_url: string;
@@ -423,6 +424,7 @@ export async function getSellableDirectOfferForReferral(id: string) {
       r.board,
       r.monthly_price::float,
       r.currency,
+      r.valid_from::text,
       r.valid_to::text,
       coalesce(r.verified_at, r.updated_at)::text as verified_at,
       r.booking_url,
@@ -442,7 +444,7 @@ export async function getSellableDirectOfferForReferral(id: string) {
   if (!r) return null;
 
   const today = new Date().toISOString().slice(0, 10);
-  const checkIn = r.valid_to && today ? today : today;
+  const checkIn = r.valid_from > today ? r.valid_from : today;
   const checkOut = addDays(checkIn, Number(r.min_nights));
   const offer = normalizeLiveCatalogRow({
     offerId: r.offer_id,
@@ -468,7 +470,7 @@ export async function getSellableDirectOfferForReferral(id: string) {
     expiresAt: new Date(r.valid_to + "T23:59:59Z").toISOString(),
     confidence: 0.995,
   });
-  return { ...offer, deepLink: r.booking_url, approvedHost: r.approved_booking_host };
+  return { ...offer, deepLink: r.booking_url, approvedHost: r.approved_booking_host, trackingParam:r.tracking_query_param };
 }
 
 export async function listHotelDesk() {
