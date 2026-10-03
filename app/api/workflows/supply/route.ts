@@ -2,6 +2,7 @@ import { z } from "zod";
 import { start } from "workflow/api";
 import { supplyWaveWorkflow } from "@/workflows/supply-wave";
 
+import { cronAuthorized,opsAuthorized } from "@/src/security/ops-auth";
 export const runtime = "nodejs";
 
 const Input = z.object({
@@ -11,15 +12,8 @@ const Input = z.object({
   durations: z.array(z.number().int().positive().max(365)).max(10).optional(),
 });
 
-function authorized(req: Request) {
-  const ops = process.env.OPS_ACCESS_KEY;
-  const cron = process.env.CRON_SECRET;
-  const auth = req.headers.get("authorization");
-  return Boolean((ops && auth === "Bearer " + ops) || (cron && auth === "Bearer " + cron));
-}
-
 export async function POST(req: Request) {
-  if (!authorized(req)) return new Response("Unauthorized", { status: 401 });
+  if(!(cronAuthorized(req)||await opsAuthorized(req))) return new Response("Unauthorized",{status:401});
   const parsed = Input.safeParse(await req.json().catch(()=>null));
   if (!parsed.success) return Response.json({error:"Invalid wave request"},{status:400});
 
