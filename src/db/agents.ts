@@ -31,7 +31,6 @@ export async function persistExternalJudge(input:{runId:string;text:string}){
   return true;
 }
 
-
 export async function getAgentUsageToday(agentKey:string){
   const sql=getDatabase();
   if(!sql) return null;
@@ -43,6 +42,15 @@ export async function getAgentUsageToday(agentKey:string){
   `;
   const row=rows[0];
   return{runs:Number(row?.runs||0),costCents:Number(row?.cost_cents||0)};
+}
+
+export async function getGlobalAgentSpendToday(){
+  const sql=getDatabase();if(!sql)return null;
+  const rows=await sql<{runs:number;cost_cents:number}[]>`
+    select count(*)::int as runs,coalesce(sum(estimated_cost_cents),0)::int as cost_cents
+    from agent_runs where started_at>=date_trunc('day',now())
+  `;
+  return{runs:Number(rows[0]?.runs||0),costCents:Number(rows[0]?.cost_cents||0)};
 }
 
 export async function reserveAgentRunSlot(agentKey:string,maxRunsPerDay:number){
