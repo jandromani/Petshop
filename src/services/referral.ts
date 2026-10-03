@@ -15,7 +15,7 @@ export type ReferralClick = {
   createdAt: string;
 };
 
-export function createReferralClick(input: Omit<ReferralClick, "clickId" | "createdAt">): ReferralClick {
+export function createReferralClick(input: Omit<ReferralClick, "clickId" | "createdAt" | "providerTrackingId">): ReferralClick {
   const clickId=crypto.randomUUID();
   return {
     ...input,
