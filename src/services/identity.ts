@@ -22,6 +22,7 @@ export function identityScore(input:{name:string;city:string;country:string;lat?
   if(input.city.toLowerCase()!==candidate.city.toLowerCase()||input.country.toLowerCase()!==candidate.country.toLowerCase())return 0;
   const nameScore=jaccard(tokens(input.name),tokens(candidate.name));
   const km=distanceKm(input,candidate);
+  if(km===null&&nameScore===1) return .82;
   const geoScore=km===null?0:km<=.25?1:km<=1?.85:km<=3?.55:km<=8?.2:0;
   return Math.round((nameScore*.55+geoScore*.35+.10)*1000)/1000;
 }
