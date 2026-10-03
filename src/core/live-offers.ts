@@ -16,6 +16,12 @@ export type LiveCatalogRow={
   occupancy:number;
   board:string|null;
   roomType:string|null;
+  cancellation?:string|null;
+  taxesIncluded?:boolean|null;
+  silverScore?:number|null;
+  photoUrls?:string[];
+  facilities?:string[];
+  description?:string|null;
   displayPrice:number;
   currency:string;
   verifiedAt:string;
