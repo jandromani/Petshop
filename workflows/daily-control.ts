@@ -5,6 +5,7 @@ import { liveProviderStatuses } from "@/src/providers/live/registry";
 import { reconcileRevenue } from "@/src/services/revenue-reconciliation";
 import { syncBookingOrders } from "@/src/services/booking-order-sync";
 import { syncIncidents } from "@/src/db/governance";
+import { runDataRetention } from "@/src/db/retention";
 
 export type ControlSignal={key:string;severity:"info"|"warning"|"critical";message:string};
 
@@ -47,6 +48,11 @@ export async function syncProviderRevenue(){
   return syncBookingOrders();
 }
 
+export async function applyDataRetention(){
+  "use step";
+  return runDataRetention();
+}
+
 export async function reconcileDailyRevenue(){
   "use step";
   return reconcileRevenue(30);
@@ -55,7 +61,7 @@ export async function reconcileDailyRevenue(){
 export async function dailyControlWorkflow(){
   "use workflow";
   const [signals,bookingOrders]=await Promise.all([collectControlSignals(),syncProviderRevenue()]);
-  const [revenue,incidents]=await Promise.all([reconcileDailyRevenue(),persistControlIncidents(signals)]);
+  const [revenue,incidents,retention]=await Promise.all([reconcileDailyRevenue(),persistControlIncidents(signals),applyDataRetention()]);
   const agenda=await buildHumanAgenda(signals);
-  return{runType:"daily-control",signals,bookingOrders,revenue,incidents,agenda,generatedAt:new Date().toISOString()};
+  return{runType:"daily-control",signals,bookingOrders,revenue,incidents,retention,agenda,generatedAt:new Date().toISOString()};
 }
