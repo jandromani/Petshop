@@ -76,6 +76,8 @@ export async function POST(req: Request) {
       {role:"user",content:JSON.stringify({artifact:actor.text,policy,deterministicChecks:deterministic})}
     ]);
 
+    const approved=deterministic.every(x=>x.verdict==="PASS")&&judge.text.trim().toUpperCase().startsWith("PASS");
+
     await Promise.allSettled([
       ...deterministic.map(result=>persistJudgeReview({runId,result})),
       persistExternalJudge({runId,text:judge.text}),
@@ -92,7 +94,6 @@ export async function POST(req: Request) {
       }),
     ]);
 
-    const approved=deterministic.every(x=>x.verdict==="PASS")&&judge.text.trim().toUpperCase().startsWith("PASS");
     await auditOpsEvent({actor:"ops",action:"agent.run",resourceType:"agent-run",resourceId:runId,outcome:approved?"APPROVED_ARTIFACT":"REVIEW_REQUIRED",detail:{agent:policy.key,model:actor.model}});
     console.log(JSON.stringify({
       level:"info",event:"agent_run",runId,agent:policy.key,model:actor.model,
@@ -106,7 +107,7 @@ export async function POST(req: Request) {
       artifact:actor.text,
       deterministicJudges:deterministic,
       externalJudge:judge.text,
-      approved:deterministic.every(x=>x.verdict==="PASS")&&judge.text.trim().toUpperCase().startsWith("PASS"),
+      approved,
       promotionAllowed:false,
       usageBeforeRun:usage,
       model:actor.model,
