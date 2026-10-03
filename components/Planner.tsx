@@ -199,6 +199,6 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
     </div></section>
 
     <SilverPromise/>
-    <footer className="footer"><div className="shell footerGrid"><span>ATLAS · LONG-STAY LIVING</span><span>Prototype catalogue is clearly marked until live provider inventory is connected.</span><a href="/system">System proof</a></div></footer>
+    <footer className="footer"><div className="shell footerGrid"><span>ATLAS · LONG-STAY LIVING</span><span>Prototype and live commercial inventory remain explicitly separated.</span><span><a href="/system">System proof</a> · <a href="/legal">Commercial & data disclosure</a></span></div></footer>
   </>;
 }
