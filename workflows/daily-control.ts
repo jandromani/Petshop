@@ -12,12 +12,12 @@ export async function collectControlSignals(): Promise<ControlSignal[]> {
   "use step";
 
   const truth = hotels.map(evaluateSellability);
-  const stale = truth.filter(x => x.state === "STALE").length;
+  const demo = truth.filter(x => x.state === "DEMO").length;
   const quarantined = truth.filter(x => x.state === "QUARANTINED").length;
   const signals: ControlSignal[] = [];
 
-  if (stale > 0) signals.push({ key:"supply.stale", severity:"warning", message:`${stale} supply records are stale` });
-  if (quarantined > 0) signals.push({ key:"supply.quarantine", severity:"critical", message:`${quarantined} supply records are quarantined` });
+  if (demo > 0) signals.push({ key:"supply.demo", severity:"warning", message:`${demo} catalogue records are demo-only and not commercially sellable` });
+  if (quarantined > 0) signals.push({ key:"supply.quarantine", severity:"critical", message:`${quarantined} seed records are structurally quarantined` });
 
   signals.push({
     key:"agents.authority",

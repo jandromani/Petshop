@@ -18,7 +18,5 @@ describe("planner", () => {
     expect(a.map(x=>x.hotel.id)).toEqual(b.map(x=>x.hotel.id));
   });
 
-  it("truth-gates healthy seed records", () => {
-    expect(hotels.every(h=>evaluateSellability(h).state==="SELLABLE")).toBe(true);
-  });
+  it("keeps seed records explicitly non-commercial", () => {\n    expect(hotels.every(h=>evaluateSellability(h).state==="DEMO")).toBe(true);\n  });
 });

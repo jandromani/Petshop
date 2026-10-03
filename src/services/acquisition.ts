@@ -10,10 +10,12 @@ export type AcquisitionWaveInput = {
 
 export type AcquisitionWaveResult = {
   waveKey: string;
+  mode: "seed" | "live";
   rawRecords: number;
   canonicalHotels: number;
   quoteTested: number;
   sellable: number;
+  demo: number;
   stale: number;
   quarantined: number;
   byRegion: Record<string, number>;
@@ -29,11 +31,13 @@ export function runSeedAcquisitionWave(input: AcquisitionWaveInput): Acquisition
 
   return {
     waveKey: input.waveKey,
+    mode: "seed",
     rawRecords: selected.length * Math.max(1, input.providers?.length || 3),
     canonicalHotels: selected.length,
     quoteTested: selected.length * Math.max(1, input.durations?.length || 1),
-    sellable: truth.filter(x => x.state === "SELLABLE").length,
-    stale: truth.filter(x => x.state === "STALE").length,
+    sellable: 0,
+    demo: truth.filter(x => x.state === "DEMO").length,
+    stale: 0,
     quarantined: truth.filter(x => x.state === "QUARANTINED").length,
     byRegion,
   };

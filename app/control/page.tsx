@@ -13,7 +13,7 @@ export default async function ControlTower() {
 
   const truth = hotels.map(evaluateSellability);
   const sellable = truth.filter(x=>x.state==="SELLABLE").length;
-  const avgConfidence = truth.reduce((s,x)=>s+x.confidence,0)/truth.length;
+  const demo = truth.filter(x=>x.state==="DEMO").length;
   const providers = ["booking","ratehawk","hbx"].map(p=>({
     name:p,
     count:hotels.filter(h=>h.provider===p).length,
@@ -26,17 +26,17 @@ export default async function ControlTower() {
       <h1>CONTROL TOWER</h1>
       <p style={{color:"#91a0b8",maxWidth:760}}>Private operating plane: supply truth, referrals, agents, judges and human-attention budget.</p>
       <div className="metrics">
-        <div className="metricDark"><b>{hotels.length}</b><span>canonical seed hotels</span></div>
-        <div className="metricDark"><b className="green">{sellable}</b><span>sellable seed records</span></div>
-        <div className="metricDark"><b>{(avgConfidence*100).toFixed(1)}%</b><span>truth confidence</span></div>
-        <div className="metricDark"><b>3</b><span>provider surfaces</span></div>
+        <div className="metricDark"><b>{hotels.length}</b><span>canonical demo hotels</span></div>
+        <div className="metricDark"><b className="green">{sellable}</b><span>commercially sellable live offers</span></div>
+        <div className="metricDark"><b className="amber">{demo}</b><span>demo-only records</span></div>
+        <div className="metricDark"><b>3</b><span>provider adapter surfaces</span></div>
         <div className="metricDark"><b>{Object.keys(AGENTS).length}</b><span>bounded agent roles</span></div>
       </div>
 
-      <h2 style={{marginTop:36}}>Provider health</h2>
+      <h2 style={{marginTop:36}}>Provider surfaces</h2>
       <div className="table">
-        <div className="tr"><b>Provider</b><b>Records</b><b>Avg freshness</b><b>Status</b></div>
-        {providers.map(p=><div className="tr" key={p.name}><span>{p.name}</span><span>{p.count}</span><span>{p.freshness}h</span><span className="green">HEALTHY · seed</span></div>)}
+        <div className="tr"><b>Provider</b><b>Seed records</b><b>Seed age</b><b>Commercial state</b></div>
+        {providers.map(p=><div className="tr" key={p.name}><span>{p.name}</span><span>{p.count}</span><span>{p.freshness}h</span><span className="amber">DEMO ONLY</span></div>)}
       </div>
 
       <h2 style={{marginTop:36}}>Autonomous workforce</h2>
