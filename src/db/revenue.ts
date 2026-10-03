@@ -1,0 +1,60 @@
+import { getDatabase } from "@/src/db/client";
+
+export async function estimateExpectedCommission(input:{provider:string;bookingValue:number;currency:string}){
+  const sql=getDatabase();if(!sql)return null;
+  const rows=await sql<{rule_type:string;value:number;currency:string|null}[]>`
+    select rule_type,value::float,currency from commission_rules
+    where provider=${input.provider}
+      and active_from<=now()
+      and (active_to is null or active_to>now())
+      and (currency is null or currency=${input.currency})
+    order by active_from desc limit 1
+  `;
+  const r=rows[0];if(!r)return null;
+  if(r.rule_type==="PERCENT")return Math.round(input.bookingValue*Number(r.value)/100*100)/100;
+  if(r.rule_type==="FIXED")return Math.round(Number(r.value)*100)/100;
+  return null;
+}
+
+export async function revenueMetrics(days=30){
+  const sql=getDatabase();if(!sql)return null;
+  const bounded=Math.max(1,Math.min(365,days));
+  const rows=await sql<Array<{currency:string|null;status:string;count:number;booking_value:number;commission:number}>>`
+    select currency,status,count(*)::int,coalesce(sum(booking_value),0)::float as booking_value,coalesce(sum(commission),0)::float as commission
+    from conversions where received_at>=now()-make_interval(days => ${bounded})
+    group by currency,status order by currency,status
+  `;
+  return rows;
+}
+
+export async function revenueAnomalies(days=30){
+  const sql=getDatabase();if(!sql)return[];
+  const bounded=Math.max(1,Math.min(365,days));
+  return sql<Array<{provider:string;provider_conversion_id:string;click_id:string;status:string;reason:string}>>`
+    select provider,provider_conversion_id,click_id,status,
+      case
+        when currency is null then 'missing_currency'
+        when status in ('CONFIRMED','SETTLED') and commission is null then 'missing_commission'
+        when status='SETTLED' and settled_at is null then 'missing_settled_at'
+        when status in ('CANCELLED','REVERSED') and cancelled_at is null then 'missing_cancelled_at'
+        else 'unknown'
+      end as reason
+    from conversions
+    where received_at>=now()-make_interval(days => ${bounded})
+      and (currency is null
+        or (status in ('CONFIRMED','SETTLED') and commission is null)
+        or (status='SETTLED' and settled_at is null)
+        or (status in ('CANCELLED','REVERSED') and cancelled_at is null))
+    order by received_at desc limit 200
+  `;
+}
+
+export async function persistReconciliation(input:{status:string;windowStart:string;windowEnd:string;conversionCount:number;metrics:unknown;anomalies:unknown[]}){
+  const sql=getDatabase();if(!sql)return null;
+  const rows=await sql<{id:string}[]>`
+    insert into revenue_reconciliation_runs (status,window_start,window_end,conversions_count,anomalies_count,metrics,anomalies)
+    values (${input.status},${input.windowStart},${input.windowEnd},${input.conversionCount},${input.anomalies.length},${sql.json(input.metrics as never)},${sql.json(input.anomalies as never)})
+    returning id::text
+  `;
+  return rows[0]?.id??null;
+}
