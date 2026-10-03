@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { AGENTS, agentSystemPrompt } from "@/src/agents/registry";
 import { deterministicBrandJudge, deterministicTruthJudge } from "@/src/judges/rules";
-import { finishPersistedAgentRun, persistExternalJudge, persistJudgeReview, startPersistedAgentRun } from "@/src/db/agents";
+import { finishPersistedAgentRun, getAgentUsageToday, persistExternalJudge, persistJudgeReview, startPersistedAgentRun } from "@/src/db/agents";
+import { databaseConfigured } from "@/src/db/client";
 
 import { opsAuthorized } from "@/src/security/ops-auth";
 export const runtime = "nodejs";
@@ -37,6 +38,19 @@ export async function POST(req: Request) {
   const parsed = Input.safeParse(await req.json().catch(()=>null));
   if (!parsed.success) return Response.json({error:"Invalid request"},{status:400});
   const policy = AGENTS[parsed.data.agent];
+  if(process.env.AGENT_RUNTIME_ENABLED==="false"){
+    return Response.json({error:"agent-runtime-disabled"},{status:503});
+  }
+  if(!databaseConfigured()){
+    return Response.json({error:"agent-governance-database-required"},{status:503});
+  }
+  const usage=await getAgentUsageToday(policy.key);
+  if(!usage){
+    return Response.json({error:"agent-governance-unavailable"},{status:503});
+  }
+  if(usage.runs>=policy.maxRunsPerDay){
+    return Response.json({error:"agent-daily-run-cap-reached",agent:policy.key,limit:policy.maxRunsPerDay,used:usage.runs},{status:429});
+  }
   const runId = crypto.randomUUID();
   await Promise.allSettled([startPersistedAgentRun({id:runId,agentKey:policy.key,objective:parsed.data.objective,payload:parsed.data.context || {}})]);
 
@@ -67,9 +81,13 @@ export async function POST(req: Request) {
       finishPersistedAgentRun({
         id:runId,
         status:"COMPLETE",
-        output:{artifact:actor.text,externalJudge:judge.text,deterministic},
+        output:{
+          artifact:actor.text,
+          externalJudge:judge.text,
+          deterministic,
+          approved:deterministic.every(x=>x.verdict==="PASS")&&judge.text.trim().toUpperCase().startsWith("PASS"),
+        },
         usage:{actor:actor.usage,judge:judge.usage},
-        costCents:0,
       }),
     ]);
 
@@ -85,6 +103,9 @@ export async function POST(req: Request) {
       artifact:actor.text,
       deterministicJudges:deterministic,
       externalJudge:judge.text,
+      approved:deterministic.every(x=>x.verdict==="PASS")&&judge.text.trim().toUpperCase().startsWith("PASS"),
+      promotionAllowed:false,
+      usageBeforeRun:usage,
       model:actor.model,
     });
   } catch (error) {
