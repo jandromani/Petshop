@@ -4,17 +4,18 @@ import { useEffect, useMemo, useState } from "react";
 import type { Hotel } from "@/src/data/hotels";
 import { adjustedMonthly, buildPlan, planTotals, type Party, type PlanMode } from "@/src/core/planner";
 import { growthEvent } from "@/src/growth/client";
+import { encodePlanToken, type SharedPlanInput } from "@/src/core/share";
 
 const euro = (n: number) => "€" + Math.round(n).toLocaleString("en-US");
 
-export default function Planner({ hotels }: { hotels: Hotel[] }) {
-  const [pension, setPension] = useState(1700);
-  const [rent, setRent] = useState(1300);
-  const [other, setOther] = useState(200);
-  const [share, setShare] = useState(64);
-  const [party, setParty] = useState<Party>("solo");
-  const [duration, setDuration] = useState<30|60|90>(90);
-  const [mode, setMode] = useState<PlanMode>("world");
+export default function Planner({ hotels, initial }: { hotels: Hotel[]; initial?: Partial<SharedPlanInput> }) {
+  const [pension, setPension] = useState(initial?.pension ?? 1700);
+  const [rent, setRent] = useState(initial?.rent ?? 1300);
+  const [other, setOther] = useState(initial?.other ?? 200);
+  const [share, setShare] = useState(initial?.share ?? 64);
+  const [party, setParty] = useState<Party>(initial?.party ?? "solo");
+  const [duration, setDuration] = useState<30|60|90>(initial?.duration ?? 90);
+  const [mode, setMode] = useState<PlanMode>(initial?.mode ?? "world");
   const [query, setQuery] = useState("");
   const [region, setRegion] = useState("All");
   const [sort, setSort] = useState("value");
@@ -23,6 +24,7 @@ export default function Planner({ hotels }: { hotels: Hotel[] }) {
   ]);
   const [draft, setDraft] = useState("");
   const [thinking, setThinking] = useState(false);
+  const [shareLabel, setShareLabel] = useState("Share this life");
 
   const income = pension + rent + other;
   const livingBudget = Math.round(income * share / 100);
@@ -39,6 +41,23 @@ export default function Planner({ hotels }: { hotels: Hotel[] }) {
     const list = hotels.filter(h => (region === "All" || h.region === region) && (!q || [h.name,h.city,h.country,...h.tags].join(" ").toLowerCase().includes(q)));
     return list.sort((a,b) => sort === "price" ? adjustedMonthly(a,party)-adjustedMonthly(b,party) : sort === "score" ? b.score-a.score : (b.score / adjustedMonthly(b,party)) - (a.score / adjustedMonthly(a,party)));
   }, [hotels, query, region, sort, party]);
+
+  async function sharePlan() {
+    const token=encodePlanToken({pension,rent,other,share,party,duration,mode});
+    const url=window.location.origin+"/plan/"+token;
+    growthEvent("route_shared",{mode,party,duration,budget:livingBudget});
+    try{
+      if(navigator.share){
+        await navigator.share({title:"Could you live like this?",text:"My retirement-life route",url});
+        setShareLabel("Shared ✓");
+      }else{
+        await navigator.clipboard.writeText(url);
+        setShareLabel("Link copied ✓");
+      }
+    }catch{
+      setShareLabel("Share this life");
+    }
+  }
 
   async function askAgent() {
     const prompt = draft.trim();
@@ -141,6 +160,7 @@ export default function Planner({ hotels }: { hotels: Hotel[] }) {
                   <button className={"btn "+(mode===m?"lime":"ghost")} key={m} onClick={()=>{ setMode(m); growthEvent("route_strategy_selected", { mode:m, budget:livingBudget, party, duration }); }}>{l}</button>
                 )}
               </div>
+              <div className="actions"><button className="btn lime" onClick={sharePlan}>{shareLabel}</button></div>
               <div className="route">
                 {plan.slice(0,6).map((s,i)=><div className="stop" key={s.hotel.id}>
                   <div className="when">STOP {String(i+1).padStart(2,"0")}</div>
