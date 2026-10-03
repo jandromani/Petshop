@@ -3,16 +3,21 @@ import { getVercelOidcToken } from "@vercel/oidc";
 export type LlmMessage={role:"system"|"user";content:string};
 export type LlmRole="actor"|"judge"|"public";
 
-function vercelOidcAvailable(){
+function vercelOidcPotentiallyAvailable(){
   return process.env.VERCEL==="1"||Boolean(process.env.VERCEL_OIDC_TOKEN);
 }
 
 export function agentModelConfigured(){
-  return Boolean(process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN||process.env.OPENROUTER_API_KEY||vercelOidcAvailable());
+  return Boolean(
+    process.env.AI_GATEWAY_API_KEY||
+    process.env.VERCEL_OIDC_TOKEN||
+    process.env.OPENROUTER_API_KEY||
+    vercelOidcPotentiallyAvailable()
+  );
 }
 
 export function agentRuntimeProvider(){
-  if(process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN||vercelOidcAvailable())return"vercel-ai-gateway";
+  if(process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN||vercelOidcPotentiallyAvailable())return"vercel-ai-gateway";
   if(process.env.OPENROUTER_API_KEY)return"openrouter";
   return"none";
 }
@@ -28,6 +33,12 @@ async function resolveGatewayToken(){
     }
   }
   return undefined;
+}
+
+export async function agentRuntimeCredentialsAvailable(){
+  const gatewayToken=await resolveGatewayToken();
+  if(gatewayToken)return true;
+  return Boolean(process.env.OPENROUTER_API_KEY);
 }
 
 function gatewayModel(role:LlmRole){
