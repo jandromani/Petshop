@@ -104,77 +104,100 @@ No R0-R6 release is promoted unless:
 all pass.
 
 
-## R7 · PRODUCTION RUNTIME — SOFTWARE CLOSED
-- private operations APIs accept signed ops sessions or explicit bearer automation auth
-- process liveness and commercial readiness are separate endpoints
-- production deploy waits for CI success and checks out the exact tested SHA
-- deploy fails when VERCEL_TOKEN is absent instead of returning a false green
-- production database migrations run with Vercel production env before build/deploy
-- production smoke is mandatory after deployment
-- activation manifest exposes missing external dependencies without exposing secret values
-
-External activation:
-- GitHub Actions VERCEL_TOKEN
-- Vercel project linkage
-- DATABASE_URL + migrations
-- CRON_SECRET / OPS_ACCESS_KEY
-
-## R8 · DIRECT SUPPLY — SOFTWARE CLOSED
-- hotel leads capture canonical geography and commercial contacts
+## R7 · DIRECT HOTEL OS — SOFTWARE CLOSED
+- hotel leads capture canonical geography + commercial contacts
 - rate creation is DRAFT-only
 - contract verification is a separate authenticated action
-- booking hostname is pinned server-side during verification
-- publication is a deterministic DRAFT → READY_FOR_REVIEW → LIVE gate
-- revocation removes a direct rate from sellable inventory
-- live catalog merges provider snapshots and verified direct-contract offers
-- direct referrals only redirect to the approved booking hostname
+- approved booking hostname is pinned server-side
+- deterministic DRAFT → READY_FOR_REVIEW → LIVE publication gate
+- revocation removes direct inventory from sellable surfaces
+- verified direct contracts merge into the same live catalogue as provider snapshots
+- direct referrals can redirect only to the approved hostname
+- no agent can sign a contract or self-publish a rate
 
 External activation:
 - real hotel agreements
-- contractual booking URLs, cancellation terms and validity windows
+- contractual URLs, validity windows and cancellation terms
 
-## R9 · GOVERNED AUTONOMY — SOFTWARE CLOSED
-- agent runtime requires persistent governance DB
-- daily run caps are reserved atomically
-- actor output cannot publish prices, sign contracts or commit money
-- deterministic truth/brand judges run outside actor generation
-- independent LLM judge remains downstream
-- model usage/cost evidence is persisted when reported
-- operational incidents open/reopen/resolve deterministically
-- Daily Control produces a <60 minute human agenda
-- retention and revenue reconciliation run in the durable daily workflow
-
-External activation:
-- OPENROUTER_API_KEY is optional
-- human approval remains mandatory for contracts, material spend and publication gates
-
-## R10 · GROWTH + SEO — SOFTWARE CLOSED
-- attribution, referral and conversion funnel is queryable by source/campaign
-- hero experiment readout uses observed visitors/referrals, not synthetic scores
-- demo hotel pages are NOINDEX
-- discovery pages index only when live evidence passes SEO gates
-- sitemap contains only current evidence-backed live surfaces
-- commercial demo and live inventory never silently substitute for one another
-- retention scrubs old pseudonymous analytics/referral fields
+## R8 · AGENT COMPANY — SOFTWARE CLOSED
+- bounded registry of specialist roles
+- persistent governance DB is mandatory
+- atomic per-agent daily run caps
+- operational signals route to specialist agents
+- every role executes its declared deterministic judges plus Truth
+- independent external LLM judge remains downstream
+- actor outputs cannot publish, sign contracts or commit money
+- approved artifacts become PROPOSED tasks in a human review inbox
+- Control Tower surfaces incidents, runs, costs and proposal tasks
+- Daily Control targets less than 60 minutes of human attention
+- data retention + revenue reconciliation run in the durable control workflow
 
 External activation:
-- SEO_LIVE_INDEXING=true only after commercial inventory exists
-- paid acquisition budgets remain outside autonomous authority
+- OPENROUTER_API_KEY to run the optional autonomous workforce
+- human authority remains mandatory for contracts, publication and material spend
 
-## R11 · RELEASE + GOVERNANCE — SOFTWARE CLOSED
-- legal/commercial disclosure explains referral economics and demo-vs-live truth
-- operator identity is an explicit launch gate
-- canonical production URL is derived from configured/Vercel production identity
-- system proof exposes software readiness and activation state separately
-- lockfile integrity is read-only and reproducible
-- CODEOWNERS + CI gates remain required
-- deployment is source-SHA exact, migrated, prebuilt and smoke-tested
+## R9 · SEO ENGINE — SOFTWARE CLOSED
+- demo inventory is NOINDEX
+- live pages index only from current SELLABLE evidence
+- discovery intents are normalized against live dimensions
+- narrative uniqueness is computed rather than hardcoded
+- sitemap emits only evidence-backed live surfaces
+- canonical URLs derive from production identity
+- live Hotel/Offer and discovery ItemList JSON-LD are rendered
+- demo and live inventory never silently substitute for one another
+- attribution and observed experiment readouts use real visitor/referral data
+- retention scrubs old pseudonymous analytics/referral data
 
 External activation:
-- LEGAL_OPERATOR_NAME
-- LEGAL_CONTACT_EMAIL
-- LEGAL_COUNTRY
-- final jurisdiction-specific legal/tax/travel-package review before selling bundled services
+- SEO_LIVE_INDEXING=true only after real commercial inventory exists
+- paid acquisition remains outside autonomous authority
+
+## R10 · SILVER BOOKING UX — SOFTWARE CLOSED
+- explicit Money Truth: resources → reserve → maximum living budget → route cost
+- one search contract: destination, dates, flexibility, duration, occupancy and budget
+- 30 / 60 / 90 / 120 / 180-day stays and 365-day route generation
+- verified live cards show monthly equivalent + total price
+- Booking details normalize photos, facilities and description into canonical hotel content
+- rich live cards display real provider media when available and never invent imagery
+- room, board, cancellation and charge evidence are surfaced when available
+- Silver Fit is computed from live evidence rather than a manually typed live score
+- responsive desktop/mobile E2E gates protect the consumer flow
+- no affordable result is presented as affordable
+
+External activation:
+- real provider/direct inventory determines how rich the live cards become
+
+## R11 · ADJACENCIES — SOFTWARE CLOSED
+- five independent lanes: flights, insurance, telemedicine, airport transfer and home management
+- partner registry is fail-closed and HTTPS-only
+- every lane is inactive until partner name/key/URL are explicitly configured
+- adjacency clicks have a separate referral ledger
+- conversion ingestion is idempotent and authenticated
+- UI labels inactive lanes as ACTIVATION REQUIRED
+- accommodation price never silently includes an adjacency
+- legal disclosure states these are independent referrals, not an Atlas package
+
+External activation:
+- partner agreements + referral destinations/tracking parameters per lane
+- jurisdiction-specific review before combining services into any package
+
+## TRANSVERSAL · PRODUCTION RUNTIME + RELEASE GOVERNANCE — SOFTWARE CLOSED
+- signed operations sessions + explicit bearer automation boundaries
+- liveness, software readiness and commercial readiness are separate states
+- production deploy waits for CI success and checks out the exact tested SHA
+- deployment fails closed when VERCEL_TOKEN is absent
+- production migrations run before prebuilt deployment
+- post-deploy production smoke is mandatory
+- activation manifest exposes missing external dependencies without secret values
+- legal operator identity is a launch gate
+- consent layer gates optional analytics
+- lockfile/migrations are reproducible and idempotent
+
+External activation:
+- GitHub Actions VERCEL_TOKEN
+- canonical Vercel project linked to Petshop/master
+- DATABASE_URL, OPS_ACCESS_KEY, CRON_SECRET
+- LEGAL_OPERATOR_NAME, LEGAL_CONTACT_EMAIL, LEGAL_COUNTRY
 
 ## R0–R11 release invariant
 
