@@ -2,6 +2,7 @@ import { z } from "zod";
 import { verifyDirectRate } from "@/src/db/direct-supply";
 import { opsAuthorized } from "@/src/security/ops-auth";
 
+import { auditOpsEvent } from "@/src/db/governance";
 const Input=z.object({
   contractReference:z.string().min(3).max(200),
   bookingUrl:z.string().url().max(2000),
@@ -16,6 +17,7 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
   if(!parsed.success) return Response.json({error:"invalid-verification",issues:parsed.error.issues},{status:400});
   try{
     const updated=await verifyDirectRate({id,...parsed.data});
+  await auditOpsEvent({actor:"ops",action:"direct-rate.verify",resourceType:"direct-rate",resourceId:id,outcome:updated?"READY_FOR_REVIEW":"NOT_FOUND"});
     if(!updated) return Response.json({error:"rate-not-found-or-database-offline"},{status:404});
     return Response.json({ok:true,id:updated,state:"READY_FOR_REVIEW"});
   }catch(error){
