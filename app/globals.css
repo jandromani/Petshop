@@ -156,3 +156,36 @@ input[type=range]{width:100%;accent-color:var(--lime)}
   .silverHotel .hotelVisual{height:145px}
   .footerGrid{grid-template-columns:1fr;gap:8px}
 }
+
+
+/* R0-R6 money truth + canonical search */
+.silverSearch{grid-template-columns:1.35fr 1fr .85fr .8fr .8fr .8fr .9fr auto}
+.searchBudget{display:flex;flex-direction:column;justify-content:center;min-height:72px;background:#f6f8fc;padding:10px 14px}
+.searchBudget span{font-size:9px;font-weight:900;letter-spacing:.09em;color:#6e7890}
+.searchBudget b{font-size:18px;letter-spacing:-.04em;color:var(--ink)}
+.financeSummary{margin:16px 0 8px;padding:16px;border-radius:16px;background:#eef4ff;border:1px solid #d8e4ff}
+.financeSummary>div:first-child{display:flex;align-items:end;justify-content:space-between;gap:14px}
+.financeSummary span,.financeBudget span{font-size:10px;font-weight:900;letter-spacing:.09em;color:#61708b}
+.financeSummary b{font-size:30px;letter-spacing:-.05em}
+.financePlus{font-size:10px!important;color:#7b879b!important;margin-top:3px}
+.financeBudget{display:flex;align-items:end;justify-content:space-between;gap:16px;margin:14px 0 20px;padding:18px;border-radius:17px;background:var(--lime);color:var(--ink)}
+.financeBudget b{font-size:34px;letter-spacing:-.055em}
+.financeBudget small{font-size:11px;margin-left:3px;letter-spacing:0;color:#405024}
+.budgetBreakdown{display:grid;gap:7px;margin:16px 0}
+.budgetBreakdown>div{display:flex;justify-content:space-between;gap:16px;border-bottom:1px solid var(--line);padding:8px 0;font-size:12px}
+.budgetBreakdown span{color:var(--muted)}
+.noRoute{display:grid;gap:6px;background:#fff4d7;border:1px solid #efcf7a;border-radius:15px;padding:16px;color:var(--ink)}
+.noRoute b{font-size:18px}.noRoute span{font-size:12px;color:#6d6248}
+@media(max-width:1180px){
+  .silverSearch{grid-template-columns:repeat(4,1fr)}
+  .silverSearch label:first-child,.silverSearch label,.searchBudget,.searchCta{border-radius:12px}
+  .searchCta{min-height:64px}
+}
+@media(max-width:780px){
+  .silverSearch{grid-template-columns:1fr 1fr}
+  .searchBudget{border-radius:12px}
+}
+@media(max-width:560px){
+  .silverSearch{grid-template-columns:1fr}
+  .financeSummary>div:first-child,.financeBudget{align-items:flex-start;flex-direction:column}
+}
