@@ -1,6 +1,8 @@
 import { cookies } from "next/headers";
+import { after } from "next/server";
 import { hotelBySlug } from "@/src/data/hotels";
 import { createReferralClick, referralLog } from "@/src/services/referral";
+import { persistReferralClick } from "@/src/db/ledger";
 
 export const runtime = "nodejs";
 
@@ -28,6 +30,7 @@ export async function GET(req: Request) {
   });
 
   console.log(referralLog(click));
+  after(async()=>{ await persistReferralClick(click); });
 
   // Bootstrap fallback. Production provider adapters will replace this
   // with attributed partner deep links and subID=click.clickId.
