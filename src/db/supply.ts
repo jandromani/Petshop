@@ -108,6 +108,7 @@ export async function persistOfferSnapshot(input:{
   occupancy:number;
   board?:string;
   roomType?:string;
+  cancellation?:string;
   taxesIncluded?:boolean;
   fulfillmentType?:"REDIRECT"|"API_BOOKING"|"DIRECT";
   totalPrice:number;
@@ -124,7 +125,7 @@ export async function persistOfferSnapshot(input:{
   const rows=await sql<{id:string}[]>`
     insert into offer_snapshots (
       hotel_id,provider,provider_offer_id,provider_request_id,
-      check_in,check_out,occupancy,board,room_type,taxes_included,fulfillment_type,total_price,display_price,currency,
+      check_in,check_out,occupancy,board,room_type,cancellation,taxes_included,fulfillment_type,total_price,display_price,currency,
       evidence,evidence_hash,deep_link,verified_at,expires_at,source_mode
     ) values (
       ${input.hotelId}::uuid,
@@ -136,6 +137,7 @@ export async function persistOfferSnapshot(input:{
       ${input.occupancy},
       ${input.board ?? null},
       ${input.roomType ?? null},
+      ${input.cancellation ?? null},
       ${input.taxesIncluded ?? null},
       ${input.fulfillmentType ?? "REDIRECT"},
       ${input.totalPrice},
