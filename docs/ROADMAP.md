@@ -102,3 +102,88 @@ No R0-R6 release is promoted unless:
 `secret scan -> npm ci -> typecheck -> unit tests -> build -> Playwright E2E -> deployment smoke`
 
 all pass.
+
+
+## R7 · PRODUCTION RUNTIME — SOFTWARE CLOSED
+- private operations APIs accept signed ops sessions or explicit bearer automation auth
+- process liveness and commercial readiness are separate endpoints
+- production deploy waits for CI success and checks out the exact tested SHA
+- deploy fails when VERCEL_TOKEN is absent instead of returning a false green
+- production database migrations run with Vercel production env before build/deploy
+- production smoke is mandatory after deployment
+- activation manifest exposes missing external dependencies without exposing secret values
+
+External activation:
+- GitHub Actions VERCEL_TOKEN
+- Vercel project linkage
+- DATABASE_URL + migrations
+- CRON_SECRET / OPS_ACCESS_KEY
+
+## R8 · DIRECT SUPPLY — SOFTWARE CLOSED
+- hotel leads capture canonical geography and commercial contacts
+- rate creation is DRAFT-only
+- contract verification is a separate authenticated action
+- booking hostname is pinned server-side during verification
+- publication is a deterministic DRAFT → READY_FOR_REVIEW → LIVE gate
+- revocation removes a direct rate from sellable inventory
+- live catalog merges provider snapshots and verified direct-contract offers
+- direct referrals only redirect to the approved booking hostname
+
+External activation:
+- real hotel agreements
+- contractual booking URLs, cancellation terms and validity windows
+
+## R9 · GOVERNED AUTONOMY — SOFTWARE CLOSED
+- agent runtime requires persistent governance DB
+- daily run caps are reserved atomically
+- actor output cannot publish prices, sign contracts or commit money
+- deterministic truth/brand judges run outside actor generation
+- independent LLM judge remains downstream
+- model usage/cost evidence is persisted when reported
+- operational incidents open/reopen/resolve deterministically
+- Daily Control produces a <60 minute human agenda
+- retention and revenue reconciliation run in the durable daily workflow
+
+External activation:
+- OPENROUTER_API_KEY is optional
+- human approval remains mandatory for contracts, material spend and publication gates
+
+## R10 · GROWTH + SEO — SOFTWARE CLOSED
+- attribution, referral and conversion funnel is queryable by source/campaign
+- hero experiment readout uses observed visitors/referrals, not synthetic scores
+- demo hotel pages are NOINDEX
+- discovery pages index only when live evidence passes SEO gates
+- sitemap contains only current evidence-backed live surfaces
+- commercial demo and live inventory never silently substitute for one another
+- retention scrubs old pseudonymous analytics/referral fields
+
+External activation:
+- SEO_LIVE_INDEXING=true only after commercial inventory exists
+- paid acquisition budgets remain outside autonomous authority
+
+## R11 · RELEASE + GOVERNANCE — SOFTWARE CLOSED
+- legal/commercial disclosure explains referral economics and demo-vs-live truth
+- operator identity is an explicit launch gate
+- canonical production URL is derived from configured/Vercel production identity
+- system proof exposes software readiness and activation state separately
+- lockfile integrity is read-only and reproducible
+- CODEOWNERS + CI gates remain required
+- deployment is source-SHA exact, migrated, prebuilt and smoke-tested
+
+External activation:
+- LEGAL_OPERATOR_NAME
+- LEGAL_CONTACT_EMAIL
+- LEGAL_COUNTRY
+- final jurisdiction-specific legal/tax/travel-package review before selling bundled services
+
+## R0–R11 release invariant
+
+A software release is mergeable only after:
+
+`secret scan → npm ci → typecheck → unit tests → build → Playwright desktop/mobile`
+
+A production release is successful only after:
+
+`tested master SHA → production migrations → prebuilt Vercel deploy → production smoke`
+
+READY never means LIVE. ACTIVATION_REQUIRED is not converted into green by mock data, missing credentials or skipped deployment steps.
