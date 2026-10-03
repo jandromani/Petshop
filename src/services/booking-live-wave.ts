@@ -3,6 +3,7 @@ import { BookingDemandClient } from "@/src/providers/live/booking";
 import { evaluateCommercialOffer } from "@/src/core/truth";
 import { stableEvidenceHash } from "@/src/services/evidence";
 import { providerFreshUntil } from "@/src/core/provider-policy";
+import { resolveCanonicalHotel } from "@/src/services/identity";
 import { databaseConfigured } from "@/src/db/client";
 import {
   finishAcquisitionRun,
@@ -10,7 +11,6 @@ import {
   persistRawProviderEvidence,
   persistSellabilityAudit,
   startAcquisitionRun,
-  upsertCanonicalHotel,
   upsertProviderHotel,
 } from "@/src/db/supply";
 
@@ -143,7 +143,7 @@ export async function runBookingLiveWave(input:BookingLiveWaveInput):Promise<Boo
         const evidencePayload={search:hit.raw,details:detail?.raw};
         const evidenceHash=stableEvidenceHash(evidencePayload);
         const price=hit.displayPrice ?? hit.totalPrice ?? 0;
-        const canonicalSlug="booking-"+hit.providerHotelId;
+        const fallbackSlug="booking-"+hit.providerHotelId;
         const verifiedAt=hit.verifiedAt || new Date().toISOString();
         const displayName=detail?.name;
 
@@ -153,15 +153,18 @@ export async function runBookingLiveWave(input:BookingLiveWaveInput):Promise<Boo
         }
 
         result.canonicalHotels++;
-        const canonicalId=shouldPersist ? await upsertCanonicalHotel({
-          slug:canonicalSlug,
+        const identity=shouldPersist ? await resolveCanonicalHotel({
+          provider:"booking",
+          providerHotelId:hit.providerHotelId,
           name:displayName,
           city:anchor.city,
           country:anchor.country,
           region:anchor.region,
           lat:detail?.latitude,
           lng:detail?.longitude,
-        }) : null;
+        }) : {id:null,slug:fallbackSlug,matched:false,score:0};
+        const canonicalId=identity.id;
+        const canonicalSlug=identity.slug;
 
         if(shouldPersist){
           await persistRawProviderEvidence({
