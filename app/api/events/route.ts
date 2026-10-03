@@ -4,6 +4,7 @@ import { track } from "@vercel/analytics/server";
 import { z } from "zod";
 import { persistGrowthEvent } from "@/src/db/ledger";
 import { enforceRateLimit,requestFingerprint } from "@/src/security/rate-limit";
+import { ANALYTICS_CONSENT,CONSENT_COOKIE } from "@/src/privacy/consent";
 
 export const runtime = "nodejs";
 
@@ -15,12 +16,13 @@ const EventInput = z.object({
 });
 
 export async function POST(req: Request) {
+  const jar=await cookies();
+  if(jar.get(CONSENT_COOKIE)?.value!==ANALYTICS_CONSENT) return new Response(null,{status:204});
   const gate=await enforceRateLimit({key:requestFingerprint(req,"growth-events"),limit:180,windowSeconds:60});
   if(!gate.allowed) return Response.json({ok:false,error:"rate-limited"},{status:429});
   const parsed = EventInput.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return Response.json({ ok: false }, { status: 400 });
 
-  const jar = await cookies();
   const visitorId = jar.get("rv_vid")?.value;
   const sessionId = jar.get("rv_sid")?.value;
   const source = jar.get("rv_src")?.value || jar.get("rv_ref")?.value || "direct";
