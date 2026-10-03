@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { hotelBySlug } from "@/src/data/hotels";
 import { evaluateSellability } from "@/src/core/truth";
 import { listSellableOffers } from "@/src/db/catalog";
+import { canonicalSiteUrl } from "@/src/system/site-url";
+import LiveStructuredData from "@/components/LiveStructuredData";
 
 export const dynamic="force-dynamic";
 const money=(n:number,currency:string)=>new Intl.NumberFormat("en-US",{style:"currency",currency,maximumFractionDigits:0}).format(n);
@@ -18,9 +20,11 @@ export async function generateMetadata({params}:{params:Promise<{slug:string}>})
   if(live.length){
     const first=live[0];
     const index=process.env.SEO_LIVE_INDEXING==="true";
+    const canonical=canonicalSiteUrl()+"/live/"+slug;
     return{
       title:first.city+" long stay · verified live offers",
       description:"Current truth-gated long-stay offers in "+first.city+", framed by monthly living cost.",
+      alternates:{canonical},
       robots:{index,follow:true},
       openGraph:{title:"Live in "+first.city+" for a season",description:"Verified long-stay inventory with current commercial paths.",type:"website"},
     };
@@ -38,7 +42,8 @@ export default async function LifePage({params}:{params:Promise<{slug:string}>})
   const live=await liveOffers(slug);
   if(live.length){
     const first=live[0];
-    return <main className="seoPage"><div className="shell">
+    const canonical=canonicalSiteUrl()+"/live/"+slug;
+    return <main className="seoPage"><LiveStructuredData offers={live} canonical={canonical}/><div className="shell">
       <a href="/" className="eyebrow">← Atlas world explorer</a>
       <section className="seoHero" style={{marginTop:20}}>
         <div className="eyebrow">LIVE · TRUTH-GATED</div>
