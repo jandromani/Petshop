@@ -35,3 +35,11 @@ create table if not exists revenue_reconciliation_runs (
 
 create index if not exists conversions_status_received on conversions(status,received_at desc);
 create index if not exists commission_rules_provider_active on commission_rules(provider,active_from desc);
+
+create table if not exists provider_sync_cursors (
+  provider text not null,
+  stream text not null,
+  cursor_at timestamptz not null,
+  updated_at timestamptz not null default now(),
+  primary key(provider,stream)
+);
