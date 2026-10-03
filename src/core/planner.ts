@@ -8,9 +8,11 @@ export type PlanStop = {
   days: number;
   monthlyCost: number;
   transport: number;
+  transportDistanceKm: number;
+  transportMode: "start" | "ground" | "flight";
 };
 
-const kmCost = (a: Hotel, b: Hotel) => {
+const mobility = (a: Hotel, b: Hotel) => {
   const toRad = (v: number) => (v * Math.PI) / 180;
   const dLat = toRad(b.lat - a.lat);
   const dLng = toRad(b.lng - a.lng);
@@ -18,7 +20,11 @@ const kmCost = (a: Hotel, b: Hotel) => {
     Math.sin(dLat / 2) ** 2 +
     Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
   const km = 6371 * 2 * Math.atan2(Math.sqrt(aa), Math.sqrt(1 - aa));
-  return Math.round(Math.max(45, Math.min(520, 35 + km * 0.055)));
+  return {
+    km: Math.round(km),
+    mode: (km > 700 ? "flight" : "ground") as "flight" | "ground",
+    cost: Math.round(Math.max(45, Math.min(520, 35 + km * 0.055))),
+  };
 };
 
 export function adjustedMonthly(hotel: Hotel, party: Party) {
@@ -57,12 +63,17 @@ export function buildPlan(
     if (!picked.includes(h)) picked.push(h);
   }
 
-  return picked.slice(0, stopsNeeded).map((hotel, i, arr) => ({
-    hotel,
-    days: duration,
-    monthlyCost: adjustedMonthly(hotel, party),
-    transport: i === 0 ? 0 : kmCost(arr[i - 1], hotel),
-  }));
+  return picked.slice(0, stopsNeeded).map((hotel, i, arr) => {
+    const move = i === 0 ? null : mobility(arr[i - 1], hotel);
+    return {
+      hotel,
+      days: duration,
+      monthlyCost: adjustedMonthly(hotel, party),
+      transport: move?.cost ?? 0,
+      transportDistanceKm: move?.km ?? 0,
+      transportMode: move?.mode ?? "start",
+    };
+  });
 }
 
 export function planTotals(stops: PlanStop[]) {

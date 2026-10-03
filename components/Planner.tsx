@@ -176,7 +176,7 @@ export default function Planner({ hotels, initial, heroVariant="freedom" }: { ho
               <div className="route">
                 {plan.slice(0,6).map((s,i)=><div className="stop" key={s.hotel.id}>
                   <div className="when">STOP {String(i+1).padStart(2,"0")}</div>
-                  <div><b>{s.hotel.flag} {s.hotel.city}</b><small>{s.days} nights · {s.hotel.board} · score {s.hotel.score}</small></div>
+                  <div><b>{s.hotel.flag} {s.hotel.city}</b><small>{s.days} nights · {s.hotel.board} · score {s.hotel.score}{s.transportMode!=="start"?" · "+s.transportMode+" ~"+s.transportDistanceKm.toLocaleString()+" km / "+euro(s.transport):""}</small></div>
                   <div className="cost">{euro(s.monthlyCost)}/mo</div>
                 </div>)}
               </div>
