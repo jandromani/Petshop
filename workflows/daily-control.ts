@@ -6,6 +6,7 @@ import { reconcileRevenue } from "@/src/services/revenue-reconciliation";
 import { syncBookingOrders } from "@/src/services/booking-order-sync";
 import { syncIncidents } from "@/src/db/governance";
 import { runDataRetention } from "@/src/db/retention";
+import { runGovernedAgent } from "@/src/services/governed-agent";
 
 export type ControlSignal={key:string;severity:"info"|"warning"|"critical";message:string};
 
@@ -53,6 +54,15 @@ export async function applyDataRetention(){
   return runDataRetention();
 }
 
+export async function runDailyAdvisor(context:Record<string,unknown>){
+  "use step";
+  return runGovernedAgent({
+    agent:"orchestrator",
+    objective:"Prioritize at most five operational actions for the next human review. Use only supplied facts. Do not publish, spend, sign, or claim execution. Separate urgent incidents from optional optimization.",
+    context,
+  });
+}
+
 export async function reconcileDailyRevenue(){
   "use step";
   return reconcileRevenue(30);
@@ -62,6 +72,20 @@ export async function dailyControlWorkflow(){
   "use workflow";
   const [signals,bookingOrders]=await Promise.all([collectControlSignals(),syncProviderRevenue()]);
   const [revenue,incidents,retention]=await Promise.all([reconcileDailyRevenue(),persistControlIncidents(signals),applyDataRetention()]);
+  const advisor=await runDailyAdvisor({
+    signals,
+    bookingOrders:{
+      status:(bookingOrders as any)?.status,
+      processed:(bookingOrders as any)?.processed,
+      attributed:(bookingOrders as any)?.attributed,
+      unattributedCount:Array.isArray((bookingOrders as any)?.unattributed)?(bookingOrders as any).unattributed.length:0,
+    },
+    revenue:{
+      status:(revenue as any)?.status,
+      anomalyCount:Array.isArray((revenue as any)?.anomalies)?(revenue as any).anomalies.length:0,
+    },
+    incidents,
+  });
   const agenda=await buildHumanAgenda(signals);
-  return{runType:"daily-control",signals,bookingOrders,revenue,incidents,retention,agenda,generatedAt:new Date().toISOString()};
+  return{runType:"daily-control",signals,bookingOrders,revenue,incidents,retention,advisor,agenda,generatedAt:new Date().toISOString()};
 }
