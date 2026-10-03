@@ -1,5 +1,6 @@
 export type LiveCatalogRow={
   offerId:string;
+  offerKind?:"snapshot"|"direct";
   hotelId:string;
   slug:string;
   name:string;
@@ -34,12 +35,13 @@ export function normalizeLiveCatalogRow(row:LiveCatalogRow):LiveCatalogOffer{
   return{...row,monthlyEquivalent:monthlyEquivalent(row.displayPrice,row.nights)};
 }
 
-export function safeCommercialUrl(provider:string,raw:string){
+export function safeCommercialUrl(provider:string,raw:string,approvedHost?:string){
   let url:URL;
   try{url=new URL(raw);}catch{return null;}
   if(url.protocol!=="https:") return null;
   const host=url.hostname.toLowerCase();
   if(provider==="booking" && !(host==="booking.com" || host.endsWith(".booking.com"))) return null;
-  if(!["booking"].includes(provider)) return null;
+  if(provider==="direct" && (!approvedHost || host!==approvedHost.toLowerCase())) return null;
+  if(!["booking","direct"].includes(provider)) return null;
   return url;
 }
