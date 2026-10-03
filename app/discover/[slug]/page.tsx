@@ -4,6 +4,7 @@ import { hotels } from "@/src/data/hotels";
 import { DISCOVERY_PAGES,discoveryBySlug } from "@/src/seo/catalog";
 import { liveDiscoveryEvidence } from "@/src/seo/live";
 import { canonicalSiteUrl } from "@/src/system/site-url";
+import LiveOfferCard from "@/components/LiveOfferCard";
 
 export const dynamic="force-dynamic";
 const euro=(n:number,currency="EUR")=>new Intl.NumberFormat("en-US",{style:"currency",currency,maximumFractionDigits:0}).format(n);
@@ -69,18 +70,7 @@ export default async function Discovery({params}:{params:Promise<{slug:string}>}
     </section>
 
     {offers.length>0?<div className="hotels">
-      {offers.slice(0,12).map((o,index)=><article className="hotel liveHotel" key={o.offerId}>
-        <div className="hotelVisual"><span className="flag">✓</span><span className="score">LIVE {Math.round(o.confidence*100)}%</span></div>
-        <div className="hotelBody">
-          <h3>{o.city}</h3>
-          <div className="loc">{o.country} · {o.name} · {o.provider}</div>
-          <div className="chips"><span className="chip">{o.nights} nights</span>{o.board&&<span className="chip">{o.board}</span>}<span className="chip">{o.checkIn} → {o.checkOut}</span></div>
-          <div className="priceRow">
-            <div><b>{euro(o.monthlyEquivalent,o.currency)}</b><small>/30-day equivalent · total {euro(o.displayPrice,o.currency)}</small></div>
-            <a className="linkbtn" href={"/api/referral?offer="+encodeURIComponent(o.offerId)+"&from="+encodeURIComponent("/discover/"+slug)+"&pos="+(index+1)}>Open verified offer →</a>
-          </div>
-        </div>
-      </article>)}
+      {offers.slice(0,12).map((o,index)=><LiveOfferCard key={o.offerId} offer={o} href={"/api/referral?offer="+encodeURIComponent(o.offerId)+"&from="+encodeURIComponent("/discover/"+slug)+"&pos="+(index+1)}/>)}
     </div>:<div className="hotels">
       {demo.map(h=><article className="hotel" key={h.id}>
         <div className="hotelVisual"><span className="flag">{h.flag}</span><span className="score">DEMO · SILVER {h.score}</span></div>
