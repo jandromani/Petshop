@@ -79,3 +79,11 @@ input[type=range]{width:100%;accent-color:var(--lime)}
 .seoPage{padding:46px 0 80px}.seoHero{border-radius:30px;padding:48px;background:linear-gradient(135deg,#dce8ff,#fff2c9);margin-bottom:24px}.seoHero h1{font-size:clamp(42px,7vw,82px);line-height:.95;letter-spacing:-.06em;margin:0 0 16px}.seoGrid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}
 @media(max-width:900px){.proof{grid-template-columns:1fr 1fr}.grid2,.agentGrid,.vcgrid,.seoGrid{grid-template-columns:1fr}.hotels{grid-template-columns:1fr 1fr}.metrics{grid-template-columns:1fr 1fr}.segment{grid-template-columns:1fr 1fr}}
 @media(max-width:620px){.navlinks a:not(.btn){display:none}.hero{padding-top:50px}.proof,.hotels,.truth,.metrics{grid-template-columns:1fr}.toolbar{grid-template-columns:1fr}.stop{grid-template-columns:58px 1fr}.stop .cost{grid-column:2}.moneyline{display:block}.surplus{text-align:left;margin-top:12px}.tr{grid-template-columns:1fr 1fr;gap:6px}.hero h1{font-size:55px}}
+
+.worldMap{margin:0 0 18px;background:#102244;border:1px solid rgba(255,255,255,.09);border-radius:24px;padding:17px;overflow:hidden}
+.worldMap svg{display:block;width:100%;height:auto;max-height:440px;border-radius:18px}
+.mapHeader{display:flex;align-items:end;justify-content:space-between;gap:18px;padding:3px 3px 14px}.mapHeader b{display:block;font-size:13px;letter-spacing:.1em}.mapHeader span{display:block;color:#92a2bc;font-size:11px;margin-top:4px}
+.mapLegend{display:flex;gap:14px}.mapLegend>span{display:flex;align-items:center;gap:6px}
+.mapDot{width:8px;height:8px;border-radius:50%;display:inline-block}.mapDot.all{background:#8ba5d5}.mapDot.routeDot{background:var(--lime);box-shadow:0 0 10px rgba(200,255,106,.6)}
+.mapStops{display:flex;gap:7px;flex-wrap:wrap;padding-top:12px}.mapStops span{display:inline-flex;gap:6px;align-items:center;background:#091731;border:1px solid rgba(255,255,255,.08);border-radius:999px;padding:7px 10px;color:#c1cade;font-size:10px}.mapStops b{width:17px;height:17px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:var(--lime);color:var(--ink)}
+@media(max-width:620px){.mapHeader{display:block}.mapLegend{margin-top:10px}.worldMap{padding:10px}.mapStops span{font-size:9px}}
