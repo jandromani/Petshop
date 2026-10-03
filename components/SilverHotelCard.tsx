@@ -1,12 +1,14 @@
 "use client";
 import type { Hotel } from "@/src/data/hotels";
 import type { Party } from "@/src/core/planner";
+import type { StayDuration } from "@/src/core/search";
 import { adjustedMonthly } from "@/src/core/planner";
 
 const euro=(n:number)=>"€"+Math.round(n).toLocaleString("en-US");
 
-export default function SilverHotelCard({hotel,party,duration}:{hotel:Hotel;party:Party;duration:30|60|90}){
+export default function SilverHotelCard({hotel,party,duration}:{hotel:Hotel;party:Party;duration:StayDuration}){
   const price=adjustedMonthly(hotel,party);
+  const total=Math.round(price*(duration/30));
   return <article className="hotel silverHotel">
     <div className={"hotelVisual region-"+hotel.region.toLowerCase()}>
       <div><span className="flag">{hotel.flag}</span><span className="visualCity">{hotel.city}</span></div>
@@ -23,7 +25,7 @@ export default function SilverHotelCard({hotel,party,duration}:{hotel:Hotel;part
         <span>✓ {hotel.tags.includes("walkable")?"Walkable":"Long-stay friendly"}</span>
       </div>
       <div className="priceRow">
-        <div><b>{euro(price)}</b><small>/month · {hotel.board}</small></div>
+        <div><b>{euro(price)}</b><small>/month · {euro(total)} / {duration} days · {hotel.board}</small></div>
         <a className="linkbtn" href={"/live/"+hotel.slug}>View stay →</a>
       </div>
     </div>
