@@ -5,6 +5,7 @@ import { DISCOVERY_PAGES,discoveryBySlug } from "@/src/seo/catalog";
 import { liveDiscoveryEvidence } from "@/src/seo/live";
 import { canonicalSiteUrl } from "@/src/system/site-url";
 import LiveOfferCard from "@/components/LiveOfferCard";
+import { esSlugForSource } from "@/src/seo/es-catalog";
 
 export const dynamic="force-dynamic";
 const euro=(n:number,currency="EUR")=>new Intl.NumberFormat("en-US",{style:"currency",currency,maximumFractionDigits:0}).format(n);
@@ -18,11 +19,13 @@ export async function generateMetadata({params}:{params:Promise<{slug:string}>})
   const result=await liveDiscoveryEvidence(slug);
   const page=result?.page||discoveryBySlug(slug);
   if(!page)return{};
-  const canonical=canonicalSiteUrl()+"/discover/"+slug;
+  const base=canonicalSiteUrl();
+  const canonical=base+"/discover/"+slug;
+  const esSlug=esSlugForSource(slug);
   return{
     title:page.title,
     description:page.description,
-    alternates:{canonical},
+    alternates:{canonical,languages:esSlug?{en:canonical,es:base+"/es/descubrir/"+esSlug}:{en:canonical}},
     robots:{index:Boolean(result?.gate.index),follow:true},
     openGraph:{title:page.headline,description:page.description,type:"website"},
   };

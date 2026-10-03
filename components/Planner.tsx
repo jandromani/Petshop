@@ -105,7 +105,7 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
   return <>
     <header className="nav"><div className="shell navin">
       <a className="brand" href="#">ATLAS<span>LONG STAY</span></a>
-      <nav className="navlinks"><a href="#explore">Stays</a><a href="#planner">Build my year</a><a href="#agent">Ask Atlas</a><a className="btn" href="#explore">Find a stay →</a></nav>
+      <nav className="navlinks"><a href="/es">ES</a><a href="/saved">Saved</a><a href="#explore">Stays</a><a href="#planner">Build my year</a><a href="#agent">Ask Atlas</a><a className="btn" href="#explore">Find a stay →</a></nav>
     </div></header>
 
     <section className="hero silverHero"><div className="shell">

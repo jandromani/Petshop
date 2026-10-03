@@ -1,4 +1,5 @@
 import type { LiveCatalogOffer } from "@/src/core/live-offers";
+import SaveStayButton from "@/components/SaveStayButton";
 
 const money=(n:number,currency:string)=>new Intl.NumberFormat("en-US",{style:"currency",currency,maximumFractionDigits:0}).format(n);
 
@@ -17,6 +18,7 @@ export default function LiveOfferCard({offer,href}:{offer:LiveCatalogOffer;href:
     </div>
     <div className="hotelBody">
       <div className="hotelTopline"><span>{offer.provider.toUpperCase()}</span><span>verified {new Date(offer.verifiedAt).toLocaleString()}</span></div>
+      <SaveStayButton offer={offer}/>
       <h3>{offer.name}</h3>
       <div className="loc">{offer.city}, {offer.country} · {offer.nights} nights · {offer.occupancy} adult{offer.occupancy===1?"":"s"}</div>
       <div className="chips">
