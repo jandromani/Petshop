@@ -124,6 +124,6 @@ export async function getSellableOfferForReferral(offerId:string){
     limit 1
   `;
   const row=rows[0];
-  if(row?.deep_link)return{...normalizeDbRow(row),deepLink:row.deep_link,approvedHost:undefined};
+  if(row?.deep_link)return{...normalizeDbRow(row),deepLink:row.deep_link,approvedHost:undefined,trackingParam:undefined};
   return getSellableDirectOfferForReferral(offerId);
 }
