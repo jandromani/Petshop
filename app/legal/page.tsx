@@ -30,7 +30,7 @@ export default function LegalPage(){
       </div>
       <div className="card">
         <h2>Data used to operate the product</h2>
-        <p>Atlas may store pseudonymous visitor/session identifiers, attribution parameters, product events, referral clicks and conversion evidence so the funnel and partner commissions can be reconciled.</p>
+        <p>With analytics consent, Atlas may store pseudonymous visitor/session identifiers, attribution parameters and product events. Without that consent, persistent analytics/attribution cookies and growth-event collection stay off. Referral clicks and conversion evidence may still be recorded when you use a commercial link so the specific referral and partner commission can be reconciled.</p>
         <p>Operational retention is configured at approximately {retention} days for analytics/pseudonymous event data; older referral identifiers and raw conversion payloads are scrubbed by the daily control workflow.</p>
       </div>
       <div className="card">
