@@ -53,6 +53,9 @@ jobs:
           vercel link --yes --project "$VERCEL_PROJECT_NAME" --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN"
           vercel pull --yes --environment=production --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN"
 
+      - name: Migrate production database
+        run: vercel env run -e production -- npm run db:migrate
+
       - name: Build production artifact
         run: vercel build --prod --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN"
 
