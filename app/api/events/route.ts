@@ -1,6 +1,8 @@
 import { cookies } from "next/headers";
+import { after } from "next/server";
 import { track } from "@vercel/analytics/server";
 import { z } from "zod";
+import { persistGrowthEvent } from "@/src/db/ledger";
 
 export const runtime = "nodejs";
 
@@ -37,6 +39,16 @@ export async function POST(req: Request) {
     properties,
     ts: new Date().toISOString(),
   }));
+
+  after(async()=>{
+    await persistGrowthEvent({
+      visitorId,
+      sessionId,
+      name:parsed.data.name,
+      properties,
+      pagePath:parsed.data.path,
+    });
+  });
 
   try {
     track(parsed.data.name, properties);
