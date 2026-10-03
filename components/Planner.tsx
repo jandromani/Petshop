@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Hotel } from "@/src/data/hotels";
-import { adjustedMonthly, buildPlan, planTotals, type Party, type PlanMode } from "@/src/core/planner";
+import { adjustedMonthly, buildPlan, planTotals, type Party, type PlanMode } from "@/src/core/planner";\nimport { growthEvent } from "@/src/growth/client";
 
 const euro = (n: number) => "€" + Math.round(n).toLocaleString("en-US");
 
@@ -29,6 +29,10 @@ export default function Planner({ hotels }: { hotels: Hotel[] }) {
   const totals = useMemo(() => planTotals(plan), [plan]);
   const avg = Math.round(totals.total / Math.max(1, totals.days / 30));
 
+  useEffect(() => {
+    growthEvent("planner_loaded", { catalogue_size: hotels.length });
+  }, [hotels.length]);
+
   const visible = useMemo(() => {
     const q = query.toLowerCase().trim();
     const list = hotels.filter(h => (region === "All" || h.region === region) && (!q || [h.name,h.city,h.country,...h.tags].join(" ").toLowerCase().includes(q)));
@@ -38,6 +42,7 @@ export default function Planner({ hotels }: { hotels: Hotel[] }) {
   async function askAgent() {
     const prompt = draft.trim();
     if (!prompt || thinking) return;
+    growthEvent("agent_question", { mode, party, duration, budget: livingBudget });
     setChat(v => [...v, {role:"user",text:prompt}]);
     setDraft("");
     setThinking(true);
@@ -65,7 +70,7 @@ export default function Planner({ hotels }: { hotels: Hotel[] }) {
             <a href="#planner">Build my year</a>
             <a href="#explore">Explore</a>
             <a href="#agent">AI concierge</a>
-            <a className="btn" href="/control">Control tower</a>
+            <a className="btn" href="#planner">Build my year →</a>
           </nav>
         </div>
       </header>
@@ -132,7 +137,7 @@ export default function Planner({ hotels }: { hotels: Hotel[] }) {
               </div>
               <div className="actions">
                 {([["world","World tour"],["winter","Winter sun"],["value","Max value"],["slow","Slow Europe"]] as [PlanMode,string][]).map(([m,l])=>
-                  <button className={"btn "+(mode===m?"lime":"ghost")} key={m} onClick={()=>setMode(m)}>{l}</button>
+                  <button className={"btn "+(mode===m?"lime":"ghost")} key={m} onClick={()=>{ setMode(m); growthEvent("route_strategy_selected", { mode:m, budget:livingBudget, party, duration }); }}>{l}</button>
                 )}
               </div>
               <div className="route">
@@ -169,7 +174,7 @@ export default function Planner({ hotels }: { hotels: Hotel[] }) {
                   <div className="chips">{h.tags.slice(0,4).map(t=><span className="chip" key={t}>{t}</span>)}</div>
                   <div className="priceRow">
                     <div><b>{euro(p)}</b><small>/month · {h.board}</small></div>
-                    <a className="linkbtn" href={"/api/referral?hotel="+encodeURIComponent(h.slug)+"&provider="+h.provider}>View offer →</a>
+                    <a className="linkbtn" href={"/api/referral?hotel="+encodeURIComponent(h.slug)+"&provider="+h.provider+"&from=%2Fexplore"}>View offer →</a>
                   </div>
                   <div className="actions"><a className="btn ghost" href={"/live/"+h.slug}>Life page</a></div>
                 </div>
