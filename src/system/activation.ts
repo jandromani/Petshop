@@ -20,7 +20,7 @@ export async function activationManifest(){
     {
       key:"database",
       state:(databaseConfigured()?"ACTIVE":"ACTIVATION_REQUIRED") as ActivationState,
-      detail:databaseConfigured()?"Persistent operational ledger configured.":"Set DATABASE_URL and apply migrations 001–008.",
+      detail:databaseConfigured()?"Persistent operational ledger configured.":"Set DATABASE_URL and apply migrations 001–011.",
     },
     {
       key:"ops-security",
