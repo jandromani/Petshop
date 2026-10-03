@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { liveProviderRegistry } from "@/src/providers/live/registry";
 
+import { opsAuthorized } from "@/src/security/ops-auth";
 export const runtime="nodejs";
 
 const Input=z.discriminatedUnion("provider",[
@@ -9,13 +10,9 @@ const Input=z.discriminatedUnion("provider",[
   z.object({provider:z.literal("hbx"),hotelCodes:z.array(z.number().int()).min(1).max(500),checkIn:z.string(),checkOut:z.string(),adults:z.number().int().min(1).max(8),currency:z.string().default("EUR")}),
 ]);
 
-function authorized(req:Request){
-  const ops=process.env.OPS_ACCESS_KEY;
-  return Boolean(ops&&req.headers.get("authorization")==="Bearer "+ops);
-}
 
 export async function POST(req:Request){
-  if(!authorized(req)) return new Response("Unauthorized",{status:401});
+  if(!(await opsAuthorized(req))) return new Response("Unauthorized",{status:401});
   const parsed=Input.safeParse(await req.json().catch(()=>null));
   if(!parsed.success) return Response.json({error:"Invalid probe request",issues:parsed.error.issues},{status:400});
 
