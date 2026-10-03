@@ -4,6 +4,7 @@ import { databaseConfigured } from "@/src/db/client";
 import { liveProviderStatuses } from "@/src/providers/live/registry";
 import { reconcileRevenue } from "@/src/services/revenue-reconciliation";
 import { syncBookingOrders } from "@/src/services/booking-order-sync";
+import { syncIncidents } from "@/src/db/governance";
 
 export type ControlSignal={key:string;severity:"info"|"warning"|"critical";message:string};
 
@@ -24,6 +25,11 @@ export async function collectControlSignals():Promise<ControlSignal[]>{
   if(failedAgents.length)signals.push({key:"agents.failures",severity:"warning",message:failedAgents.length+" recent agent runs failed"});
   signals.push({key:"agents.authority",severity:"info",message:Object.keys(AGENTS).length+" bounded agent roles; 0 have contract or price publication authority"});
   return signals;
+}
+
+export async function persistControlIncidents(signals:ControlSignal[]){
+  "use step";
+  return syncIncidents(signals.filter((x):x is ControlSignal & {severity:"warning"|"critical"}=>x.severity!=="info"));
 }
 
 export async function buildHumanAgenda(signals:ControlSignal[]){
@@ -49,7 +55,7 @@ export async function reconcileDailyRevenue(){
 export async function dailyControlWorkflow(){
   "use workflow";
   const [signals,bookingOrders]=await Promise.all([collectControlSignals(),syncProviderRevenue()]);
-  const revenue=await reconcileDailyRevenue();
+  const [revenue,incidents]=await Promise.all([reconcileDailyRevenue(),persistControlIncidents(signals)]);
   const agenda=await buildHumanAgenda(signals);
-  return{runType:"daily-control",signals,bookingOrders,revenue,agenda,generatedAt:new Date().toISOString()};
+  return{runType:"daily-control",signals,bookingOrders,revenue,incidents,agenda,generatedAt:new Date().toISOString()};
 }
