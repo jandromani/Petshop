@@ -27,5 +27,10 @@ export function runSoftwareProof(now=new Date()){
     {name:"truth-judge",pass:truthJudge.verdict==="PASS",detail:truthJudge.verdict},
     {name:"brand-judge",pass:brandJudge.verdict==="PASS",detail:brandJudge.verdict},
   ];
-  return{pass:checks.every(c=>c.pass),checks};
+  return{
+    kind:"synthetic-software-circuit" as const,
+    proves:"deterministic software contracts only; not production traffic, live supply or revenue",
+    pass:checks.every(c=>c.pass),
+    checks,
+  };
 }
