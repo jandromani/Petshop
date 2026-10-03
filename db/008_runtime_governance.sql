@@ -23,3 +23,11 @@ create table if not exists ops_audit_events (
 
 create index if not exists ops_incidents_status on ops_incidents(status,severity,last_seen_at desc);
 create index if not exists ops_audit_time on ops_audit_events(created_at desc);
+
+create table if not exists agent_daily_budget (
+  agent_key text not null,
+  budget_date date not null default current_date,
+  run_count integer not null default 0,
+  updated_at timestamptz not null default now(),
+  primary key(agent_key,budget_date)
+);
