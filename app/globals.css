@@ -87,3 +87,5 @@ input[type=range]{width:100%;accent-color:var(--lime)}
 .mapDot{width:8px;height:8px;border-radius:50%;display:inline-block}.mapDot.all{background:#8ba5d5}.mapDot.routeDot{background:var(--lime);box-shadow:0 0 10px rgba(200,255,106,.6)}
 .mapStops{display:flex;gap:7px;flex-wrap:wrap;padding-top:12px}.mapStops span{display:inline-flex;gap:6px;align-items:center;background:#091731;border:1px solid rgba(255,255,255,.08);border-radius:999px;padding:7px 10px;color:#c1cade;font-size:10px}.mapStops b{width:17px;height:17px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:var(--lime);color:var(--ink)}
 @media(max-width:620px){.mapHeader{display:block}.mapLegend{margin-top:10px}.worldMap{padding:10px}.mapStops span{font-size:9px}}
+
+.liveDiscovery{background:#eef5ff}.liveHotel{border-color:#b9cbf4;box-shadow:0 14px 38px rgba(35,88,232,.08)}.liveHotel .hotelVisual{background:linear-gradient(135deg,#d7ffac,#dce8ff)}

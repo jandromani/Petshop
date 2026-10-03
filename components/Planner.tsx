@@ -7,6 +7,7 @@ import { growthEvent } from "@/src/growth/client";
 import { encodePlanToken, type SharedPlanInput } from "@/src/core/share";
 import { HERO_VARIANTS, type HeroVariant } from "@/src/growth/experiments";
 import WorldMap from "@/components/WorldMap";
+import LiveOffers from "@/components/LiveOffers";
 
 const euro = (n: number) => "€" + Math.round(n).toLocaleString("en-US");
 
@@ -185,6 +186,8 @@ export default function Planner({ hotels, initial, heroVariant="freedom" }: { ho
           </div>
         </div>
       </section>
+
+      <LiveOffers />
 
       <section id="explore" className="discovery">
         <div className="shell">

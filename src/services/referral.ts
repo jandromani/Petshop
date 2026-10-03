@@ -3,6 +3,9 @@ export type ReferralClick = {
   visitorId?: string;
   sessionId?: string;
   hotelSlug: string;
+  canonicalHotelId?: string;
+  offerSnapshotId?: string;
+  expectedCommission?: number;
   provider: string;
   source?: string;
   campaign?: string;
