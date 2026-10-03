@@ -3,6 +3,7 @@ import { AGENTS, agentSystemPrompt } from "@/src/agents/registry";
 import { deterministicBrandJudge, deterministicTruthJudge } from "@/src/judges/rules";
 import { finishPersistedAgentRun, persistExternalJudge, persistJudgeReview, startPersistedAgentRun } from "@/src/db/agents";
 
+import { opsAuthorized } from "@/src/security/ops-auth";
 export const runtime = "nodejs";
 
 const Input = z.object({
@@ -30,13 +31,9 @@ async function openRouter(messages: {role:"system"|"user";content:string}[]) {
   return { text:String(data?.choices?.[0]?.message?.content || ""), usage:data?.usage, model };
 }
 
-function authorized(req:Request){
-  const secret=process.env.OPS_ACCESS_KEY;
-  return Boolean(secret&&req.headers.get("authorization")==="Bearer "+secret);
-}
 
 export async function POST(req: Request) {
-  if(!authorized(req)) return new Response("Unauthorized",{status:401});
+  if(!(await opsAuthorized(req))) return new Response("Unauthorized",{status:401});
   const parsed = Input.safeParse(await req.json().catch(()=>null));
   if (!parsed.success) return Response.json({error:"Invalid request"},{status:400});
   const policy = AGENTS[parsed.data.agent];
