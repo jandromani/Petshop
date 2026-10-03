@@ -1,11 +1,12 @@
 import { getSystemReadiness } from "@/src/system/readiness";
+import { activationManifest } from "@/src/system/activation";
 
 export const metadata={title:"System proof",robots:{index:false,follow:false}};
 
 const cls=(state:string)=>state==="LIVE"||state==="READY"?"green":state==="WAITING_EXTERNAL"?"amber":"";
 
 export default async function SystemPage(){
-  const status=await getSystemReadiness();
+  const [status,activation]=await Promise.all([getSystemReadiness(),activationManifest()]);
   const layers=[
     ["01","EXPERIENCE / GROWTH",status.layers.experience],
     ["02","SUPPLY / TRUTH",status.layers.supply],
@@ -30,6 +31,13 @@ export default async function SystemPage(){
       <div className="table" style={{marginTop:26}}>
         {layers.map(([n,name,layer])=><div className="tr" key={name}>
           <b>{n} · {name}</b><span className={cls(layer.state)}>{layer.state}</span><span>{layer.score}%</span><span>{layer.detail}</span>
+        </div>)}
+      </div>
+
+      <h2 style={{marginTop:38}}>Activation manifest</h2>
+      <div className="table">
+        {activation.items.map(item=><div className="tr" key={item.key}>
+          <b>{item.key}</b><span className={item.state==="ACTIVE"?"green":item.state==="ACTIVATION_REQUIRED"?"amber":""}>{item.state}</span><span>{item.detail}</span><span>{item.state==="ACTIVE"?"operational":"explicit external gate"}</span>
         </div>)}
       </div>
 
