@@ -1,3 +1,5 @@
+import { hasAnalyticsConsent } from "@/src/privacy/consent";
+
 export type EventProperty = string | number | boolean;
 
 export function growthEvent(
@@ -5,6 +7,7 @@ export function growthEvent(
   properties: Record<string, EventProperty> = {},
 ) {
   if (typeof window === "undefined") return;
+  if (!hasAnalyticsConsent(document.cookie)) return;
 
   const body = JSON.stringify({
     name,
