@@ -4,10 +4,17 @@ import { persistConversion } from "@/src/db/ledger";
 import { databaseConfigured } from "@/src/db/client";
 
 function record(value:unknown):Record<string,any>{return value&&typeof value==="object"&&!Array.isArray(value)?value as Record<string,any>:{};}
-function numberValue(value:unknown):number|undefined{
+function numberValue(value:unknown,depth=0):number|undefined{
+  if(depth>4||value===null||value===undefined)return undefined;
   if(typeof value==="number"&&Number.isFinite(value))return value;
   if(typeof value==="string"&&value.trim()&&Number.isFinite(Number(value)))return Number(value);
-  const r=record(value);for(const key of ["amount","value","total","actual","estimated"]){const n=numberValue(r[key]);if(n!==undefined)return n;}
+  if(typeof value!=="object"||Array.isArray(value))return undefined;
+  const r=value as Record<string,unknown>;
+  for(const key of ["amount","value","total","actual","estimated"]){
+    if(!(key in r))continue;
+    const n=numberValue(r[key],depth+1);
+    if(n!==undefined)return n;
+  }
   return undefined;
 }
 function findLabel(value:unknown,depth=0):string|undefined{
