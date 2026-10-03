@@ -1,4 +1,4 @@
-name: Deploy production
+name: Verify production
 
 on:
   workflow_run:
@@ -11,69 +11,54 @@ permissions:
   contents: read
 
 concurrency:
-  group: vercel-production
-  cancel-in-progress: false
+  group: atlas-production-verification
+  cancel-in-progress: true
 
 jobs:
-  deploy:
+  verify:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_SCOPE: jandromanis-projects
-      VERCEL_PROJECT_NAME: marble-orchid-741
-      SOURCE_SHA: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.workflow_run.head_sha }}
+      PRODUCTION_URL: https://atlas-living-jandromanis-projects.vercel.app
+      EXPECTED_SHA: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.workflow_run.head_sha }}
     steps:
-      - name: Require deployment credentials
-        shell: bash
-        run: |
-          test -n "$VERCEL_TOKEN" || {
-            echo "::error::VERCEL_TOKEN is not configured. Production was NOT deployed."
-            exit 1
-          }
-
       - uses: actions/checkout@v4
         with:
-          ref: ${{ env.SOURCE_SHA }}
+          ref: ${{ env.EXPECTED_SHA }}
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Install application dependencies
-        run: npm ci --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
 
-      - name: Install pinned Vercel CLI
-        run: npm install --global vercel@59.20.0
-
-      - name: Link production project
+      - name: Await exact Git-linked Vercel deployment
         shell: bash
         run: |
-          vercel project add "$VERCEL_PROJECT_NAME" --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN" >/tmp/project-add.log 2>&1 || true
-          vercel link --yes --project "$VERCEL_PROJECT_NAME" --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN"
-          vercel pull --yes --environment=production --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN"
+          node <<'NODE'
+          const base=process.env.PRODUCTION_URL;
+          const expected=process.env.EXPECTED_SHA;
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          let last="";
+          for(let i=0;i<30;i++){
+            try{
+              const res=await fetch(base+"/api/health",{cache:"no-store"});
+              if(res.ok){
+                const body=await res.json();
+                last=String(body?.deployment?.commitSha||"");
+                if(last===expected){
+                  console.log("Exact tested SHA is live:",expected);
+                  process.exit(0);
+                }
+              }
+            }catch(error){last=String(error);}
+            await sleep(10_000);
+          }
+          throw new Error("Production alias did not reach expected SHA "+expected+"; last observed "+last);
+          NODE
 
-      - name: Migrate production database
-        run: vercel env run -e production -- npm run db:migrate
-
-      - name: Build production artifact
-        run: vercel build --prod --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN"
-
-      - name: Deploy exact prebuilt artifact
-        id: deploy
-        shell: bash
-        run: |
-          URL="$(vercel deploy --prebuilt --prod --yes --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN" | tail -n 1)"
-          test -n "$URL"
-          echo "url=$URL" >> "$GITHUB_OUTPUT"
-          echo "DEPLOYMENT_URL=$URL"
-          {
-            echo "### Production deployment"
-            echo "- Source SHA: $SOURCE_SHA"
-            echo "- URL: $URL"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Smoke deployed production
+      - name: Smoke exact production
         env:
-          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+          DEPLOYMENT_URL: ${{ env.PRODUCTION_URL }}
+          EXPECTED_SHA: ${{ env.EXPECTED_SHA }}
         run: npm run smoke:production
