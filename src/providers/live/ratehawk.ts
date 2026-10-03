@@ -31,10 +31,9 @@ export class RateHawkClient {
   readonly provider="ratehawk";
 
   status():LiveProviderStatus{
-    const missingEnv=[
-      ["RATEHAWK_KEY_ID",process.env.RATEHAWK_KEY_ID],
-      ["RATEHAWK_API_KEY",process.env.RATEHAWK_API_KEY],
-    ].filter(([,v])=>!v).map(([k])=>k);
+    const missingEnv=["RATEHAWK_KEY_ID","RATEHAWK_API_KEY"].filter(
+      (key)=>!process.env[key],
+    );
     const base=process.env.RATEHAWK_API_BASE || "https://api-sandbox.ratehawk.com";
     return{
       provider:this.provider,

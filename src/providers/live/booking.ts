@@ -22,10 +22,9 @@ export class BookingDemandClient {
   readonly provider = "booking";
 
   status(): LiveProviderStatus {
-    const missingEnv = [
-      ["BOOKING_API_KEY", process.env.BOOKING_API_KEY],
-      ["BOOKING_AFFILIATE_ID", process.env.BOOKING_AFFILIATE_ID],
-    ].filter(([,v])=>!v).map(([k])=>k);
+    const missingEnv = ["BOOKING_API_KEY","BOOKING_AFFILIATE_ID"].filter(
+      (key) => !process.env[key],
+    );
 
     const base = process.env.BOOKING_API_BASE || "https://demandapi-sandbox.booking.com/3.2";
     return {

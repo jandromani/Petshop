@@ -32,10 +32,9 @@ export class HbxClient{
   readonly provider="hbx";
 
   status():LiveProviderStatus{
-    const missingEnv=[
-      ["HBX_API_KEY",process.env.HBX_API_KEY],
-      ["HBX_SECRET",process.env.HBX_SECRET],
-    ].filter(([,v])=>!v).map(([k])=>k);
+    const missingEnv=["HBX_API_KEY","HBX_SECRET"].filter(
+      (key)=>!process.env[key],
+    );
     const base=process.env.HBX_API_BASE || "https://api.test.hotelbeds.com";
     return{
       provider:this.provider,
