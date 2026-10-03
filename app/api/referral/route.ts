@@ -5,6 +5,7 @@ import { createReferralClick, referralLog } from "@/src/services/referral";
 import { persistReferralClick } from "@/src/db/ledger";
 import { getSellableOfferForReferral } from "@/src/db/catalog";
 import { safeCommercialUrl } from "@/src/core/live-offers";
+import { busEvent, publishBusEvent } from "@/src/events/bus";
 
 export const runtime = "nodejs";
 
@@ -36,7 +37,7 @@ async function liveReferral(url:URL,jar:Awaited<ReturnType<typeof cookies>>){
   }
 
   console.log(referralLog(click));
-  after(async()=>{await persistReferralClick(click);});
+  after(async()=>{await Promise.allSettled([persistReferralClick(click),publishBusEvent(busEvent("referral.clicked",click,click.clickId,click.clickId))]);});
   return new Response(null,{
     status:302,
     headers:{Location:target.toString(),"Cache-Control":"no-store","X-Referral-Click":click.clickId},
@@ -67,7 +68,7 @@ export async function GET(req: Request) {
     position:Number(url.searchParams.get("pos")) || undefined,
   });
   console.log(referralLog(click));
-  after(async()=>{await persistReferralClick(click);});
+  after(async()=>{await Promise.allSettled([persistReferralClick(click),publishBusEvent(busEvent("referral.clicked",click,click.clickId,click.clickId))]);});
 
   const target=new URL("https://www.booking.com/searchresults.html");
   target.searchParams.set("ss",hotel.city+", "+hotel.country);

@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "db:migrate": "node scripts/migrate.mjs",
-    "security:secrets": "node scripts/check-secrets.mjs"
+    "security:secrets": "node scripts/check-secrets.mjs",
+    "smoke:production": "node scripts/smoke-production.mjs"
   },
   "dependencies": {
     "@vercel/analytics": "^1.5.0",
@@ -20,7 +21,8 @@
     "react-dom": "19.3.0",
     "zod": "^4.1.12",
     "workflow": "^5.0.1",
-    "postgres": "^3.4.9"
+    "postgres": "^3.4.9",
+    "@vercel/queue": "^0.1.3"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

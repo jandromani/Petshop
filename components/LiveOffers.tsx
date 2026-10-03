@@ -9,6 +9,7 @@ const euro=(n:number,currency:string)=>new Intl.NumberFormat("en-US",{style:"cur
 export default function LiveOffers(){
   const [offers,setOffers]=useState<LiveCatalogOffer[]>([]);
   const [loaded,setLoaded]=useState(false);
+  const [configured,setConfigured]=useState(false);
 
   useEffect(()=>{
     let alive=true;
@@ -17,6 +18,7 @@ export default function LiveOffers(){
       .then(data=>{
         if(!alive) return;
         const rows=Array.isArray(data?.offers)?data.offers:[];
+        setConfigured(Boolean(data?.configured));
         setOffers(rows);
         setLoaded(true);
         if(rows.length) growthEvent("live_catalog_loaded",{count:rows.length});
@@ -25,7 +27,22 @@ export default function LiveOffers(){
     return()=>{alive=false;};
   },[]);
 
-  if(!loaded || !offers.length) return null;
+  if(!loaded) return <section className="discovery liveDiscovery"><div className="shell"><div className="card"><b>LIVE SUPPLY LANE</b><p>Checking the truth-gated commercial catalogue…</p></div></div></section>;
+
+  if(!offers.length) return <section className="discovery liveDiscovery">
+    <div className="shell">
+      <div className="sectionTitle">
+        <h2>Live supply lane.<br/>Nothing hidden.</h2>
+        <p>The live catalogue never falls back to demo inventory. If no verified commercial offers exist, we show the state explicitly.</p>
+      </div>
+      <div className="card">
+        <div className="eyebrow">{configured?"DATABASE ONLINE":"SOFTWARE READY"}</div>
+        <h3 style={{fontSize:28,marginBottom:8}}>{configured?"Waiting for the first SELLABLE provider wave.":"Production data plane not connected on this environment."}</h3>
+        <p style={{color:"#68738b"}}>{configured?"Booking / RateHawk / HBX evidence must pass the Truth Gate before anything appears here.":"The adapters, evidence ledger, sellability gate and referral path are compiled and tested; external DB/provider credentials are still required."}</p>
+        <a className="btn ghost" href="/system">Open full-system proof →</a>
+      </div>
+    </div>
+  </section>;
 
   return <section className="discovery liveDiscovery">
     <div className="shell">

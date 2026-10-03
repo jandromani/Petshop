@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { databaseConfigured } from "@/src/db/client";
 import { persistConversion } from "@/src/db/ledger";
+import { after } from "next/server";
+import { busEvent, publishBusEvent } from "@/src/events/bus";
 
 export const runtime="nodejs";
 
@@ -31,5 +33,6 @@ export async function POST(req:Request){
   if(!result.persisted) return Response.json({error:result.reason},{status:503});
 
   console.log(JSON.stringify({level:"info",event:"conversion_ingested",provider:parsed.data.provider,clickId:parsed.data.clickId,providerConversionId:parsed.data.providerConversionId}));
+  after(async()=>{await publishBusEvent(busEvent("conversion.received",parsed.data,parsed.data.clickId,parsed.data.provider+"-"+parsed.data.providerConversionId));});
   return Response.json({ok:true});
 }

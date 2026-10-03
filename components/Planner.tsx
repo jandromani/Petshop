@@ -8,6 +8,7 @@ import { encodePlanToken, type SharedPlanInput } from "@/src/core/share";
 import { HERO_VARIANTS, type HeroVariant } from "@/src/growth/experiments";
 import WorldMap from "@/components/WorldMap";
 import LiveOffers from "@/components/LiveOffers";
+import VerifiedRoute from "@/components/VerifiedRoute";
 
 const euro = (n: number) => "€" + Math.round(n).toLocaleString("en-US");
 
@@ -94,6 +95,7 @@ export default function Planner({ hotels, initial, heroVariant="freedom" }: { ho
             <a href="#planner">Build my year</a>
             <a href="#explore">Explore</a>
             <a href="#agent">AI concierge</a>
+            <a href="/system">System proof</a>
             <a className="btn" href="#planner">Build my year →</a>
           </nav>
         </div>
@@ -174,16 +176,17 @@ export default function Planner({ hotels, initial, heroVariant="freedom" }: { ho
               <div className="route">
                 {plan.slice(0,6).map((s,i)=><div className="stop" key={s.hotel.id}>
                   <div className="when">STOP {String(i+1).padStart(2,"0")}</div>
-                  <div><b>{s.hotel.flag} {s.hotel.city}</b><small>{s.days} nights · {s.hotel.board} · score {s.hotel.score}</small></div>
+                  <div><b>{s.hotel.flag} {s.hotel.city}</b><small>{s.days} nights · {s.hotel.board} · score {s.hotel.score}{s.transportMode!=="start"?" · "+s.transportMode+" ~"+s.transportDistanceKm.toLocaleString()+" km / "+euro(s.transport):""}</small></div>
                   <div className="cost">{euro(s.monthlyCost)}/mo</div>
                 </div>)}
               </div>
               <div className="label" style={{marginTop:14}}>
-                <span>{totals.days} nights · transport estimate {euro(totals.transportTotal)}</span>
+                <span>{totals.days} nights · mobility estimate {euro(totals.transportTotal)}</span>
                 <b>{euro(totals.total)} total</b>
               </div>
             </div>
           </div>
+          <VerifiedRoute monthlyBudget={livingBudget} />
         </div>
       </section>
 
