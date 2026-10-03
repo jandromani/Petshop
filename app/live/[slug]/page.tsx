@@ -8,7 +8,6 @@ import LiveStructuredData from "@/components/LiveStructuredData";
 import LiveOfferCard from "@/components/LiveOfferCard";
 
 export const dynamic="force-dynamic";
-const money=(n:number,currency:string)=>new Intl.NumberFormat("en-US",{style:"currency",currency,maximumFractionDigits:0}).format(n);
 
 async function liveOffers(slug:string){
   return listSellableOffers({slug,limit:12});
@@ -41,23 +40,24 @@ export async function generateMetadata({params}:{params:Promise<{slug:string}>})
 export default async function LifePage({params}:{params:Promise<{slug:string}>}){
   const {slug}=await params;
   const live=await liveOffers(slug);
+
   if(live.length){
     const first=live[0];
     const canonical=canonicalSiteUrl()+"/live/"+slug;
-    return <main className="seoPage"><LiveStructuredData offers={live} canonical={canonical}/><div className="shell">
-      <a href="/" className="eyebrow">← Atlas world explorer</a>
-      <section className="seoHero" style={{marginTop:20}}>
-        <div className="eyebrow">LIVE · TRUTH-GATED</div>
-        <h1>Live in {first.city}<br/>for a season.</h1>
-        <p style={{fontSize:20,maxWidth:760}}>{first.name} · {first.country}. Every offer below has a current verified commercial path; no LLM-generated price is shown.</p>
-      </section>
-      <div className="hotels">
-        {live.map((o,index)=><LiveOfferCard key={o.offerId} offer={o} href={"/api/referral?offer="+encodeURIComponent(o.offerId)+"&from="+encodeURIComponent("/live/"+slug)+"&pos="+(index+1)}/>)}
+    return <main className="seoPage">
+      <LiveStructuredData offers={live} canonical={canonical}/>
+      <div className="shell">
+        <a href="/" className="eyebrow">← Atlas world explorer</a>
+        <section className="seoHero" style={{marginTop:20}}>
+          <div className="eyebrow">LIVE · TRUTH-GATED</div>
+          <h1>Live in {first.city}<br/>for a season.</h1>
+          <p style={{fontSize:20,maxWidth:760}}>{first.name} · {first.country}. Every offer below has a current verified commercial path; no LLM-generated price is shown.</p>
+        </section>
+        <div className="hotels">
+          {live.map((o,index)=><LiveOfferCard key={o.offerId} offer={o} href={"/api/referral?offer="+encodeURIComponent(o.offerId)+"&from="+encodeURIComponent("/live/"+slug)+"&pos="+(index+1)}/>)}
+        </div>
       </div>
-          </div>
-        </article>)}
-      </div>
-    </div></main>;
+    </main>;
   }
 
   const h=hotelBySlug(slug);
