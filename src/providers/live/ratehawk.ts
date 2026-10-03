@@ -1,6 +1,12 @@
 import { Buffer } from "node:buffer";
 import { daysBetween, fetchJson, finiteNumber, type LiveProviderStatus, type LiveSearchBase, type LiveSearchHit } from "./common";
 
+export type RateHawkHotelIdsInput = LiveSearchBase & {
+  hotelIds:number[];
+  residency?:string;
+  children?:number[];
+};
+
 export type RateHawkGeoInput = LiveSearchBase & {
   latitude:number;
   longitude:number;
@@ -113,6 +119,25 @@ export class RateHawkClient {
     if(daysBetween(input.checkIn,input.checkOut)>30) throw new Error("RateHawk search segment exceeds documented 30-day limit");
   }
 
+  async searchHotels(input:RateHawkHotelIdsInput):Promise<LiveSearchHit[]>{
+    this.assertConfigured();
+    this.assertShortStay(input);
+    if(input.hotelIds.length===0 || input.hotelIds.length>300) throw new Error("RateHawk hotelIds must contain 1..300 IDs");
+    const data=await fetchJson<RateHawkResponse>(this.provider,this.base()+"/api/b2b/v3/search/serp/hotels/",{
+      method:"POST",
+      headers:{Authorization:this.auth(),"Content-Type":"application/json"},
+      body:JSON.stringify({
+        checkin:input.checkIn,
+        checkout:input.checkOut,
+        residency:input.residency || "es",
+        language:"en",
+        guests:[{adults:input.adults,children:input.children || []}],
+        hids:input.hotelIds,
+        currency:input.currency || "EUR",
+      }),
+    },{retries:2});
+    return parseRateHawkResponse(data,"search",false);
+  }
   async searchGeo(input:RateHawkGeoInput):Promise<LiveSearchHit[]>{
     this.assertConfigured();
     this.assertShortStay(input);
