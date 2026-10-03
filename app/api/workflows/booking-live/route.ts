@@ -2,6 +2,7 @@ import { z } from "zod";
 import { start } from "workflow/api";
 import { bookingLiveWaveWorkflow } from "@/workflows/booking-live-wave";
 
+import { opsAuthorized } from "@/src/security/ops-auth";
 export const runtime="nodejs";
 
 const Input=z.object({
@@ -16,13 +17,9 @@ const Input=z.object({
   persist:z.boolean().optional(),
 });
 
-function authorized(req:Request){
-  const secret=process.env.OPS_ACCESS_KEY;
-  return Boolean(secret&&req.headers.get("authorization")==="Bearer "+secret);
-}
 
 export async function POST(req:Request){
-  if(!authorized(req)) return new Response("Unauthorized",{status:401});
+  if(!(await opsAuthorized(req))) return new Response("Unauthorized",{status:401});
   const parsed=Input.safeParse(await req.json().catch(()=>null));
   if(!parsed.success) return Response.json({error:"invalid-live-wave",issues:parsed.error.issues},{status:400});
   const run=await start(bookingLiveWaveWorkflow,[parsed.data]);
