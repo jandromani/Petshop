@@ -13,6 +13,7 @@ import VerifiedRoute from "@/components/VerifiedRoute";
 import SilverSearch from "@/components/SilverSearch";
 import SilverHotelCard from "@/components/SilverHotelCard";
 import SilverPromise from "@/components/SilverPromise";
+import AdjacencyRail from "@/components/AdjacencyRail";
 
 const euro=(n:number)=>"€"+Math.round(n).toLocaleString("en-US");
 
@@ -198,6 +199,7 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
       </div>
     </div></section>
 
+    <AdjacencyRail/>
     <SilverPromise/>
     <footer className="footer"><div className="shell footerGrid"><span>ATLAS · LONG-STAY LIVING</span><span>Prototype and live commercial inventory remain explicitly separated.</span><span><a href="/system">System proof</a> · <a href="/legal">Commercial & data disclosure</a></span></div></footer>
   </>;
