@@ -18,5 +18,7 @@ describe("planner", () => {
     expect(a.map(x=>x.hotel.id)).toEqual(b.map(x=>x.hotel.id));
   });
 
-  it("keeps seed records explicitly non-commercial", () => {\n    expect(hotels.every(h=>evaluateSellability(h).state==="DEMO")).toBe(true);\n  });
+  it("keeps seed records explicitly non-commercial", () => {
+    expect(hotels.every(h=>evaluateSellability(h).state==="DEMO")).toBe(true);
+  });
 });
