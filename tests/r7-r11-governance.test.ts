@@ -3,6 +3,7 @@ import { usageCostCents } from "@/src/db/agents";
 import { filterLiveDiscovery,liveDiscoveryMode } from "@/src/seo/live";
 import { legalIdentity } from "@/src/system/legal";
 import { hasAnalyticsConsent } from "@/src/privacy/consent";
+import { runGovernedAgent } from "@/src/services/governed-agent";
 import type { LiveCatalogOffer } from "@/src/core/live-offers";
 
 const offer=(overrides:Partial<LiveCatalogOffer>={}):LiveCatalogOffer=>({
@@ -17,6 +18,13 @@ describe("R9-R11 governance contracts",()=>{
   afterEach(()=>{
     for(const key of ["LEGAL_OPERATOR_NAME","LEGAL_CONTACT_EMAIL","LEGAL_COUNTRY"]) delete process.env[key];
     Object.assign(process.env,original);
+  });
+
+  it("fails closed when the autonomous runtime is disabled",async()=>{
+    process.env.AGENT_RUNTIME_ENABLED="false";
+    const result=await runGovernedAgent({agent:"orchestrator",objective:"test"});
+    expect(result).toMatchObject({ok:false,status:503,error:"agent-runtime-disabled"});
+    delete process.env.AGENT_RUNTIME_ENABLED;
   });
 
   it("normalizes reported model cost to cents without inventing missing cost",()=>{
