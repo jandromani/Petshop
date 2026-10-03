@@ -44,3 +44,26 @@ export async function getAgentUsageToday(agentKey:string){
   const row=rows[0];
   return{runs:Number(row?.runs||0),costCents:Number(row?.cost_cents||0)};
 }
+
+export async function reserveAgentRunSlot(agentKey:string,maxRunsPerDay:number){
+  const sql=getDatabase();
+  if(!sql)return null;
+  const maxRuns=Math.max(1,Math.floor(maxRunsPerDay));
+  const rows=await sql<{run_count:number}[]>`
+    insert into agent_daily_budget (agent_key,budget_date,run_count,updated_at)
+    values (${agentKey},current_date,1,now())
+    on conflict (agent_key,budget_date) do update set
+      run_count=agent_daily_budget.run_count+1,
+      updated_at=now()
+    where agent_daily_budget.run_count<${maxRuns}
+    returning run_count
+  `;
+  return rows[0]?{allowed:true,used:Number(rows[0].run_count),limit:maxRuns}:{allowed:false,used:maxRuns,limit:maxRuns};
+}
+
+export function usageCostCents(usage:unknown){
+  if(!usage||typeof usage!=="object")return 0;
+  const raw=(usage as Record<string,unknown>).cost;
+  const cost=typeof raw==="number"?raw:typeof raw==="string"?Number(raw):0;
+  return Number.isFinite(cost)&&cost>0?Math.round(cost*100):0;
+}
