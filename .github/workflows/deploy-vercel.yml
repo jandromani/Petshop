@@ -1,10 +1,10 @@
 name: Deploy production
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: [master]
-    paths-ignore:
-      - "docs/**"
   workflow_dispatch:
 
 permissions:
@@ -16,64 +16,64 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_SCOPE: jandromanis-projects
       VERCEL_PROJECT_NAME: marble-orchid-741
+      SOURCE_SHA: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.workflow_run.head_sha }}
     steps:
+      - name: Require deployment credentials
+        shell: bash
+        run: |
+          test -n "$VERCEL_TOKEN" || {
+            echo "::error::VERCEL_TOKEN is not configured. Production was NOT deployed."
+            exit 1
+          }
+
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE_SHA }}
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Detect Vercel token
-        id: auth
-        shell: bash
-        run: |
-          if [ -n "$VERCEL_TOKEN" ]; then
-            echo "configured=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "configured=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::VERCEL_TOKEN is not configured; deployment steps are skipped."
-          fi
-
-      - name: Install dependencies
-        if: steps.auth.outputs.configured == 'true'
+      - name: Install application dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Verify application
-        if: steps.auth.outputs.configured == 'true'
-        run: |
-          npm run typecheck
-          npm test
-          npm run build
+      - name: Install pinned Vercel CLI
+        run: npm install --global vercel@59.20.0
 
-      - name: Install Vercel CLI
-        if: steps.auth.outputs.configured == 'true'
-        run: npm install --global vercel@latest
-
-      - name: Ensure neutral Vercel project
-        if: steps.auth.outputs.configured == 'true'
+      - name: Link production project
         shell: bash
         run: |
           vercel project add "$VERCEL_PROJECT_NAME" --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN" >/tmp/project-add.log 2>&1 || true
           vercel link --yes --project "$VERCEL_PROJECT_NAME" --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN"
+          vercel pull --yes --environment=production --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN"
 
-      - name: Deploy production
-        if: steps.auth.outputs.configured == 'true'
+      - name: Migrate production database
+        run: vercel env run -e production -- npm run db:migrate
+
+      - name: Build production artifact
+        run: vercel build --prod --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN"
+
+      - name: Deploy exact prebuilt artifact
         id: deploy
         shell: bash
         run: |
-          URL="$(vercel deploy --prod --yes --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN" | tail -n 1)"
+          URL="$(vercel deploy --prebuilt --prod --yes --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN" | tail -n 1)"
+          test -n "$URL"
           echo "url=$URL" >> "$GITHUB_OUTPUT"
-          echo "### Production deployment" >> "$GITHUB_STEP_SUMMARY"
-          echo "$URL" >> "$GITHUB_STEP_SUMMARY"
           echo "DEPLOYMENT_URL=$URL"
+          {
+            echo "### Production deployment"
+            echo "- Source SHA: $SOURCE_SHA"
+            echo "- URL: $URL"
+          } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Smoke test
-        if: steps.auth.outputs.configured == 'true'
+      - name: Smoke deployed production
         env:
           DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
         run: npm run smoke:production

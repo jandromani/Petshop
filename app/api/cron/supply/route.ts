@@ -8,6 +8,7 @@ function authorized(req:Request){
   return Boolean(secret&&req.headers.get("authorization")==="Bearer "+secret);
 }
 export async function GET(req:Request){
+  if(process.env.SUPPLY_RUNTIME_ENABLED==="false") return Response.json({error:"supply-runtime-disabled"},{status:503});
   if(!authorized(req))return new Response("Unauthorized",{status:401});
   const run=await start(liveSupplyControlWorkflow,[{}]);
   console.log(JSON.stringify({level:"info",event:"scheduled_workflow_started",type:"live-supply-control",runId:run.runId}));

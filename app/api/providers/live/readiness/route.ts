@@ -1,14 +1,11 @@
 import { providerReadinessReport } from "@/src/providers/live/conformance";
 
+import { opsAuthorized } from "@/src/security/ops-auth";
 export const runtime="nodejs";
 
-function authorized(req:Request){
-  const secret=process.env.OPS_ACCESS_KEY;
-  return Boolean(secret && req.headers.get("authorization")==="Bearer "+secret);
-}
 
 export async function GET(req:Request){
-  if(!authorized(req)) return new Response("Not found",{status:404});
+  if(!(await opsAuthorized(req))) return new Response("Not found",{status:404});
   return Response.json({
     providers:providerReadinessReport(),
     generatedAt:new Date().toISOString(),

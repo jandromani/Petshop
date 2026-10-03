@@ -90,7 +90,7 @@ export async function persistConversion(input:{
         ${input.bookingValue ?? null},
         ${input.commission ?? null},
         ${input.currency ?? null},
-        ${input.status ?? "REPORTED"},
+        ${input.status ?? "PENDING"},
         ${input.occurredAt ?? null},
         ${sql.json((input.rawPayload||{}) as never)},
         ${input.status==="CANCELLED"||input.status==="REVERSED" ? input.occurredAt ?? new Date().toISOString() : null},

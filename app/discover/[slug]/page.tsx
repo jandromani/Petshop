@@ -1,71 +1,86 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { hotels } from "@/src/data/hotels";
-import { DISCOVERY_PAGES, discoveryBySlug } from "@/src/seo/catalog";
-import { seoGate } from "@/src/seo/gate";
+import { DISCOVERY_PAGES,discoveryBySlug } from "@/src/seo/catalog";
+import { liveDiscoveryEvidence } from "@/src/seo/live";
+import { canonicalSiteUrl } from "@/src/system/site-url";
+import LiveOfferCard from "@/components/LiveOfferCard";
 
-const euro=(n:number)=>"€"+Math.round(n).toLocaleString("en-US");
+export const dynamic="force-dynamic";
+const euro=(n:number,currency="EUR")=>new Intl.NumberFormat("en-US",{style:"currency",currency,maximumFractionDigits:0}).format(n);
 
 export function generateStaticParams(){
   return DISCOVERY_PAGES.map(p=>({slug:p.slug}));
 }
 
-function evidenceFor(slug:string){
-  const page=discoveryBySlug(slug);
-  if(!page) return null;
-  const matches=hotels.filter(page.filter);
-  const gate=seoGate({
-    liveIndexingEnabled:process.env.SEO_LIVE_INDEXING==="true",
-    sellableHotels:matches.length,
-    uniqueCountries:new Set(matches.map(h=>h.country)).size,
-    hasFreshProviderEvidence:process.env.SEO_HAS_LIVE_PROVIDER_EVIDENCE==="true",
-    uniqueNarrative:true,
-  });
-  return{page,matches,gate};
-}
-
 export async function generateMetadata({params}:{params:Promise<{slug:string}>}):Promise<Metadata>{
   const {slug}=await params;
-  const result=evidenceFor(slug);
-  if(!result) return{};
+  const result=await liveDiscoveryEvidence(slug);
+  const page=result?.page||discoveryBySlug(slug);
+  if(!page)return{};
+  const canonical=canonicalSiteUrl()+"/discover/"+slug;
   return{
-    title:result.page.title,
-    description:result.page.description,
-    robots:{index:result.gate.index,follow:true},
-    openGraph:{title:result.page.headline,description:result.page.description,type:"website"},
+    title:page.title,
+    description:page.description,
+    alternates:{canonical},
+    robots:{index:Boolean(result?.gate.index),follow:true},
+    openGraph:{title:page.headline,description:page.description,type:"website"},
   };
 }
 
 export default async function Discovery({params}:{params:Promise<{slug:string}>}){
   const {slug}=await params;
-  const result=evidenceFor(slug);
-  if(!result) notFound();
-  const sorted=[...result.matches].sort((a,b)=>(b.score/b.monthly)-(a.score/a.monthly));
+  const live=await liveDiscoveryEvidence(slug);
+  const page=live?.page||discoveryBySlug(slug);
+  if(!page)notFound();
 
-  return <main className="seoPage">
-    <div className="shell">
-      <a href="/" className="eyebrow">← WORLD EXPLORER</a>
-      <section className="seoHero" style={{marginTop:20}}>
-        <div className="eyebrow">{result.page.intent.toUpperCase().replaceAll("-"," ")}</div>
-        <h1 style={{marginTop:20}}>{result.page.headline}</h1>
-        <p style={{fontSize:20,maxWidth:740}}>{result.page.description}</p>
-        {!result.gate.index && <p style={{fontSize:12,color:"#68738b"}}>Indexing is intentionally disabled until live provider evidence is attached. The page is usable as a product/SEM landing meanwhile.</p>}
-      </section>
+  const demo=[...hotels.filter(page.filter)].sort((a,b)=>(b.score/b.monthly)-(a.score/a.monthly)).slice(0,12);
+  const offers=live?.offers||[];
+  const indexed=Boolean(live?.gate.index);
 
-      <div className="hotels">
-        {sorted.slice(0,12).map(h=><article className="hotel" key={h.id}>
-          <div className="hotelVisual"><span className="flag">{h.flag}</span><span className="score">SILVER {h.score}</span></div>
-          <div className="hotelBody">
-            <h3>{h.city}</h3>
-            <div className="loc">{h.country} · {h.name}</div>
-            <div className="chips">{h.tags.slice(0,4).map(t=><span className="chip" key={t}>{t}</span>)}</div>
-            <div className="priceRow">
-              <div><b>{euro(h.monthly)}</b><small>/month prototype · {h.board}</small></div>
-              <a className="linkbtn" href={"/api/referral?hotel="+h.slug+"&provider="+h.provider+"&from="+encodeURIComponent("/discover/"+slug)}>View →</a>
-            </div>
-          </div>
-        </article>)}
-      </div>
-    </div>
-  </main>;
+  const canonical=canonicalSiteUrl()+"/discover/"+slug;
+  const jsonLd=offers.length?{
+    "@context":"https://schema.org",
+    "@type":"ItemList",
+    name:page.title,
+    url:canonical,
+    numberOfItems:offers.length,
+    itemListElement:offers.slice(0,12).map((o,index)=>({
+      "@type":"ListItem",
+      position:index+1,
+      item:{
+        "@type":"Hotel",
+        name:o.name,
+        address:{"@type":"PostalAddress",addressLocality:o.city,addressCountry:o.country},
+        offers:{"@type":"Offer",price:o.displayPrice,priceCurrency:o.currency,url:canonical},
+      },
+    })),
+  }:null;
+  return <main className="seoPage">{jsonLd&&<script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(jsonLd)}}/>}<div className="shell">
+    <a href="/" className="eyebrow">← WORLD EXPLORER</a>
+    <section className="seoHero" style={{marginTop:20}}>
+      <div className="eyebrow">{page.intent.toUpperCase().replaceAll("-"," ")}</div>
+      <h1 style={{marginTop:20}}>{page.headline}</h1>
+      <p style={{fontSize:20,maxWidth:740}}>{page.description}</p>
+      <p style={{fontSize:12,color:"#68738b"}}>
+        {indexed
+          ? "This page is indexable because every commercial card below comes from current truth-gated live inventory."
+          : "Indexing is disabled. Live evidence is not yet sufficient for this intent; any fallback cards are clearly marked prototype scenarios."}
+      </p>
+    </section>
+
+    {offers.length>0?<div className="hotels">
+      {offers.slice(0,12).map((o,index)=><LiveOfferCard key={o.offerId} offer={o} href={"/api/referral?offer="+encodeURIComponent(o.offerId)+"&from="+encodeURIComponent("/discover/"+slug)+"&pos="+(index+1)}/>)}
+    </div>:<div className="hotels">
+      {demo.map(h=><article className="hotel" key={h.id}>
+        <div className="hotelVisual"><span className="flag">{h.flag}</span><span className="score">DEMO · SILVER {h.score}</span></div>
+        <div className="hotelBody">
+          <h3>{h.city}</h3>
+          <div className="loc">{h.country} · {h.name}</div>
+          <div className="chips">{h.tags.slice(0,4).map(t=><span className="chip" key={t}>{t}</span>)}</div>
+          <div className="priceRow"><div><b>{euro(h.monthly)}</b><small>/month prototype · {h.board}</small></div><a className="linkbtn" href={"/live/"+h.slug}>Scenario →</a></div>
+        </div>
+      </article>)}
+    </div>}
+  </div></main>;
 }

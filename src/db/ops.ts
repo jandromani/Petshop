@@ -3,6 +3,9 @@ import { getDatabase } from "@/src/db/client";
 export type OpsSnapshot = {
   available:boolean;
   liveOffers:number;
+  providerLiveOffers:number;
+  directLiveOffers:number;
+  openIncidents:number;
   referralClicks30d:number;
   conversions30d:number;
   commission30d:number;
@@ -13,9 +16,9 @@ export type OpsSnapshot = {
 
 export async function getOpsSnapshot():Promise<OpsSnapshot>{
   const sql=getDatabase();
-  if(!sql) return{available:false,liveOffers:0,referralClicks30d:0,conversions30d:0,commission30d:0,acquisitionRuns:[],agentRuns:[]};
+  if(!sql) return{available:false,liveOffers:0,providerLiveOffers:0,directLiveOffers:0,openIncidents:0,referralClicks30d:0,conversions30d:0,commission30d:0,acquisitionRuns:[],agentRuns:[]};
   try{
-    const [counts]=await sql<{live_offers:number;referral_clicks:number;conversions:number;commission:number}[]>`
+    const [counts]=await sql<{provider_live_offers:number;direct_live_offers:number;open_incidents:number;referral_clicks:number;conversions:number;commission:number}[]>`
       select
         (select count(*)::int from offer_snapshots o join lateral (select state from sellability_audits sa where sa.offer_snapshot_id=o.id order by sa.evaluated_at desc limit 1) a on true where a.state='SELLABLE' and o.source_mode='live' and o.fulfillment_type='REDIRECT' and o.deep_link is not null
           and coalesce(
@@ -26,7 +29,15 @@ export async function getOpsSnapshot():Promise<OpsSnapshot>{
               when o.provider='hbx' then interval '5 minutes'
               else interval '10 minutes'
             end
-          )>now()) as live_offers,
+          )>now()) as provider_live_offers,
+        (select count(*)::int from direct_rate_offers r
+          where r.publication_state='LIVE'
+            and r.contract_verified=true
+            and r.booking_url is not null
+            and r.approved_booking_host is not null
+            and r.valid_from<=current_date
+            and r.valid_to>=current_date) as direct_live_offers,
+        (select count(*)::int from ops_incidents where status='OPEN') as open_incidents,
         (select count(*)::int from referral_clicks where created_at>=now()-interval '30 days') as referral_clicks,
         (select count(*)::int from conversions where received_at>=now()-interval '30 days') as conversions,
         coalesce((select sum(commission) from conversions where received_at>=now()-interval '30 days' and currency='EUR' and status not in ('CANCELLED','REVERSED')),0)::float as commission
@@ -41,7 +52,10 @@ export async function getOpsSnapshot():Promise<OpsSnapshot>{
     `;
     return{
       available:true,
-      liveOffers:Number(counts?.live_offers||0),
+      providerLiveOffers:Number(counts?.provider_live_offers||0),
+      directLiveOffers:Number(counts?.direct_live_offers||0),
+      liveOffers:Number(counts?.provider_live_offers||0)+Number(counts?.direct_live_offers||0),
+      openIncidents:Number(counts?.open_incidents||0),
       referralClicks30d:Number(counts?.referral_clicks||0),
       conversions30d:Number(counts?.conversions||0),
       commission30d:Number(counts?.commission||0),
@@ -50,6 +64,6 @@ export async function getOpsSnapshot():Promise<OpsSnapshot>{
     };
   }catch(error){
     console.error(JSON.stringify({level:"error",event:"ops_snapshot_failed",error:String(error)}));
-    return{available:false,liveOffers:0,referralClicks30d:0,conversions30d:0,commission30d:0,acquisitionRuns:[],agentRuns:[],error:"query-failed"};
+    return{available:false,liveOffers:0,providerLiveOffers:0,directLiveOffers:0,openIncidents:0,referralClicks30d:0,conversions30d:0,commission30d:0,acquisitionRuns:[],agentRuns:[],error:"query-failed"};
   }
 }

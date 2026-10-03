@@ -3,6 +3,7 @@
 import { useEffect,useState } from "react";
 import type { LiveCatalogOffer } from "@/src/core/live-offers";
 import { growthEvent } from "@/src/growth/client";
+import LiveOfferCard from "@/components/LiveOfferCard";
 
 const euro=(n:number,currency:string)=>new Intl.NumberFormat("en-US",{style:"currency",currency,maximumFractionDigits:0}).format(n);
 
@@ -51,18 +52,7 @@ export default function LiveOffers(){
         <p>These offers passed provider evidence, freshness and fulfilment gates. The price shown comes from the stored verified snapshot, never from an LLM.</p>
       </div>
       <div className="hotels">
-        {offers.map((o,index)=><article className="hotel liveHotel" key={o.offerId}>
-          <div className="hotelVisual"><span className="flag">✓</span><span className="score">LIVE {Math.round(o.confidence*100)}%</span></div>
-          <div className="hotelBody">
-            <h3>{o.name}</h3>
-            <div className="loc">{o.city}, {o.country} · {o.provider} · verified {new Date(o.verifiedAt).toLocaleString()}</div>
-            <div className="chips"><span className="chip">{o.nights} nights</span>{o.board&&<span className="chip">{o.board}</span>}<span className="chip">{o.checkIn} → {o.checkOut}</span></div>
-            <div className="priceRow">
-              <div><b>{euro(o.monthlyEquivalent,o.currency)}</b><small>/30-day equivalent · total {euro(o.displayPrice,o.currency)}</small></div>
-              <a className="linkbtn" href={"/api/referral?offer="+encodeURIComponent(o.offerId)+"&from=%2Flive&pos="+(index+1)}>Open verified offer →</a>
-            </div>
-          </div>
-        </article>)}
+        {offers.map((o,index)=><LiveOfferCard key={o.offerId} offer={o} href={"/api/referral?offer="+encodeURIComponent(o.offerId)+"&from=%2Flive&pos="+(index+1)}/>)}
       </div>
     </div>
   </section>;

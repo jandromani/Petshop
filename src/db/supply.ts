@@ -270,3 +270,35 @@ export async function listProviderHotels(provider:string,limit=100){
     limit ${bounded}
   `;
 }
+
+
+export async function upsertHotelContent(input:{
+  hotelId:string;
+  provider:string;
+  description?:string;
+  photoUrls?:string[];
+  facilities?:string[];
+  sourceHash?:string;
+}){
+  const sql=getDatabase();if(!sql)return false;
+  await sql`
+    insert into hotel_content (hotel_id,provider,description,photo_urls,facilities,source_hash,updated_at)
+    values (
+      ${input.hotelId}::uuid,
+      ${input.provider},
+      ${input.description ?? null},
+      ${sql.json((input.photoUrls||[]) as never)},
+      ${sql.json((input.facilities||[]) as never)},
+      ${input.sourceHash ?? null},
+      now()
+    )
+    on conflict (hotel_id) do update set
+      provider=excluded.provider,
+      description=coalesce(excluded.description,hotel_content.description),
+      photo_urls=case when jsonb_array_length(excluded.photo_urls)>0 then excluded.photo_urls else hotel_content.photo_urls end,
+      facilities=case when jsonb_array_length(excluded.facilities)>0 then excluded.facilities else hotel_content.facilities end,
+      source_hash=coalesce(excluded.source_hash,hotel_content.source_hash),
+      updated_at=now()
+  `;
+  return true;
+}

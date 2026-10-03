@@ -20,6 +20,8 @@ The agenda is designed around a human-attention budget below 60 minutes/day.
 
 Workflow is not an agent. A workflow owns process state and retries. An agent may be called from a workflow step when a bounded judgment or synthesis task is required, but an external judge and deterministic gates remain downstream.
 
-## Current bootstrap state
+## Current operating state
 
-The workflow substrate is real. Supply is still seed/mock until provider credentials are connected. Production persistence and conversion ingestion remain external dependencies.
+The workflow substrate, provider adapters, direct-contract publication lane, click/conversion ledger, revenue reconciliation, incident persistence and retention workflow are implemented. Missing credentials or agreements remain explicit activation dependencies and never convert demo inventory into commercial supply.
+
+Agent execution requires persistent governance state, consumes an atomic daily run slot, runs downstream deterministic/external judges, and has no authority to publish prices, sign contracts or commit money.

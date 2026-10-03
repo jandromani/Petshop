@@ -68,8 +68,28 @@ export type BookingAccommodationDetails = {
   latitude?: number;
   longitude?: number;
   webUrl?: string;
+  description?: string;
+  photoUrls: string[];
+  facilities: string[];
   raw: unknown;
 };
+
+function collectStrings(value:unknown,out:string[],depth=0){
+  if(depth>5||out.length>=80||value===null||value===undefined)return;
+  if(typeof value==="string"){if(value.trim())out.push(value.trim());return;}
+  if(Array.isArray(value)){for(const item of value)collectStrings(item,out,depth+1);return;}
+  if(typeof value==="object"){for(const item of Object.values(value as Record<string,unknown>))collectStrings(item,out,depth+1);}
+}
+
+function extractPhotoUrls(value:unknown){
+  const strings:string[]=[];collectStrings(value,strings);
+  return [...new Set(strings.filter(x=>/^https:\/\//i.test(x)&&(/\.(jpe?g|png|webp)(\?|$)/i.test(x)||/photo|image/i.test(x))))].slice(0,12);
+}
+
+function extractFacilityLabels(value:unknown){
+  const strings:string[]=[];collectStrings(value,strings);
+  return [...new Set(strings.filter(x=>!/^https?:\/\//i.test(x)&&x.length>=2&&x.length<=80))].slice(0,30);
+}
 
 function currencyCode(value: BookingCurrency | undefined) {
   if (typeof value === "string") return value;
@@ -218,6 +238,9 @@ export class BookingDemandClient {
         latitude:finiteNumber(row.location?.coordinates?.latitude),
         longitude:finiteNumber(row.location?.coordinates?.longitude),
         webUrl:webUrl(row.url),
+        description:localizedText(row.description),
+        photoUrls:extractPhotoUrls(row.photos),
+        facilities:extractFacilityLabels(row.facilities),
         raw:row,
       }];
     });
