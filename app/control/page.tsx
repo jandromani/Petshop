@@ -5,6 +5,8 @@ import { AGENTS } from "@/src/agents/registry";
 import { liveProviderStatuses } from "@/src/providers/live/registry";
 import { databaseConfigured } from "@/src/db/client";
 import { getOpsSnapshot } from "@/src/db/ops";
+import { listOpenIncidents } from "@/src/db/governance";
+import { growthFunnel,heroExperimentReadout } from "@/src/db/growth";
 
 export const metadata={title:"Control Tower",robots:{index:false,follow:false}};
 
@@ -13,7 +15,7 @@ export default async function ControlTower(){
   if(!verifyOpsSession(jar.get(OPS_COOKIE)?.value)) notFound();
 
   const providers=liveProviderStatuses();
-  const ops=await getOpsSnapshot();
+  const [ops,incidents,funnel,heroExperiment]=await Promise.all([getOpsSnapshot(),listOpenIncidents(20),growthFunnel(30),heroExperimentReadout(30)]);
   const db=databaseConfigured();
   const agentConfigured=Boolean(process.env.OPENROUTER_API_KEY);
 
@@ -26,9 +28,31 @@ export default async function ControlTower(){
       <div className="metrics">
         <div className="metricDark"><b className={db?"green":"amber"}>{db?"ONLINE":"OFFLINE"}</b><span>database</span></div>
         <div className="metricDark"><b className={agentConfigured?"green":"amber"}>{agentConfigured?"ONLINE":"OFFLINE"}</b><span>agent runtime</span></div>
-        <div className="metricDark"><b className="green">{ops.liveOffers}</b><span>SELLABLE live offers</span></div>
+        <div className="metricDark"><b className="green">{ops.liveOffers}</b><span>SELLABLE live offers · {ops.providerLiveOffers} provider + {ops.directLiveOffers} direct</span></div>
         <div className="metricDark"><b>{ops.referralClicks30d}</b><span>referral clicks · 30d</span></div>
         <div className="metricDark"><b>€{Math.round(ops.commission30d).toLocaleString("en-US")}</b><span>commission EUR · 30d</span></div>
+      </div>
+
+      <h2 style={{marginTop:36}}>Open incidents</h2>
+      <div className="table">
+        {incidents.length?incidents.map(i=><div className="tr" key={i.key}>
+          <b>{i.key}</b><span className={i.severity==="critical"?"amber":""}>{i.severity.toUpperCase()}</span><span>{i.occurrences}×</span><span>{i.message}</span>
+        </div>):<div className="tr"><b>No open incidents</b><span className="green">CLEAR</span><span>0</span><span>Daily Control will reopen a signal if it recurs.</span></div>}
+      </div>
+
+      <h2 style={{marginTop:36}}>Growth funnel · 30d</h2>
+      <div className="metrics">
+        <div className="metricDark"><b>{funnel?.events.find(x=>x.event_name==="planner_loaded")?.visitors||0}</b><span>planner visitors</span></div>
+        <div className="metricDark"><b>{funnel?.events.find(x=>x.event_name==="hero_search")?.visitors||0}</b><span>search visitors</span></div>
+        <div className="metricDark"><b>{funnel?.events.find(x=>x.event_name==="route_shared")?.visitors||0}</b><span>share visitors</span></div>
+        <div className="metricDark"><b>{funnel?.referrals.visitors||0}</b><span>referral visitors</span></div>
+        <div className="metricDark"><b>{funnel?.conversions.visitors||0}</b><span>converted visitors</span></div>
+      </div>
+      <div className="table">
+        <div className="tr"><b>Hero variant</b><b>Exposed visitors</b><b>Referral visitors</b><b>Observed referral rate</b></div>
+        {heroExperiment.length?heroExperiment.map(x=><div className="tr" key={x.variant}>
+          <b>{x.variant}</b><span>{x.exposed_visitors}</span><span>{x.referral_visitors}</span><span>{x.exposed_visitors?((x.referral_visitors/x.exposed_visitors)*100).toFixed(1)+"%":"—"}</span>
+        </div>):<div className="tr"><b>No experiment data yet</b><span>—</span><span>—</span><span>observational only</span></div>}
       </div>
 
       <h2 style={{marginTop:36}}>Provider readiness</h2>
