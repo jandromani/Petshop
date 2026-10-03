@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
+import { OPS_COOKIE,verifyOpsSession } from "@/src/security/ops-session";
 import { AGENTS } from "@/src/agents/registry";
 import { liveProviderStatuses } from "@/src/providers/live/registry";
 import { databaseConfigured } from "@/src/db/client";
@@ -9,8 +10,7 @@ export const metadata={title:"Control Tower",robots:{index:false,follow:false}};
 
 export default async function ControlTower(){
   const jar=await cookies();
-  const configured=process.env.OPS_ACCESS_KEY;
-  if(!configured || jar.get("atlas_ops")?.value!==configured) notFound();
+  if(!verifyOpsSession(jar.get(OPS_COOKIE)?.value)) notFound();
 
   const providers=liveProviderStatuses();
   const ops=await getOpsSnapshot();
