@@ -58,3 +58,29 @@ export async function persistReconciliation(input:{status:string;windowStart:str
   `;
   return rows[0]?.id??null;
 }
+
+export async function findReferralByTrackingId(providerTrackingId:string){
+  const sql=getDatabase();if(!sql)return null;
+  const rows=await sql<{click_id:string;provider:string}[]>`
+    select click_id,provider from referral_clicks where provider_tracking_id=${providerTrackingId} limit 1
+  `;
+  return rows[0]??null;
+}
+
+export async function getProviderSyncCursor(provider:string,stream:string){
+  const sql=getDatabase();if(!sql)return null;
+  const rows=await sql<{cursor_at:string}[]>`
+    select cursor_at::text from provider_sync_cursors where provider=${provider} and stream=${stream} limit 1
+  `;
+  return rows[0]?.cursor_at??null;
+}
+
+export async function setProviderSyncCursor(provider:string,stream:string,cursorAt:string){
+  const sql=getDatabase();if(!sql)return false;
+  await sql`
+    insert into provider_sync_cursors (provider,stream,cursor_at,updated_at)
+    values (${provider},${stream},${cursorAt},now())
+    on conflict (provider,stream) do update set cursor_at=excluded.cursor_at,updated_at=now()
+  `;
+  return true;
+}
