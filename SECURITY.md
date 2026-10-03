@@ -16,8 +16,13 @@ Missing credentials mean `DISABLED`. Credentials alone do not mean `COMMERCIAL_R
 
 ## Internal operations
 
-Control and operational endpoints require `OPS_ACCESS_KEY` and should return 404 rather than disclose internal state when unauthorized.
+Control pages use a signed, HttpOnly ops session derived from `OPS_ACCESS_KEY`. Operational APIs accept that same-origin signed session or explicit bearer authentication for automation. Cron endpoints use `CRON_SECRET`. Unauthorized read surfaces should avoid disclosing internal state.
 
 ## Incident handling
 
 If a credential is suspected to have entered repository history, revoke it at the provider, remove it from current source, audit history and downstream logs, and add a regression signature to the secret scanner.
+
+
+## Deployment truth
+
+A skipped deploy is not a successful deploy. Production automation must fail closed when deployment credentials are absent, run database migrations against the production environment, deploy the exact CI-tested source SHA, and smoke-test the resulting URL.
