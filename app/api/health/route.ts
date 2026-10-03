@@ -1,17 +1,16 @@
-import { databaseConfigured } from "@/src/db/client";
-import { liveProviderStatuses } from "@/src/providers/live/registry";
-import { runSoftwareProof } from "@/src/system/proof";
+import { getSystemReadiness } from "@/src/system/readiness";
 
 export async function GET(){
-  const providers=liveProviderStatuses();
-  const proof=runSoftwareProof();
+  const status=await getSystemReadiness();
   return Response.json({
-    ok:proof.pass,
+    ok:status.proof.pass,
     service:"atlas-web",
-    softwareProof:proof.pass,
-    agentConfigured:Boolean(process.env.OPENROUTER_API_KEY),
-    databaseConfigured:databaseConfigured(),
-    providers:providers.map(p=>({provider:p.provider,configured:p.configured,environment:p.environment})),
+    softwareProof:status.proof.pass,
+    commercialReady:status.infrastructure.databaseConfigured&&status.infrastructure.configuredProviders.length>0&&status.layers.supply.state==="LIVE",
+    databaseConfigured:status.infrastructure.databaseConfigured,
+    agentConfigured:status.infrastructure.agentConfigured,
+    providers:status.infrastructure.providers,
+    layers:status.layers,
     now:new Date().toISOString(),
   },{headers:{"Cache-Control":"no-store"}});
 }
