@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Hotel } from "@/src/data/hotels";
-import { adjustedMonthly, buildPlan, planTotals, type Party, type PlanMode } from "@/src/core/planner";\nimport { growthEvent } from "@/src/growth/client";
+import { adjustedMonthly, buildPlan, planTotals, type Party, type PlanMode } from "@/src/core/planner";
+import { growthEvent } from "@/src/growth/client";
 
 const euro = (n: number) => "€" + Math.round(n).toLocaleString("en-US");
 
