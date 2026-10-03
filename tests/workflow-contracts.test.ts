@@ -6,10 +6,12 @@ describe("durable workflow contracts", () => {
   it("passes healthy acquisition output", async () => {
     const gate = await gateSupplyWave({
       waveKey:"healthy",
+      mode:"live",
       rawRecords:90,
       canonicalHotels:30,
       quoteTested:90,
       sellable:30,
+      demo:0,
       stale:0,
       quarantined:0,
       byRegion:{Europe:10,Asia:10,Africa:5,Americas:5},
@@ -20,15 +22,34 @@ describe("durable workflow contracts", () => {
   it("escalates empty supply", async () => {
     const gate = await gateSupplyWave({
       waveKey:"empty",
+      mode:"live",
       rawRecords:0,
       canonicalHotels:0,
       quoteTested:0,
       sellable:0,
+      demo:0,
       stale:0,
       quarantined:0,
       byRegion:{},
     });
     expect(gate.verdict).toBe("REJECT");
+  });
+
+  it("never passes a seed wave for commercial publication", async () => {
+    const gate = await gateSupplyWave({
+      waveKey:"demo",
+      mode:"seed",
+      rawRecords:90,
+      canonicalHotels:30,
+      quoteTested:90,
+      sellable:0,
+      demo:30,
+      stale:0,
+      quarantined:0,
+      byRegion:{Europe:30},
+    });
+    expect(gate.verdict).toBe("REVIEW");
+    expect(gate.reasons).toContain("seed wave cannot publish commercial supply");
   });
 
   it("builds a bounded human agenda", async () => {

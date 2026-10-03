@@ -17,9 +17,16 @@ export async function gateSupplyWave(result: AcquisitionWaveResult): Promise<Sup
   if (result.canonicalHotels <= 0) reasons.push("no canonical hotels produced");
   if (result.quoteTested < result.canonicalHotels) reasons.push("quote coverage below canonical coverage");
   if (result.quarantined > Math.max(3, result.canonicalHotels * 0.15)) reasons.push("quarantine rate above threshold");
+  if (result.mode === "seed") reasons.push("seed wave cannot publish commercial supply");
+  if (result.mode === "live" && result.sellable <= 0) reasons.push("live wave produced no sellable offers");
 
   return {
-    verdict: reasons.length === 0 ? "PASS" : result.canonicalHotels === 0 ? "REJECT" : "REVIEW",
+    verdict:
+      result.canonicalHotels === 0
+        ? "REJECT"
+        : reasons.length === 0
+          ? "PASS"
+          : "REVIEW",
     reasons,
   };
 }

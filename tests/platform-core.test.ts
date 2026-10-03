@@ -34,7 +34,8 @@ describe("acquisition waves", () => {
     expect(wave.canonicalHotels).toBeGreaterThan(0);
     expect(wave.rawRecords).toBe(wave.canonicalHotels * 3);
     expect(wave.quoteTested).toBe(wave.canonicalHotels * 3);
-    expect(wave.sellable + wave.stale + wave.quarantined).toBe(wave.canonicalHotels);
+    expect(wave.sellable).toBe(0);
+    expect(wave.demo + wave.stale + wave.quarantined).toBe(wave.canonicalHotels);
   });
 });
 
