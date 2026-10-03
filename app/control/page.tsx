@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
+import { OPS_COOKIE,verifyOpsSession } from "@/src/security/ops-session";
 import { AGENTS } from "@/src/agents/registry";
 import { liveProviderStatuses } from "@/src/providers/live/registry";
 import { databaseConfigured } from "@/src/db/client";
@@ -9,8 +10,7 @@ export const metadata={title:"Control Tower",robots:{index:false,follow:false}};
 
 export default async function ControlTower(){
   const jar=await cookies();
-  const configured=process.env.OPS_ACCESS_KEY;
-  if(!configured || jar.get("atlas_ops")?.value!==configured) notFound();
+  if(!verifyOpsSession(jar.get(OPS_COOKIE)?.value)) notFound();
 
   const providers=liveProviderStatuses();
   const ops=await getOpsSnapshot();
@@ -28,7 +28,7 @@ export default async function ControlTower(){
         <div className="metricDark"><b className={agentConfigured?"green":"amber"}>{agentConfigured?"ONLINE":"OFFLINE"}</b><span>agent runtime</span></div>
         <div className="metricDark"><b className="green">{ops.liveOffers}</b><span>SELLABLE live offers</span></div>
         <div className="metricDark"><b>{ops.referralClicks30d}</b><span>referral clicks · 30d</span></div>
-        <div className="metricDark"><b>€{Math.round(ops.commission30d).toLocaleString("en-US")}</b><span>commission · 30d</span></div>
+        <div className="metricDark"><b>€{Math.round(ops.commission30d).toLocaleString("en-US")}</b><span>commission EUR · 30d</span></div>
       </div>
 
       <h2 style={{marginTop:36}}>Provider readiness</h2>

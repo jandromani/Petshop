@@ -3,29 +3,21 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  title: {
-    default: "Atlas — Your retirement. Everywhere.",
-    template: "%s · Atlas",
-  },
-  description:
-    "Explore what your pension and home income can buy around the world. Long-stay living, verified offers and route planning.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://example.vercel.app"),
-  openGraph: {
-    title: "You retired from work. Not from the world.",
-    description: "Turn recurring income into months of life around the world.",
-    type: "website",
-  },
+function siteUrl(){
+  const explicit=process.env.NEXT_PUBLIC_SITE_URL;
+  if(explicit)return explicit;
+  const host=process.env.VERCEL_PROJECT_PRODUCTION_URL||process.env.VERCEL_URL;
+  if(host)return "https://"+host;
+  return "http://localhost:3000";
+}
+
+export const metadata:Metadata={
+  title:{default:"Atlas Long Stay — Live somewhere better",template:"%s · Atlas Long Stay"},
+  description:"Compare 30–180 day hotel stays by monthly cost and build a flexible year around a real living budget.",
+  metadataBase:new URL(siteUrl()),
+  openGraph:{title:"Atlas Long Stay — Live somewhere better",description:"Long-stay hotel living by monthly budget, dates and verified availability.",type:"website"},
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return (
-    <html lang="en">
-      <body>
-        {children}
-        <Analytics />
-        <SpeedInsights />
-      </body>
-    </html>
-  );
+export default function RootLayout({children}:Readonly<{children:React.ReactNode}>){
+  return <html lang="en"><body>{children}<Analytics/><SpeedInsights/></body></html>;
 }

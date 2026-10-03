@@ -1,13 +1,13 @@
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
+import { OPS_COOKIE,verifyOpsSession } from "@/src/security/ops-session";
 import { listHotelDesk } from "@/src/db/direct-supply";
 
 export const metadata={title:"Hotel Desk",robots:{index:false,follow:false}};
 
 export default async function HotelDesk(){
   const jar=await cookies();
-  const configured=process.env.OPS_ACCESS_KEY;
-  if(!configured||jar.get("atlas_ops")?.value!==configured) notFound();
+  if(!verifyOpsSession(jar.get(OPS_COOKIE)?.value)) notFound();
   const desk=await listHotelDesk();
 
   return <main className="controlPage"><div className="shell">

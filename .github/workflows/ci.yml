@@ -12,7 +12,9 @@ jobs:
         with:
           node-version: 22
       - run: npm run security:secrets
-      - run: npm install --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e

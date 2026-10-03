@@ -38,10 +38,11 @@ export async function persistReferralClick(click:ReferralClick):Promise<PersistR
   try{
     await sql`
       insert into referral_clicks (
-        click_id,visitor_id,session_id,hotel_id,provider,offer_snapshot_id,
+        click_id,provider_tracking_id,visitor_id,session_id,hotel_id,provider,offer_snapshot_id,
         source,campaign,page_path,position,expected_commission,created_at
       ) values (
         ${click.clickId},
+        ${click.providerTrackingId},
         ${click.visitorId ?? null},
         ${click.sessionId ?? null},
         ${click.canonicalHotelId ?? null}::uuid,
@@ -70,8 +71,10 @@ export async function persistConversion(input:{
   bookingValue?:number;
   commission?:number;
   currency?:string;
-  status?:string;
+  status?:"PENDING"|"CONFIRMED"|"CANCELLED"|"SETTLED"|"REVERSED";
   occurredAt?:string;
+  rawPayload?:unknown;
+  settlementReference?:string;
 }):Promise<PersistResult>{
   const sql=getDatabase();
   if(!sql) return{persisted:false,reason:"database-not-configured"};
@@ -79,7 +82,7 @@ export async function persistConversion(input:{
   try{
     await sql`
       insert into conversions (
-        click_id,provider,provider_conversion_id,booking_value,commission,currency,status,occurred_at
+        click_id,provider,provider_conversion_id,booking_value,commission,currency,status,occurred_at,raw_payload,cancelled_at,settled_at,settlement_reference,updated_at
       ) values (
         ${input.clickId},
         ${input.provider},
@@ -88,7 +91,12 @@ export async function persistConversion(input:{
         ${input.commission ?? null},
         ${input.currency ?? null},
         ${input.status ?? "REPORTED"},
-        ${input.occurredAt ?? null}
+        ${input.occurredAt ?? null},
+        ${sql.json((input.rawPayload||{}) as never)},
+        ${input.status==="CANCELLED"||input.status==="REVERSED" ? input.occurredAt ?? new Date().toISOString() : null},
+        ${input.status==="SETTLED" ? input.occurredAt ?? new Date().toISOString() : null},
+        ${input.settlementReference ?? null},
+        now()
       )
       on conflict (provider,provider_conversion_id)
       do update set
@@ -96,7 +104,12 @@ export async function persistConversion(input:{
         commission=excluded.commission,
         currency=excluded.currency,
         status=excluded.status,
-        occurred_at=excluded.occurred_at
+        occurred_at=excluded.occurred_at,
+        raw_payload=excluded.raw_payload,
+        cancelled_at=coalesce(excluded.cancelled_at,conversions.cancelled_at),
+        settled_at=coalesce(excluded.settled_at,conversions.settled_at),
+        settlement_reference=coalesce(excluded.settlement_reference,conversions.settlement_reference),
+        updated_at=now()
     `;
     return{persisted:true};
   }catch(error){

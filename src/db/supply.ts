@@ -6,6 +6,7 @@ export type CanonicalHotelInput={
   name:string;
   city:string;
   country:string;
+  region?:string;
   lat?:number;
   lng?:number;
   silverScore?:number;
@@ -15,12 +16,13 @@ export async function upsertCanonicalHotel(input:CanonicalHotelInput){
   const sql=getDatabase();
   if(!sql) return null;
   const rows=await sql<{id:string}[]>`
-    insert into canonical_hotels (slug,name,city,country,lat,lng,silver_score,updated_at)
+    insert into canonical_hotels (slug,name,city,country,region,lat,lng,silver_score,updated_at)
     values (
       ${input.slug},
       ${input.name},
       ${input.city},
       ${input.country},
+      ${input.region ?? null},
       ${input.lat ?? null},
       ${input.lng ?? null},
       ${input.silverScore ?? null},
@@ -30,6 +32,7 @@ export async function upsertCanonicalHotel(input:CanonicalHotelInput){
       name=excluded.name,
       city=excluded.city,
       country=excluded.country,
+      region=coalesce(excluded.region,canonical_hotels.region),
       lat=coalesce(excluded.lat,canonical_hotels.lat),
       lng=coalesce(excluded.lng,canonical_hotels.lng),
       updated_at=now()
@@ -104,6 +107,10 @@ export async function persistOfferSnapshot(input:{
   checkOut:string;
   occupancy:number;
   board?:string;
+  roomType?:string;
+  cancellation?:string;
+  taxesIncluded?:boolean;
+  fulfillmentType?:"REDIRECT"|"API_BOOKING"|"DIRECT";
   totalPrice:number;
   displayPrice?:number;
   currency:string;
@@ -118,7 +125,7 @@ export async function persistOfferSnapshot(input:{
   const rows=await sql<{id:string}[]>`
     insert into offer_snapshots (
       hotel_id,provider,provider_offer_id,provider_request_id,
-      check_in,check_out,occupancy,board,total_price,display_price,currency,
+      check_in,check_out,occupancy,board,room_type,cancellation,taxes_included,fulfillment_type,total_price,display_price,currency,
       evidence,evidence_hash,deep_link,verified_at,expires_at,source_mode
     ) values (
       ${input.hotelId}::uuid,
@@ -129,6 +136,10 @@ export async function persistOfferSnapshot(input:{
       ${input.checkOut},
       ${input.occupancy},
       ${input.board ?? null},
+      ${input.roomType ?? null},
+      ${input.cancellation ?? null},
+      ${input.taxesIncluded ?? null},
+      ${input.fulfillmentType ?? "REDIRECT"},
       ${input.totalPrice},
       ${input.displayPrice ?? null},
       ${input.currency},
@@ -229,4 +240,33 @@ export async function finishAcquisitionRun(input:{
     where id=${input.runId}::uuid
   `;
   return true;
+}
+
+export type CanonicalCandidate={
+  id:string;slug:string;name:string;city:string;country:string;region:string|null;lat:number|null;lng:number|null;
+};
+
+export async function findCanonicalCandidates(input:{city:string;country:string;limit?:number}):Promise<CanonicalCandidate[]>{
+  const sql=getDatabase();if(!sql)return[];
+  const limit=Math.max(1,Math.min(100,input.limit??40));
+  return sql<CanonicalCandidate[]>`
+    select id::text,slug,name,city,country,region,lat,lng
+    from canonical_hotels
+    where lower(country)=lower(${input.country})
+      and lower(city)=lower(${input.city})
+    order by updated_at desc
+    limit ${limit}
+  `;
+}
+
+export async function listProviderHotels(provider:string,limit=100){
+  const sql=getDatabase();if(!sql)return[];
+  const bounded=Math.max(1,Math.min(500,limit));
+  return sql<Array<{hotel_id:string;slug:string;name:string;city:string;country:string;region:string|null;lat:number|null;lng:number|null;provider_hotel_id:string}>>`
+    select h.id::text as hotel_id,h.slug,h.name,h.city,h.country,h.region,h.lat,h.lng,p.provider_hotel_id
+    from provider_hotels p join canonical_hotels h on h.id=p.hotel_id
+    where p.provider=${provider} and p.status='ACTIVE'
+    order by coalesce(p.last_verified_at,p.last_seen_at) asc nulls first
+    limit ${bounded}
+  `;
 }

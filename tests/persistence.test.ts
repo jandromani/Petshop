@@ -11,6 +11,7 @@ describe("optional persistence",()=>{
     expect(await persistGrowthEvent({name:"test",properties:{x:1}})).toEqual({persisted:false,reason:"database-not-configured"});
     expect(await persistReferralClick({
       clickId:crypto.randomUUID(),
+      providerTrackingId:"atlas_click-test",
       hotelSlug:"x",
       provider:"booking",
       createdAt:new Date().toISOString(),

@@ -1,88 +1,104 @@
-# Delivery roadmap — closure state
+# Atlas delivery state — R0 to R6 closure
 
-The software architecture is now implemented as four operational layers. Remaining items are explicitly classified as **external activation**, not missing architecture.
+This document distinguishes software closure from external commercial activation.
 
-## Layer 1 — Experience / Growth
-Status: **SOFTWARE COMPLETE**
-- deterministic retirement budget planner
-- route engine + mobility estimate
-- world map
-- shareable plans + OG cards
-- discovery / SEO landing pages with evidence gate
-- A/B hero experiment
-- first-party UTM / visitor / session attribution
-- live catalog lane that never falls back silently to demo data
-- AI concierge with deterministic truth boundary
-- public /system proof page
+## R0 · MONEY TRUTH — SOFTWARE CLOSED
+- monthly resources = pension + net home income + other recurring income
+- reserve is explicit money kept untouched
+- maximum living budget = resources - reserve
+- route cost is a separate number
+- living-budget headroom and total monthly headroom are separate
+- planner cannot silently exceed budget
+- no affordable route means no route
+- annual plans cover exactly 365 days
+- supported cadences: 30 / 60 / 90 / 120 / 180 days
 
-External activation:
-- real traffic
-- SEM budget
-- live flight/meta-search partner if desired
+## R1 · SEARCH CONTRACT — SOFTWARE CLOSED
+One contract is shared by demo search, verified live search and concierge:
+- query
+- region
+- check-in
+- flexible dates: exact / ±7 / ±30
+- duration
+- occupancy
+- maximum monthly budget
 
-## Layer 2 — Supply / Truth
-Status: **SOFTWARE COMPLETE**
-- Booking Demand API v3.2
-- RateHawk staged SERP → hotelpage → prebook flow
-- HBX availability / booking-readiness gate
-- provider conformance tests
-- canonical hotels + provider identity mapping
-- immutable raw evidence hashes
-- offer snapshots
-- Truth Gate: DEMO / SELLABLE / STALE / QUARANTINED
-- long-stay segmentation / continuity rules
-- durable acquisition workflows
-- truth-gated live catalog
+Live offers must match the requested dates, nights, occupancy and budget.
 
-External activation:
-- provider credentials / commercial approval
-- production Postgres + migrations
-- first live acquisition wave
-- real 30/60/90/180 inventory volume
+## R2 · PRIVACY + SECURITY — SOFTWARE CLOSED
+- shared plans use opaque database IDs
+- pension, rent and other income never enter share URLs
+- operations login is POST-only
+- signed HttpOnly operations sessions replace raw-secret cookies
+- operational cookie is valid for both Control Tower and Hotel Desk
+- public concierge and event ingestion are rate limited
+- public concierge receives only the minimum budget/preferences needed
+- public concierge output passes deterministic truth + brand judges
+- baseline browser security headers and CSP are enabled
 
-## Layer 3 — Money / Referral
-Status: **SOFTWARE COMPLETE**
-- click_id lineage
-- referral persistence
-- verified offer re-check before redirect
-- safe commercial URL allowlist
-- conversion ingestion
-- revenue / commission summary
-- durable queue fan-out for referral + conversion events
-- attribution from visitor/session/UTM to conversion
+## R3 · REPRODUCIBLE DELIVERY — SOFTWARE CLOSED WHEN CI GATE IS GREEN
+- package-lock.json committed
+- npm install strategy fixed for deterministic dependency layout
+- CI uses npm ci
+- unit/type/build gates
+- Playwright desktop + mobile E2E
+- production smoke checks money/search/system contracts
+- metadata derives the real Vercel deployment URL
 
 External activation:
-- real affiliate / partner IDs
-- provider conversion report/webhook
-- first completed booking and commission payment
+- canonical Vercel project must be linked directly to Petshop/master
+- production DATABASE_URL and deployment secrets must exist
 
-## Layer 4 — Autonomous Operations
-Status: **SOFTWARE COMPLETE**
-- 11 bounded agent roles
-- authority / spend limits
-- deterministic truth + brand judges
-- external LLM judge outside actor flow
-- persisted agent runs + judge reviews
-- durable Workflow processes
-- Vercel Queues event bus
-- daily control workflow
-- Control Tower 2.0 backed by runtime data
-- public full-system proof
-- production smoke suite
-- human attention target < 60 min/day
+## R4 · BOOKING LIVE — SOFTWARE CLOSED
+- Booking Demand API 3.2 search + details
+- products + extra charges
+- property description/facilities/photos/policies/rooms evidence
+- room, board, cancellation and charge evidence normalized
+- hard provider TTL
+- exact dates + occupancy + budget live catalog contract
+- canonical identity resolution
+- immutable raw evidence + snapshot + sellability audit
+- full click tracking label
 
 External activation:
-- OpenRouter env key on deployment
-- production Vercel project
-- runtime traffic to populate histories
+- Booking commercial credentials and affiliate approval
 
-## Production closure definition
+## R5 · SUPPLY OS — SOFTWARE CLOSED
+- deterministic canonical-hotel resolver
+- Booking discovery wave
+- RateHawk mapped long-stay wave with segmented continuity
+- HBX mapped availability/check-rate wave
+- provider-specific freshness gates
+- durable live-supply workflow
+- scheduled supply cron now runs live provider control, not seed acquisition
+- disabled providers are skipped explicitly rather than simulated
 
-The repo is considered software-closed when CI passes:
-`secret scan → typecheck → tests → build`.
+External activation:
+- provider mappings/credentials
+- RateHawk/HBX booking capability approval where required
 
-A deployment is considered runtime-closed when:
-`/ → /system → /api/health → /api/system/status → /api/catalog/live`
-all pass `npm run smoke:production`.
+## R6 · MONEY OS — SOFTWARE CLOSED
+- click -> provider tracking ID -> conversion lineage
+- Booking Orders incremental sync
+- lifecycle: PENDING / CONFIRMED / CANCELLED / SETTLED / REVERSED
+- raw conversion evidence
+- commission rules
+- currency-safe revenue summaries
+- settlement references and timestamps
+- event-driven reconciliation
+- daily provider order sync + revenue reconciliation
+- anomaly detection
+- idempotent conversion updates
 
-Commercial closure is deliberately separate and requires third-party credentials, contracts and an actual conversion. No test fixture may be represented as commercial revenue.
+External activation:
+- real partner reporting data / bookings
+- commercial commission rules
+- settlements from providers
+
+## Non-negotiable production gate
+
+No R0-R6 release is promoted unless:
+
+`secret scan -> npm ci -> typecheck -> unit tests -> build -> Playwright E2E -> deployment smoke`
+
+all pass.

@@ -41,7 +41,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.auth.outputs.configured == 'true'
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Verify application
         if: steps.auth.outputs.configured == 'true'

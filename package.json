@@ -10,7 +10,8 @@
     "test": "vitest run",
     "db:migrate": "node scripts/migrate.mjs",
     "security:secrets": "node scripts/check-secrets.mjs",
-    "smoke:production": "node scripts/smoke-production.mjs"
+    "smoke:production": "node scripts/smoke-production.mjs",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@vercel/analytics": "^1.5.0",
@@ -29,6 +30,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "typescript": "^5.9.0",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "@playwright/test": "^1.55.0"
   }
 }

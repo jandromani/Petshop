@@ -17,10 +17,19 @@ export async function getOpsSnapshot():Promise<OpsSnapshot>{
   try{
     const [counts]=await sql<{live_offers:number;referral_clicks:number;conversions:number;commission:number}[]>`
       select
-        (select count(*)::int from offer_snapshots o join lateral (select state from sellability_audits sa where sa.offer_snapshot_id=o.id order by sa.evaluated_at desc limit 1) a on true where a.state='SELLABLE' and o.source_mode='live' and o.deep_link is not null and (o.expires_at is null or o.expires_at>now())) as live_offers,
+        (select count(*)::int from offer_snapshots o join lateral (select state from sellability_audits sa where sa.offer_snapshot_id=o.id order by sa.evaluated_at desc limit 1) a on true where a.state='SELLABLE' and o.source_mode='live' and o.fulfillment_type='REDIRECT' and o.deep_link is not null
+          and coalesce(
+            o.expires_at,
+            o.verified_at + case
+              when o.provider='booking' then interval '15 minutes'
+              when o.provider='ratehawk' then interval '5 minutes'
+              when o.provider='hbx' then interval '5 minutes'
+              else interval '10 minutes'
+            end
+          )>now()) as live_offers,
         (select count(*)::int from referral_clicks where created_at>=now()-interval '30 days') as referral_clicks,
         (select count(*)::int from conversions where received_at>=now()-interval '30 days') as conversions,
-        coalesce((select sum(commission) from conversions where received_at>=now()-interval '30 days'),0)::float as commission
+        coalesce((select sum(commission) from conversions where received_at>=now()-interval '30 days' and currency='EUR' and status not in ('CANCELLED','REVERSED')),0)::float as commission
     `;
     const acquisitionRuns=await sql<{wave_key:string;provider:string|null;status:string;started_at:string;completed_at:string|null;sellable_count:number;error_count:number}[]>`
       select wave_key,provider,status,started_at::text,completed_at::text,sellable_count,error_count

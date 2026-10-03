@@ -22,8 +22,10 @@ type BookingCurrency = string | { accommodation?: string; booker?: string };
 type BookingUrl = string | { web?: string; app?: string };
 type BookingProduct = {
   id?: string;
-  price?: { display?: number | string; total?: number | string };
-  policies?: { meal_plan?: unknown };
+  room?: string | number;
+  number_of_adults?: number;
+  price?: { display?: number | string; total?: number | string; charges?: unknown[] };
+  policies?: { meal_plan?: unknown; cancellation?: unknown };
 };
 
 export type BookingSearchResponse = {
@@ -31,7 +33,7 @@ export type BookingSearchResponse = {
   data?: Array<{
     id?: number | string;
     currency?: BookingCurrency;
-    price?: { display?: number | string; total?: number | string; book?: number | string };
+    price?: { display?: number | string; total?: number | string; book?: number | string; charges?: unknown[] };
     url?: BookingUrl;
     deep_link_url?: string;
     products?: BookingProduct[];
@@ -52,6 +54,11 @@ type BookingDetailsResponse = {
     url?: BookingUrl;
     currency?: string;
     long_stay_friendly?: boolean;
+    photos?: unknown;
+    facilities?: unknown;
+    policies?: unknown;
+    rooms?: unknown;
+    description?: unknown;
   }>;
 };
 
@@ -73,6 +80,30 @@ function webUrl(value: BookingUrl | undefined, legacy?: string) {
   if (typeof value === "string") return value;
   return value?.web || legacy || value?.app;
 }
+function nestedString(value:unknown,keys:string[]){
+  let current:any=value;
+  for(const key of keys){if(!current||typeof current!=="object")return undefined;current=current[key];}
+  return typeof current==="string"&&current.trim()?current.trim():undefined;
+}
+
+function chargesIncluded(charges:unknown){
+  if(!Array.isArray(charges)||!charges.length)return undefined;
+  const flags=charges.map(c=>nestedString(c,["included_in","display"]) ?? (typeof (c as any)?.included_in?.display==="boolean" ? String((c as any).included_in.display) : undefined));
+  if(flags.some(x=>x==="false"))return false;
+  if(flags.every(x=>x==="true"))return true;
+  return undefined;
+}
+
+function mealPlan(policy:unknown){
+  if(typeof policy==="string")return policy;
+  return nestedString(policy,["plan"])||nestedString(policy,["name"]);
+}
+
+function cancellationType(policy:unknown){
+  if(typeof policy==="string")return policy;
+  return nestedString(policy,["type"]);
+}
+
 
 export function parseBookingSearchResponse(
   data: BookingSearchResponse,
@@ -88,6 +119,7 @@ export function parseBookingSearchResponse(
       row.price?.total ?? product?.price?.total ?? row.price?.display ?? product?.price?.display ?? row.price?.book,
     );
     const link = webUrl(row.url, row.deep_link_url);
+    const charges=row.price?.charges ?? product?.price?.charges;
 
     return [{
       provider: "booking",
@@ -97,6 +129,10 @@ export function parseBookingSearchResponse(
       totalPrice,
       displayPrice,
       currency: currencyCode(row.currency),
+      board:mealPlan(product?.policies?.meal_plan),
+      roomType:product?.room!==undefined?String(product.room):undefined,
+      cancellation:cancellationType(product?.policies?.cancellation),
+      taxesIncluded:chargesIncluded(charges),
       deepLink: link,
       verifiedAt,
       stage: "search" as const,
@@ -147,7 +183,7 @@ export class BookingDemandClient {
       checkout:input.checkOut,
       currency:input.currency || "EUR",
       guests:{number_of_adults:input.adults,number_of_rooms:input.rooms || 1},
-      extras:["products"],
+      extras:["extra_charges","products"],
       rows:Math.max(10,Math.min(100,Math.ceil((input.rows || 20)/10)*10)),
       sort:{by:"price",direction:"ascending"},
     };
@@ -171,7 +207,7 @@ export class BookingDemandClient {
     const data=await fetchJson<BookingDetailsResponse>(this.provider,base+"/accommodations/details",{
       method:"POST",
       headers:this.headers(),
-      body:JSON.stringify({ accommodations:ids, languages:["en-gb"] }),
+      body:JSON.stringify({ accommodations:ids, extras:["description","facilities","photos","policies","rooms"], languages:["en-gb"] }),
     },{retries:2});
 
     return (data.data || []).flatMap(row=>{

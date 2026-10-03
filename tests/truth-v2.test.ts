@@ -55,6 +55,7 @@ describe("truth v2",()=>{
       checkIn:"2027-02-01",
       checkOut:"2027-03-01",
       verifiedAt:"2027-01-01T11:55:00Z",
+      expiresAt:"2027-01-01T12:10:00Z",
       apiBookingCapable:true,
       rawHash:"hash",
     },new Date("2027-01-01T12:00:00Z"));
