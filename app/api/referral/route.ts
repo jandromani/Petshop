@@ -17,7 +17,7 @@ async function liveReferral(url:URL,jar:Awaited<ReturnType<typeof cookies>>){
   if(!offerId || !UUID.test(offerId)) return null;
   const offer=await getSellableOfferForReferral(offerId);
   if(!offer) return new Response("Offer unavailable",{status:404,headers:{"Cache-Control":"no-store"}});
-  const target=safeCommercialUrl(offer.provider,offer.deepLink);
+  const target=safeCommercialUrl(offer.provider,offer.deepLink,offer.approvedHost);
   if(!target) return new Response("Commercial destination blocked",{status:409,headers:{"Cache-Control":"no-store"}});
 
   const expectedCommission=await estimateExpectedCommission({provider:offer.provider,bookingValue:offer.displayPrice,currency:offer.currency});
@@ -26,7 +26,7 @@ async function liveReferral(url:URL,jar:Awaited<ReturnType<typeof cookies>>){
     sessionId:jar.get("rv_sid")?.value,
     hotelSlug:offer.slug,
     canonicalHotelId:offer.hotelId,
-    offerSnapshotId:offer.offerId,
+    offerSnapshotId:offer.offerKind==="snapshot"?offer.offerId:undefined,
     provider:offer.provider,
     expectedCommission:expectedCommission ?? undefined,
     source:jar.get("rv_src")?.value || jar.get("rv_ref")?.value || "direct",
