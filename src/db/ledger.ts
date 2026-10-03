@@ -38,16 +38,20 @@ export async function persistReferralClick(click:ReferralClick):Promise<PersistR
   try{
     await sql`
       insert into referral_clicks (
-        click_id,visitor_id,session_id,provider,source,campaign,page_path,position,created_at
+        click_id,visitor_id,session_id,hotel_id,provider,offer_snapshot_id,
+        source,campaign,page_path,position,expected_commission,created_at
       ) values (
         ${click.clickId},
         ${click.visitorId ?? null},
         ${click.sessionId ?? null},
+        ${click.canonicalHotelId ?? null}::uuid,
         ${click.provider},
+        ${click.offerSnapshotId ?? null}::uuid,
         ${click.source ?? null},
         ${click.campaign ?? null},
         ${click.pagePath ?? null},
         ${click.position ?? null},
+        ${click.expectedCommission ?? null},
         ${click.createdAt}
       )
       on conflict (click_id) do nothing
