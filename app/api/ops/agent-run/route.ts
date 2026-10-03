@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { AGENTS, agentSystemPrompt } from "@/src/agents/registry";
 import { deterministicBrandJudge, deterministicTruthJudge } from "@/src/judges/rules";
+import { finishPersistedAgentRun, persistExternalJudge, persistJudgeReview, startPersistedAgentRun } from "@/src/db/agents";
 
 export const runtime = "nodejs";
 
@@ -34,6 +35,7 @@ export async function POST(req: Request) {
   if (!parsed.success) return Response.json({error:"Invalid request"},{status:400});
   const policy = AGENTS[parsed.data.agent];
   const runId = crypto.randomUUID();
+  await Promise.allSettled([startPersistedAgentRun({id:runId,agentKey:policy.key,objective:parsed.data.objective,payload:parsed.data.context || {}})]);
 
   try {
     const actor = await openRouter([
@@ -56,6 +58,18 @@ export async function POST(req: Request) {
       {role:"user",content:JSON.stringify({artifact:actor.text,policy,deterministicChecks:deterministic})}
     ]);
 
+    await Promise.allSettled([
+      ...deterministic.map(result=>persistJudgeReview({runId,result})),
+      persistExternalJudge({runId,text:judge.text}),
+      finishPersistedAgentRun({
+        id:runId,
+        status:"COMPLETE",
+        output:{artifact:actor.text,externalJudge:judge.text,deterministic},
+        usage:{actor:actor.usage,judge:judge.usage},
+        costCents:0,
+      }),
+    ]);
+
     console.log(JSON.stringify({
       level:"info",event:"agent_run",runId,agent:policy.key,model:actor.model,
       actorUsage:actor.usage,judgeUsage:judge.usage,deterministic
@@ -71,6 +85,7 @@ export async function POST(req: Request) {
       model:actor.model,
     });
   } catch (error) {
+    await Promise.allSettled([finishPersistedAgentRun({id:runId,status:"FAILED",output:{error:String(error)}})]);
     console.error(JSON.stringify({level:"error",event:"agent_run_failed",runId,agent:policy.key,error:String(error)}));
     return Response.json({runId,error:"Agent runtime unavailable",detail:String(error)},{status:503});
   }
