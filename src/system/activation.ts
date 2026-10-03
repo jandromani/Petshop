@@ -3,6 +3,7 @@ import { liveProviderStatuses } from "@/src/providers/live/registry";
 import { getOpsSnapshot } from "@/src/db/ops";
 import { canonicalSiteUrl,publicSiteConfigured } from "@/src/system/site-url";
 import { legalIdentity } from "@/src/system/legal";
+import { adjacencyPartners } from "@/src/adjacency/registry";
 
 export type ActivationState="ACTIVE"|"READY"|"ACTIVATION_REQUIRED"|"OPTIONAL";
 
@@ -12,6 +13,8 @@ export async function activationManifest(){
   const providerConfigured=providers.some(p=>p.configured);
   const supplyActive=ops.liveOffers>0;
   const legal=legalIdentity();
+  const adjacencies=adjacencyPartners();
+  const activeAdjacencies=adjacencies.filter(x=>x.configured);
 
   const items=[
     {
@@ -52,6 +55,13 @@ export async function activationManifest(){
       key:"conversion-ingest",
       state:(process.env.CONVERSION_INGEST_SECRET?"ACTIVE":"ACTIVATION_REQUIRED") as ActivationState,
       detail:process.env.CONVERSION_INGEST_SECRET?"Authenticated conversion ingestion enabled.":"Set CONVERSION_INGEST_SECRET for non-Booking conversion callbacks/imports.",
+    },
+    {
+      key:"adjacency-lanes",
+      state:(activeAdjacencies.length?"ACTIVE":"OPTIONAL") as ActivationState,
+      detail:activeAdjacencies.length
+        ? activeAdjacencies.length+" independent partner lanes active: "+activeAdjacencies.map(x=>x.kind).join(", ")+"."
+        : "Optional: configure flight, insurance, telemedicine, transfer or home-management partners independently.",
     },
     {
       key:"agent-runtime",
