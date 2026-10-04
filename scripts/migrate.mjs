@@ -28,7 +28,7 @@ try{
   for(const file of files){
     const source=await fs.readFile(path.join(dir,file),"utf8");
     const checksum=crypto.createHash("sha256").update(source).digest("hex");
-    const applied=await sql<{checksum:string}[]>`
+    const applied=await sql`
       select checksum from atlas_schema_migrations where filename=${file} limit 1
     `;
 
