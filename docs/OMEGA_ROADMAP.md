@@ -175,11 +175,11 @@ Exit gate: at least 10 fresh SELLABLE offers are visible from real commercial ev
 - reconcile provider totals against Atlas ledger
 - define invoice/tax/accounting treatment with accountant
 - monitor:
-  - booking value
-  - take rate
-  - expected vs confirmed commission
-  - settled cash
-  - attribution loss
+  - booking value: consolidated EUR evidence is computed for the requested window
+  - take rate: observed EUR commission / eligible EUR booking value
+  - expected vs confirmed commission: expected values remain non-consolidated until currency evidence is explicit
+  - settled cash: settled EUR commission is reported separately from confirmed commission
+  - attribution loss: still requires persisted provider-order unmatched evidence
 
 Exit gate: at least one real booking can be traced end-to-end to settled revenue with immutable evidence.
 
@@ -245,13 +245,13 @@ Exit gate: Atlas has demonstrated recovery from DB, provider, AI and bad-deploy 
 
 - capture real Core Web Vitals
 - set p75 LCP/INP/CLS budgets
-- Lighthouse CI or equivalent regression budget
+- dependency-free Playwright LAB budgets gate FCP/LCP/CLS and homepage DOM size in Chromium + Pixel 7; these are regression budgets, not substitutes for production RUM
 - Chromium, Firefox, WebKit and Pixel 7 mobile E2E run in CI
 - WCAG 2.2 AA audit
 - keyboard-only planner critical path is enforced in Playwright
 - public-surface regression checks enforce main landmarks, visible h1s, image alt text and accessible names for buttons, links and form controls; deeper screen-reader audit remains external
-- load test public read paths and rate-limited write paths
-- validate mobile devices with slow network/CPU
+- CI runs a 20-request concurrent public health burst and verifies the application rate-limit fallback; sustained distributed/edge load testing remains external
+- Pixel 7 emulation is in the browser matrix; slow-network/CPU validation remains pending real lab/RUM evidence
 - search zero-result rate and trackable-session abandonment are derived from consented search/referral telemetry and surfaced in Control Tower
 
 Exit gate: real-user performance and accessibility meet documented budgets, not just local screenshots/E2E.
