@@ -51,3 +51,14 @@ export async function listSourcingRequests(limit=100){
     limit ${bounded}
   `;
 }
+
+export async function updateSourcingRequestStatus(id:string,status:"OPEN"|"SOURCING"|"MATCHED"|"CLOSED"){
+  const sql=getDatabase();if(!sql)return null;
+  const rows=await sql<Array<{id:string;status:string}>>`
+    update sourcing_requests
+    set status=${status},updated_at=now()
+    where id=${id}::uuid
+    returning id::text,status
+  `;
+  return rows[0]??null;
+}
