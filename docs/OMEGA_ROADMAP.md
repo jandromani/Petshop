@@ -102,7 +102,7 @@ Exit gate: abusive traffic is controlled before compute/DB, and secrets/incident
   - referral redirect success
   - conversion ingestion success
   - agent run failure/cost
-- add alert thresholds and notification destination
+- warning/critical Daily Control signals have an optional HTTPS notification webhook; a real operator destination must still be configured
 - surface database latency and connection failures
 - add workflow duration/retry metrics
 - add AI token/cost/model metrics by role
