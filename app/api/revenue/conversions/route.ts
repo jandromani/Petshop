@@ -5,6 +5,7 @@ import { after } from "next/server";
 import { busEvent,publishBusEvent } from "@/src/events/bus";
 import { findReferralByTrackingId } from "@/src/db/revenue";
 import { enforceRateLimit,requestFingerprint } from "@/src/security/rate-limit";
+import { recordServiceOutcome } from "@/src/db/governance";
 
 export const runtime="nodejs";
 
@@ -40,11 +41,26 @@ export async function POST(req:Request){
     const referral=await findReferralByTrackingId(parsed.data.providerTrackingId);
     clickId=referral?.click_id;
   }
-  if(!clickId)return Response.json({error:"referral-not-found"},{status:404});
+  if(!clickId){
+    after(async()=>{await recordServiceOutcome({action:"conversion.ingest",outcome:"rejected",resourceId:parsed.data.providerConversionId,detail:{reason:"referral-not-found",provider:parsed.data.provider}});});
+    return Response.json({error:"referral-not-found"},{status:404});
+  }
   const conversion={...parsed.data,clickId};
   const result=await persistConversion(conversion);
-  if(!result.persisted)return Response.json({error:result.reason},{status:result.reason==="attribution-window-rejected"?409:503});
+  if(!result.persisted){
+    const rejected=result.reason==="attribution-window-rejected";
+    after(async()=>{await recordServiceOutcome({
+      action:"conversion.ingest",
+      outcome:rejected?"rejected":"failure",
+      resourceId:parsed.data.providerConversionId,
+      detail:{reason:result.reason,provider:parsed.data.provider},
+    });});
+    return Response.json({error:result.reason},{status:rejected?409:503});
+  }
   console.log(JSON.stringify({level:"info",event:"conversion_ingested",provider:parsed.data.provider,clickId,providerConversionId:parsed.data.providerConversionId,status:parsed.data.status}));
-  after(async()=>{await publishBusEvent(busEvent("conversion.received",conversion,clickId,parsed.data.provider+"-"+parsed.data.providerConversionId));});
+  after(async()=>{await Promise.allSettled([
+    publishBusEvent(busEvent("conversion.received",conversion,clickId,parsed.data.provider+"-"+parsed.data.providerConversionId)),
+    recordServiceOutcome({action:"conversion.ingest",outcome:"success",resourceId:parsed.data.providerConversionId,detail:{provider:parsed.data.provider,status:parsed.data.status}}),
+  ]);});
   return Response.json({ok:true,status:parsed.data.status});
 }
