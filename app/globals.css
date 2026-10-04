@@ -258,3 +258,12 @@ input[type=range]{width:100%;accent-color:var(--lime)}
 .serviceTruth{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:24px 0}
 .serviceTruth .card{font-weight:750}
 @media(max-width:760px){.serviceTruth{grid-template-columns:1fr}.directoryActions{align-items:flex-start}.directoryLinks{justify-content:flex-start}.directoryPager{flex-wrap:wrap}}
+
+.sourceStay{margin-top:24px;padding-top:22px;border-top:1px solid var(--line)}
+.sourceStay h3{font-size:24px;margin:6px 0}
+.sourceStay>p{color:#68738b;max-width:720px}
+.sourceStayGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}
+.sourceStayGrid label{display:flex;flex-direction:column;gap:6px;font-size:11px;font-weight:800;color:#53617a}
+.sourceStayGrid input,.sourceStayGrid select{min-height:44px;border:1px solid var(--line);border-radius:10px;padding:0 12px;background:#fff;color:var(--ink)}
+.sourceError{color:#a33!important}
+@media(max-width:760px){.sourceStayGrid{grid-template-columns:1fr 1fr}}
