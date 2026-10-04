@@ -4,6 +4,7 @@ import { persistConversion } from "@/src/db/ledger";
 import { after } from "next/server";
 import { busEvent,publishBusEvent } from "@/src/events/bus";
 import { findReferralByTrackingId } from "@/src/db/revenue";
+import { enforceRateLimit,requestFingerprint } from "@/src/security/rate-limit";
 
 export const runtime="nodejs";
 
@@ -28,6 +29,8 @@ function authorized(req:Request){
 }
 
 export async function POST(req:Request){
+  const gate=await enforceRateLimit({key:requestFingerprint(req,"conversion-ingest"),limit:60,windowSeconds:60});
+  if(!gate.allowed)return Response.json({error:"rate-limited"},{status:429});
   if(!authorized(req))return new Response("Unauthorized",{status:401});
   if(!databaseConfigured())return Response.json({error:"database-not-configured"},{status:503});
   const parsed=Input.safeParse(await req.json().catch(()=>null));
