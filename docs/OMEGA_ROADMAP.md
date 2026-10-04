@@ -85,7 +85,7 @@ Exit gate: nobody can place an untested commit on production or silently rewrite
   - conversion ingestion endpoints
 - add bot/abuse policy for scraping and credential attacks
 - keep application-level DB rate limiting as defense in depth
-- rotate OPS/CRON/conversion secrets on a documented schedule
+- OPS/CRON/conversion/provider/database secret classes have a documented 90-day-or-shorter rotation policy plus immediate incident triggers; real rotation evidence remains an operator responsibility
 - incident severity, containment and credential-rotation procedure are documented in `docs/INCIDENT_RUNBOOK.md`
 - responsible vulnerability disclosure is documented in `SECURITY.md`; a real operator contact remains a launch dependency
 
