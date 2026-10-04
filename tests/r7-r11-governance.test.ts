@@ -67,7 +67,7 @@ describe("R9-R11 governance contracts",()=>{
 
   it("runs every declared deterministic judge and fails unknown judges closed",()=>{
     const checks=runRequiredJudges(["seo","revenue","security","reliability"],"Evidence-backed proposal only. No execution claim.");
-    expect(checks.map(x=>x.judge)).toEqual(["truth","seo","revenue","security","reliability"]);
+    expect(checks.map(x=>x.judge)).toEqual(["truth","authority","seo","revenue","security","reliability"]);
     expect(runRequiredJudges(["unknown"],"test").find(x=>x.judge==="unknown")?.verdict).toBe("REVISION");
   });
 
