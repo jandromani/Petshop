@@ -9,7 +9,7 @@ import { addDays } from "@/src/core/search";
 import { databaseConfigured } from "@/src/db/client";
 
 export type MappedWaveInput={
-  waveKey:string;checkIn:string;nights:30|60|90|120|180;adults:1|2;maxHotels?:number;persist?:boolean;
+  waveKey:string;checkIn:string;nights:30|60|90|120|180|365;adults:1|2;maxHotels?:number;persist?:boolean;
 };
 export type MappedWaveResult={
   waveKey:string;provider:"ratehawk"|"hbx";mappedHotels:number;quoteTested:number;sellable:number;stale:number;quarantined:number;persisted:number;errors:Array<{hotel:string;message:string}>;
