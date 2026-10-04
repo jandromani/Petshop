@@ -1,6 +1,6 @@
 import { afterAll,describe,expect,it } from "vitest";
 import { getDatabase } from "@/src/db/client";
-import { listSavedStaysForProfile,removeSavedStay,upsertSavedStay } from "@/src/db/consumer-memory";
+import { deleteSavedProfile,listSavedStaysForProfile,removeSavedStay,upsertSavedStay } from "@/src/db/consumer-memory";
 import type { SavedStay } from "@/src/core/saved-stays";
 
 const dbIt=process.env.DATABASE_URL?it:it.skip;
@@ -23,6 +23,28 @@ describe("consumer memory persistence",()=>{
 
     expect(await removeSavedStay(saved.profileId,"ci-offer-1")).toBe(true);
     expect(await listSavedStaysForProfile(saved.profileId)).toEqual([]);
+  });
+
+  dbIt("deletes an anonymous profile and cascades saved stays",async()=>{
+    const stay:SavedStay={
+      offerId:"ci-offer-delete",slug:"ci-delete",name:"Delete Me",city:"Madrid",country:"Spain",provider:"direct",
+      savedMonthly:999,currency:"EUR",verifiedAt:"2026-10-04T10:00:00.000Z",expiresAt:null,savedAt:"2026-10-04T10:02:00.000Z",
+    };
+    const saved=await upsertSavedStay(null,stay);
+    if(!saved)throw new Error("profile not created");
+    expect(await listSavedStaysForProfile(saved.profileId)).toHaveLength(1);
+    expect(await deleteSavedProfile(saved.profileId)).toBe(true);
+    expect(await listSavedStaysForProfile(saved.profileId)).toEqual([]);
+
+    const sql=getDatabase();
+    const profiles=await sql!<{count:number}[]>`
+      select count(*)::int as count from consumer_profiles where id=${saved.profileId}::uuid
+    `;
+    const stays=await sql!<{count:number}[]>`
+      select count(*)::int as count from consumer_saved_stays where profile_id=${saved.profileId}::uuid
+    `;
+    expect(profiles[0]?.count).toBe(0);
+    expect(stays[0]?.count).toBe(0);
   });
 });
 
