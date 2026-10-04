@@ -58,6 +58,12 @@ export default function SavedStaysClient(){
     void fetch("/api/saved?offerId="+encodeURIComponent(id),{method:"DELETE",cache:"no-store"}).catch(()=>{});
   }
 
+  function clearAll(){
+    setRows([]);
+    localStorage.removeItem(SAVED_STAYS_KEY);
+    void fetch("/api/saved?all=1",{method:"DELETE",cache:"no-store"}).catch(()=>{});
+  }
+
   if(!rows.length)return <div className="card"><b>No saved stays yet.</b><p>Save verified offers from the live catalogue and compare them here. With a production database, Atlas also keeps the list in anonymous server-side memory.</p><a className="btn" href="/#explore">Find stays →</a></div>;
 
   return <>
@@ -65,6 +71,9 @@ export default function SavedStaysClient(){
       <div><b>{rows.length}</b><span>saved references</span></div>
       <div><b>{liveRows.length}</b><span>still live now</span></div>
       <div><b>{rows.length-liveRows.length}</b><span>need re-check</span></div>
+    </div>
+    <div className="actions" style={{marginBottom:18}}>
+      <button className="btn ghost" onClick={clearAll}>Clear all saved memory</button>
     </div>
     <div className="savedGrid">
       {rows.map(({saved,live,checked})=><article className="card savedStayCard" key={saved.offerId}>
