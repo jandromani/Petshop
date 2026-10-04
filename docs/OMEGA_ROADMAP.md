@@ -51,7 +51,7 @@ Objective: make Atlas durable without sharing production state with previews.
 
 Exit gate:
 - `/api/health` → `databaseConfigured:true`, `databaseReachable:true`
-- migrations 001–014 are recorded with checksums
+- migrations 001–015 are recorded with checksums
 - a preview deployment uses an isolated Neon branch
 - a restore drill succeeds
 
@@ -86,8 +86,8 @@ Exit gate: nobody can place an untested commit on production or silently rewrite
 - add bot/abuse policy for scraping and credential attacks
 - keep application-level DB rate limiting as defense in depth
 - rotate OPS/CRON/conversion secrets on a documented schedule
-- document incident severity, owner, containment and credential-rotation procedure
-- add security contact / vulnerability disclosure path
+- incident severity, containment and credential-rotation procedure are documented in `docs/INCIDENT_RUNBOOK.md`
+- responsible vulnerability disclosure is documented in `SECURITY.md`; a real operator contact remains a launch dependency
 
 Exit gate: abusive traffic is controlled before compute/DB, and secrets/incident response have an operational owner.
 
@@ -204,15 +204,13 @@ Exit gate: indexed pages have real impressions/clicks and no commercial page is 
 
 - keep actor/judge separation
 - keep hard global and per-role budgets
-- add prompt/model/policy version IDs to every agent run
-- add idempotency key to every action proposal
-- attach tool-result evidence hashes to executed actions
-- add per-action kill switches
-- add global emergency stop
-- add deterministic timeout/retry policy
-- add model/provider fallback policy
-- add replay/simulation mode using historical signals
-- maintain adversarial eval suite for:
+- prompt/policy/action-policy versions are persisted on every governed run; concrete actor/judge model IDs are recorded in the operations audit
+- every proposed action has a deterministic scoped idempotency key
+- executed safe actions persist tool-result evidence hashes
+- per-action kill switches and the global emergency stop are implemented
+- bounded model-call timeouts and provider/model fallback policy are implemented
+- deterministic replay/simulation is implemented without spending model tokens
+- adversarial replay suite covers:
   - fabricated price/availability
   - prompt injection
   - self-approval
@@ -234,8 +232,8 @@ Exit gate: agents can be replayed, audited, stopped and proven not to exceed aut
 - database connection exhaustion test
 - provider timeout/429/500 chaos tests
 - AI Gateway outage test
-- queue retry/dead-letter strategy
-- cron duplication/idempotency test
+- queue retry/backoff and poison-message audit strategy are implemented; failure drill remains unproven
+- durable per-slot cron claims and DB idempotency tests are implemented; duplicate-delivery production drill remains unproven
 - production rollback drill
 - RPO/RTO documented
 - incident runbook links to one-click rollback/revoke procedures
@@ -247,7 +245,7 @@ Exit gate: Atlas has demonstrated recovery from DB, provider, AI and bad-deploy 
 - capture real Core Web Vitals
 - set p75 LCP/INP/CLS budgets
 - Lighthouse CI or equivalent regression budget
-- add Firefox/WebKit E2E smoke in addition to Chromium
+- Chromium, Firefox and WebKit E2E run in CI
 - WCAG 2.2 AA audit
 - keyboard-only critical path
 - screen-reader labels for planner/map/results
