@@ -192,7 +192,7 @@ Exit gate: at least one real booking can be traced end-to-end to settled revenue
 - submit live sitemap only after SELLABLE inventory exists
 - Hotel/Offer/ItemList JSON-LD is generated through shared pure builders with regression tests; external rich-result validation awaits the final domain
 - generate destination pages only from live evidence
-- build internal-link graph from inventory
+- live inventory cards on the homepage and discovery pages link to canonical `/live/{slug}` detail pages; demo inventory never enters the commercial internal-link graph
 - keep demo pages NOINDEX
 - enable Vercel Web Analytics
 - keep Growth Autopilot evidence thresholds
