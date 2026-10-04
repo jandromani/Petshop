@@ -52,7 +52,7 @@ export default function LiveOffers(){
         <p>These offers passed provider evidence, freshness and fulfilment gates. The price shown comes from the stored verified snapshot, never from an LLM.</p>
       </div>
       <div className="hotels">
-        {offers.map((o,index)=><LiveOfferCard key={o.offerId} offer={o} href={"/api/referral?offer="+encodeURIComponent(o.offerId)+"&from=%2Flive&pos="+(index+1)}/>)}
+        {offers.map((o,index)=><LiveOfferCard key={o.offerId} offer={o} detailHref={"/live/"+encodeURIComponent(o.slug)} href={"/api/referral?offer="+encodeURIComponent(o.offerId)+"&from=%2Flive&pos="+(index+1)}/>)}
       </div>
     </div>
   </section>;
