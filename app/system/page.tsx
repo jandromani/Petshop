@@ -61,7 +61,7 @@ export default async function SystemPage(){
       <h2 style={{marginTop:38}}>Provider readiness</h2>
       <div className="table">
         {status.infrastructure.providers.map(p=><div className="tr" key={p.provider}>
-          <b>{p.provider}</b><span className={p.configured?"green":"amber"}>{p.configured?"CONFIGURED":"OPTIONAL / WAITING"}</span><span>{p.environment}</span><span>{p.configured?"eligible for live probes":"Direct Hotel OS can launch without this provider"}</span>
+          <b>{p.provider}</b><span className={p.commercialReady?"green":"amber"}>{p.grade}</span><span>{p.environment}</span><span>{p.commercialReady?"commercial fulfillment ready":p.blockers.join(" · ")||"credentials not configured"}</span>
         </div>)}
       </div>
 
