@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { listSellableOffers } from "@/src/db/catalog";
-import { indexableDiscoveryPages } from "@/src/seo/live";
+import { indexableDiscoveryPages,seoAutopilotEnabled } from "@/src/seo/live";
 import { canonicalSiteUrl,publicSiteConfigured } from "@/src/system/site-url";
 import { ES_DISCOVERY } from "@/src/seo/es-catalog";
 
@@ -8,7 +8,7 @@ export default async function sitemap():Promise<MetadataRoute.Sitemap>{
   const base=canonicalSiteUrl();
   if(!publicSiteConfigured())return[];
 
-  const allowLive=process.env.SEO_LIVE_INDEXING==="true";
+  const allowLive=seoAutopilotEnabled();
   const [offers,discovery]=allowLive
     ? await Promise.all([listSellableOffers({limit:50}),indexableDiscoveryPages()])
     : [[],[]] as const;

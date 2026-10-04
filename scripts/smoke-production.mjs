@@ -1,6 +1,7 @@
 const base=(process.env.DEPLOYMENT_URL||process.argv[2]||"").replace(/\/$/,"");
 const expectedSha=process.env.EXPECTED_SHA||"";
 if(!base)throw new Error("DEPLOYMENT_URL or URL argument is required");
+const futureCheckIn=new Date(Date.now()+90*24*60*60*1000).toISOString().slice(0,10);
 
 async function get(path,expected=200){
   const res=await fetch(base+path,{redirect:"manual",cache:"no-store"});
@@ -26,7 +27,7 @@ if(expectedSha&&health?.deployment?.commitSha!==expectedSha){
 
 
 async function smokeAgent(){
-  const checkIn=new Date(Date.now()+90*24*60*60*1000).toISOString().slice(0,10);
+  const checkIn=futureCheckIn;
   const payload={
     prompt:"Reply exactly with: Atlas concierge online.",
     livingBudget:1500,
@@ -65,7 +66,7 @@ async function smokeAgent(){
 const status=await (await get("/api/system/status")).json();
 if(status?.proof?.pass!==true)throw new Error("system status proof failed");
 
-const catalog=await (await get("/api/catalog/live?limit=1&checkIn=2027-01-15&flexibleDays=7&nights=90&occupancy=1&region=All&maxMonthly=2000")).json();
+const catalog=await (await get("/api/catalog/live?limit=1&checkIn="+futureCheckIn+"&flexibleDays=7&nights=90&occupancy=1&region=All&maxMonthly=2000")).json();
 if(!Array.isArray(catalog.offers))throw new Error("live catalog contract invalid");
 
 await get("/api/ops/access",404);
