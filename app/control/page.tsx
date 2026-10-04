@@ -98,6 +98,14 @@ export default async function ControlTower(){
           <span>provider-wave success · target {slo.targets.providerWaveSuccessPct}%</span>
         </div>
         <div className="metricDark">
+          <b>{slo.indicators.referralRedirect.successPct===null?"NO SAMPLE":slo.indicators.referralRedirect.successPct.toFixed(1)+"%"}</b>
+          <span>referral redirect · target {slo.targets.referralRedirectSuccessPct}% · {slo.indicators.referralRedirect.rejected} rejected</span>
+        </div>
+        <div className="metricDark">
+          <b>{slo.indicators.conversionIngest.successPct===null?"NO SAMPLE":slo.indicators.conversionIngest.successPct.toFixed(1)+"%"}</b>
+          <span>conversion ingest · target {slo.targets.conversionIngestSuccessPct}% · {slo.indicators.conversionIngest.rejected} rejected</span>
+        </div>
+        <div className="metricDark">
           <b className={economics.proofState==="COMMERCIAL_EVIDENCE_OBSERVED"?"green":"amber"}>{economics.proofState}</b>
           <span>commercial evidence</span>
         </div>
