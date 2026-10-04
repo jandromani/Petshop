@@ -98,6 +98,7 @@ export async function syncBookingOrders(input:{from?:string;to?:string}={}){
         rawPayload:{order,accommodation:detail,label:normalized.label},
       });
       if(result.persisted)attributed++;
+      else if(result.reason==="attribution-window-rejected")unattributed.push(orderId);
     }
     page=String(record(response.metadata).next_page||record(response.metadata).next_page_token||"")||undefined;
   }while(page);
