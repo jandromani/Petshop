@@ -86,3 +86,15 @@ export async function removeSavedStay(profileId:string|undefined|null,offerId:st
   await sql`update consumer_profiles set last_seen_at=now(),updated_at=now() where id=${profileId}::uuid`;
   return Boolean(rows[0]);
 }
+
+
+export async function deleteSavedProfile(profileId:string|undefined|null){
+  const sql=getDatabase();
+  if(!sql||!validSavedProfileId(profileId))return false;
+  const rows=await sql<{id:string}[]>`
+    delete from consumer_profiles
+    where id=${profileId}::uuid
+    returning id::text
+  `;
+  return Boolean(rows[0]);
+}
