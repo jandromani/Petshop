@@ -9,7 +9,7 @@ HBX availability is not flattened into a generic provider result.
 - `rateKey` is the provider offer identity.
 - `RECHECK` rates cannot cross the Truth Gate until CheckRate returns fresh information.
 - `BOOKABLE` rates can skip CheckRate, but Petshop still requires actual booking capability before marking an API-only offer sellable.
-- `HBX_BOOKING_ENABLED=true` and `HBX_MTLS_READY=true` are explicit commercial gates.
+- `HBX_BOOKING_ENABLED=true` and `HBX_MTLS_READY=true` are necessary but not sufficient. Atlas currently has no HBX booking transaction implementation, so checked rates remain non-commercial until that transaction exists.
 
 ## Price truth
 
