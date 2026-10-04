@@ -1,4 +1,4 @@
-import { databaseConfigured } from "@/src/db/client";
+import { databaseHealth } from "@/src/db/client";
 import { liveProviderStatuses } from "@/src/providers/live/registry";
 import { getOpsSnapshot } from "@/src/db/ops";
 import { canonicalSiteUrl,publicSiteConfigured } from "@/src/system/site-url";
@@ -11,13 +11,16 @@ export type ActivationState="ACTIVE"|"READY"|"ACTIVATION_REQUIRED"|"OPTIONAL";
 
 export async function activationManifest(){
   const providers=liveProviderStatuses();
-  const [ops,agentCredentials]=await Promise.all([getOpsSnapshot(),agentRuntimeCredentialsAvailable()]);
+  const [ops,agentCredentials,db]=await Promise.all([
+    getOpsSnapshot(),
+    agentRuntimeCredentialsAvailable(),
+    databaseHealth(),
+  ]);
   const providerConfigured=providers.some(p=>p.configured);
   const supplyActive=ops.liveOffers>0;
   const legal=legalIdentity();
   const adjacencies=adjacencyPartners();
   const activeAdjacencies=adjacencies.filter(x=>x.configured);
-  const db=databaseConfigured();
   const deployedOnVercel=process.env.VERCEL==="1"||Boolean(process.env.VERCEL_PROJECT_ID);
   const agentActive=agentCredentials&&process.env.AGENT_RUNTIME_ENABLED!=="false";
   const runtimeProvider=agentActive?agentRuntimeProvider():"none";
@@ -26,8 +29,12 @@ export async function activationManifest(){
   const items=[
     {
       key:"database",
-      state:(db?"ACTIVE":"ACTIVATION_REQUIRED") as ActivationState,
-      detail:db?"Persistent operational ledger configured; migrations are applied by vercel-build.":"Connect DATABASE_URL; the next Vercel build will apply migrations 001–012 automatically.",
+      state:(db.reachable?"ACTIVE":"ACTIVATION_REQUIRED") as ActivationState,
+      detail:db.reachable
+        ?"Persistent database probe succeeded in "+String(db.latencyMs)+"ms; migrations are ledgered, checksummed and serialized."
+        :db.configured
+          ?"DATABASE_URL exists but the database is unreachable; commercial and autonomous state remain fail-closed."
+          :"Connect Neon/Postgres as DATABASE_URL; the next Vercel build will apply migrations automatically.",
     },
     {
       key:"ops-security",
@@ -56,14 +63,14 @@ export async function activationManifest(){
     },
     {
       key:"hotel-supply",
-      state:(supplyActive?"ACTIVE":db||providerConfigured?"READY":"ACTIVATION_REQUIRED") as ActivationState,
+      state:(supplyActive?"ACTIVE":db.reachable||providerConfigured?"READY":"ACTIVATION_REQUIRED") as ActivationState,
       detail:supplyActive
-        ? ops.liveOffers+" live offers ("+ops.providerLiveOffers+" provider + "+ops.directLiveOffers+" direct)."
-        : db
-          ? "Direct Hotel OS is ready now; provider credentials are optional accelerators."
-          : providerConfigured
-            ? "Provider credentials exist; persistent DB is still required."
-            : "Connect the database, then publish a verified direct hotel contract or add provider credentials.",
+        ?ops.liveOffers+" live offers ("+ops.providerLiveOffers+" provider + "+ops.directLiveOffers+" direct)."
+        :db.reachable
+          ?"Direct Hotel OS is durable and ready; provider credentials remain optional accelerators."
+          :providerConfigured
+            ?"Provider credentials exist; reachable persistent DB is still required."
+            :"Connect the database, then publish a verified direct hotel contract or add provider credentials.",
     },
     {
       key:"conversion-ingest",
@@ -74,21 +81,21 @@ export async function activationManifest(){
       key:"adjacency-lanes",
       state:(activeAdjacencies.length?"ACTIVE":"OPTIONAL") as ActivationState,
       detail:activeAdjacencies.length
-        ? activeAdjacencies.length+" independent partner lanes active: "+activeAdjacencies.map(x=>x.kind).join(", ")+"."
-        : "Optional and fail-closed until partner agreements exist.",
+        ?activeAdjacencies.length+" independent partner lanes active: "+activeAdjacencies.map(x=>x.kind).join(", ")+"."
+        :"Optional and fail-closed until partner agreements exist.",
     },
     {
       key:"agent-runtime",
-      state:(agentActive&&db?"ACTIVE":agentActive?"READY":"OPTIONAL") as ActivationState,
+      state:(agentActive&&db.reachable?"ACTIVE":agentActive?"READY":"OPTIONAL") as ActivationState,
       detail:agentActive
-        ?"Governed runtime credential probe succeeded via "+runtimeProvider+"; DB activates durable quotas, judges and actuation."
+        ?"Governed runtime credential probe succeeded via "+runtimeProvider+(db.reachable?"; durable quotas/judges/actuation are active.":"; database activation is still required for durable governance.")
         :"No usable AI runtime credential was observed. Vercel OIDC is preferred; OpenRouter remains an optional fallback.",
     },
     {
       key:"seo-indexing",
       state:(seoAuto?(supplyActive?"ACTIVE":"READY"):"OPTIONAL") as ActivationState,
       detail:seoAuto
-        ? supplyActive?"SEO autopilot may index only evidence-backed pages that pass all gates.":"SEO autopilot is armed but remains NOINDEX until real sellable evidence exists."
+        ?supplyActive?"SEO autopilot may index only evidence-backed pages that pass all gates.":"SEO autopilot is armed but remains NOINDEX until real sellable evidence exists."
         :"SEO indexing is explicitly disabled.",
     },
   ];
