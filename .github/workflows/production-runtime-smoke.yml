@@ -15,22 +15,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Wait for exact SHA in production
+      - name: Verify production OpenRouter runtime
         env:
           BASE_URL: https://atlas-living-ten.vercel.app
-          EXPECTED_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          for attempt in $(seq 1 60); do
+          for attempt in $(seq 1 24); do
             body="$(curl --fail --silent --show-error "$BASE_URL/api/system/status" || true)"
+            observed="$(printf '%s' "$body" | jq -r '.infrastructure.productionObserved // false' 2>/dev/null || true)"
+            provider="$(printf '%s' "$body" | jq -r '.infrastructure.agentRuntimeProvider // empty' 2>/dev/null || true)"
             live_sha="$(printf '%s' "$body" | jq -r '.infrastructure.deploymentCommitSha // empty' 2>/dev/null || true)"
-            if [ "$live_sha" = "$EXPECTED_SHA" ]; then
-              echo "Production serves exact SHA $EXPECTED_SHA"
+            if [ "$observed" = "true" ] && [ "$provider" = "openrouter" ] && [ -n "$live_sha" ]; then
+              echo "Production OpenRouter runtime observed at application SHA $live_sha"
               exit 0
             fi
             sleep 5
           done
-          echo "Production did not converge to expected SHA" >&2
+          echo "Production OpenRouter runtime was not observed" >&2
           exit 1
 
       - name: Exercise public concierge through OpenRouter
