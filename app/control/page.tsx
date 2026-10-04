@@ -12,6 +12,7 @@ import { agentRuntimeCredentialsAvailable,agentRuntimeProvider } from "@/src/age
 import { getHeroOverride } from "@/src/growth/autopilot";
 import { getSloSnapshot } from "@/src/system/slo";
 import { getEconomicsSnapshot } from "@/src/system/economics";
+import { getWeeklyOperatingScorecard } from "@/src/system/scorecard";
 
 export const metadata={title:"Control Tower",robots:{index:false,follow:false}};
 
@@ -20,7 +21,7 @@ export default async function ControlTower(){
   if(!verifyOpsSession(jar.get(OPS_COOKIE)?.value)) notFound();
 
   const providers=liveProviderStatuses();
-  const [ops,incidents,funnel,heroExperiment,friction,agentTasks,heroOverride,dbHealth,agentCredentials,slo,economics]=await Promise.all([
+  const [ops,incidents,funnel,heroExperiment,friction,agentTasks,heroOverride,dbHealth,agentCredentials,slo,economics,scorecard]=await Promise.all([
     getOpsSnapshot(),
     listOpenIncidents(20),
     growthFunnel(30),
@@ -32,6 +33,7 @@ export default async function ControlTower(){
     agentRuntimeCredentialsAvailable(),
     getSloSnapshot(),
     getEconomicsSnapshot(30),
+    getWeeklyOperatingScorecard(),
   ]);
   const db=dbHealth.reachable;
   const agentConfigured=agentCredentials&&process.env.AGENT_RUNTIME_ENABLED!=="false";
@@ -48,6 +50,18 @@ export default async function ControlTower(){
         <div className="metricDark"><b className={ops.liveOffers?"green":"amber"}>{ops.liveOffers}</b><span>SELLABLE live offers · {ops.providerLiveOffers} provider + {ops.directLiveOffers} direct</span></div>
         <div className="metricDark"><b>{ops.referralClicks30d}</b><span>referral clicks · 30d</span></div>
         <div className="metricDark"><b>€{Math.round(ops.commission30d).toLocaleString("en-US")}</b><span>commission EUR · 30d</span></div>
+      </div>
+
+      <h2 style={{marginTop:36}}>Weekly operating scorecard</h2>
+      <div className="metrics">
+        <div className="metricDark"><b>{scorecard.score.pct}%</b><span>evidence-weighted operating score · 7d</span></div>
+        <div className="metricDark"><b className={scorecard.dimensions.runtime.state==="PASS"?"green":"amber"}>{scorecard.dimensions.runtime.state}</b><span>runtime</span></div>
+        <div className="metricDark"><b className={scorecard.dimensions.supply.state==="PASS"?"green":"amber"}>{scorecard.dimensions.supply.state}</b><span>supply</span></div>
+        <div className="metricDark"><b className={scorecard.dimensions.money.state==="PASS"?"green":"amber"}>{scorecard.dimensions.money.state}</b><span>money loop</span></div>
+        <div className="metricDark"><b>{scorecard.openIncidents}</b><span>open incidents</span></div>
+      </div>
+      <div className="table">
+        {scorecard.priorities.length?scorecard.priorities.map((priority,i)=><div className="tr" key={priority}><b>{String(i+1).padStart(2,"0")}</b><span>PRIORITY</span><span>7d</span><span>{priority}</span></div>):<div className="tr"><b>01</b><span className="green">CLEAR</span><span>7d</span><span>No evidence-backed weekly priority.</span></div>}
       </div>
 
       <h2 style={{marginTop:36}}>Runtime SLOs</h2>
