@@ -1,6 +1,6 @@
 import { AGENTS } from "@/src/agents/registry";
 import { getOpsSnapshot } from "@/src/db/ops";
-import { databaseConfigured } from "@/src/db/client";
+import { databaseHealth } from "@/src/db/client";
 import { liveProviderStatuses } from "@/src/providers/live/registry";
 import { reconcileRevenue } from "@/src/services/revenue-reconciliation";
 import { syncBookingOrders } from "@/src/services/booking-order-sync";
@@ -25,7 +25,7 @@ export async function collectControlSignals():Promise<ControlSignal[]>{
   if(!db)signals.push({key:"infra.database",severity:"critical",message:"Persistent database is not configured"});
   const disabled=providers.filter(p=>!p.configured).map(p=>p.provider);
   if(disabled.length)signals.push({key:"supply.providers",severity:"warning",message:"Disabled providers: "+disabled.join(", ")});
-  if(db&&ops.liveOffers===0)signals.push({key:"supply.live",severity:"warning",message:"No fresh SELLABLE redirect offers in the public catalog"});
+  if(db.reachable&&ops.liveOffers===0)signals.push({key:"supply.live",severity:"warning",message:"No fresh SELLABLE redirect offers in the public catalog"});
   const failedWaves=ops.acquisitionRuns.filter(r=>r.status==="FAILED"||r.errors>0);
   if(failedWaves.length)signals.push({key:"supply.waves",severity:"warning",message:failedWaves.length+" recent acquisition waves have errors"});
   const failedAgents=ops.agentRuns.filter(r=>r.status==="FAILED");
