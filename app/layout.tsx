@@ -15,6 +15,10 @@ export const metadata:Metadata={
   description:"Compare 30–180 day hotel stays by monthly cost and build a flexible year around a real living budget.",
   metadataBase:new URL(siteUrl()),
   openGraph:{title:"Atlas Long Stay — Live somewhere better",description:"Long-stay hotel living by monthly budget, dates and verified availability.",type:"website"},
+  verification:{
+    google:process.env.GOOGLE_SITE_VERIFICATION||undefined,
+    other:process.env.BING_SITE_VERIFICATION?{"msvalidate.01":[process.env.BING_SITE_VERIFICATION]}:undefined,
+  },
 };
 
 export default function RootLayout({children}:Readonly<{children:React.ReactNode}>){
