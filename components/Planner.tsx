@@ -61,6 +61,9 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
 
   function jumpToExplore(){
     growthEvent("hero_search",{query,region,party,duration,budget:livingBudget,check_in:checkIn,flexible_days:flexibleDays,matches:matching.length});
+    if(matching.length===0){
+      growthEvent("search_zero_results",{query_present:Boolean(query.trim()),region,party,duration,budget:livingBudget,flexible_days:flexibleDays});
+    }
     document.getElementById("explore")?.scrollIntoView({behavior:"smooth"});
   }
 
