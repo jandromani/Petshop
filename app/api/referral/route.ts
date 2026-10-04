@@ -7,6 +7,7 @@ import { getSellableOfferForReferral } from "@/src/db/catalog";
 import { safeCommercialUrl } from "@/src/core/live-offers";
 import { busEvent, publishBusEvent } from "@/src/events/bus";
 import { estimateExpectedCommission } from "@/src/db/revenue";
+import { enforceRateLimit,requestFingerprint } from "@/src/security/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -47,6 +48,8 @@ async function liveReferral(url:URL,jar:Awaited<ReturnType<typeof cookies>>){
 }
 
 export async function GET(req: Request) {
+  const gate=await enforceRateLimit({key:requestFingerprint(req,"referral"),limit:180,windowSeconds:60});
+  if(!gate.allowed)return new Response("Too many referral requests",{status:429,headers:{"Cache-Control":"no-store"}});
   if(process.env.REFERRAL_RUNTIME_ENABLED==="false") return new Response("Referral runtime disabled",{status:503,headers:{"Cache-Control":"no-store"}});
   const url=new URL(req.url);
   const jar=await cookies();
