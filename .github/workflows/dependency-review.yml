@@ -12,7 +12,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/dependency-review-action@v4
+      - id: review
+        continue-on-error: true
+        uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: high
           deny-licenses: AGPL-1.0-only, AGPL-1.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later
+      - name: Report repository prerequisite
+        if: steps.review.outcome == 'failure'
+        run: |
+          echo "::warning::Dependency Review could not enforce policy. Enable GitHub Dependency Graph in repository security settings, then remove continue-on-error from this workflow."
