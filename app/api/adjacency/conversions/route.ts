@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { persistAdjacencyConversion } from "@/src/db/adjacency";
+import { enforceRateLimit,requestFingerprint } from "@/src/security/rate-limit";
+import { bearerSecretAuthorized } from "@/src/security/secrets";
 
 const Input=z.object({
   clickId:z.string().uuid(),
@@ -14,8 +16,9 @@ const Input=z.object({
 });
 
 export async function POST(req:Request){
-  const secret=process.env.CONVERSION_INGEST_SECRET;
-  if(!secret||req.headers.get("authorization")!=="Bearer "+secret)return new Response("Unauthorized",{status:401});
+  const gate=await enforceRateLimit({key:requestFingerprint(req,"adjacency-conversion-ingest"),limit:60,windowSeconds:60});
+  if(!gate.allowed)return Response.json({error:"rate-limited"},{status:429});
+  if(!bearerSecretAuthorized(req,process.env.CONVERSION_INGEST_SECRET))return new Response("Unauthorized",{status:401});
   const parsed=Input.safeParse(await req.json().catch(()=>null));
   if(!parsed.success)return Response.json({error:"invalid-adjacency-conversion",issues:parsed.error.issues},{status:400});
   const ok=await persistAdjacencyConversion(parsed.data);

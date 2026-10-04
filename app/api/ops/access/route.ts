@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { createOpsSession,OPS_COOKIE } from "@/src/security/ops-session";
 import { enforceRateLimit,requestFingerprint } from "@/src/security/rate-limit";
+import { secureSecretEqual } from "@/src/security/secrets";
 
 export const runtime="nodejs";
 
@@ -10,7 +11,7 @@ export async function GET(){
 
 export async function POST(req:Request){
   const gate=await enforceRateLimit({key:requestFingerprint(req,"ops-login"),limit:8,windowSeconds:900});
-  if(!gate.allowed) return new Response("Too many attempts",{status:429});
+  if(!gate.allowed) return new Response("Too many attempts",{status:429,headers:{"Cache-Control":"no-store"}});
 
   const contentType=req.headers.get("content-type")||"";
   let supplied="";
@@ -22,8 +23,7 @@ export async function POST(req:Request){
     supplied=String(form?.get("key")||"");
   }
 
-  const configured=process.env.OPS_ACCESS_KEY;
-  if(!configured||!supplied||supplied!==configured) return new Response("Not found",{status:404});
+  if(!secureSecretEqual(supplied,process.env.OPS_ACCESS_KEY)) return new Response("Not found",{status:404});
 
   const jar=await cookies();
   jar.set(OPS_COOKIE,createOpsSession(),{

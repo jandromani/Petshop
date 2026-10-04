@@ -5,6 +5,7 @@ import { after } from "next/server";
 import { busEvent,publishBusEvent } from "@/src/events/bus";
 import { findReferralByTrackingId } from "@/src/db/revenue";
 import { enforceRateLimit,requestFingerprint } from "@/src/security/rate-limit";
+import { bearerSecretAuthorized } from "@/src/security/secrets";
 
 export const runtime="nodejs";
 
@@ -24,8 +25,7 @@ const Input=z.object({
 }).refine(v=>Boolean(v.clickId||v.providerTrackingId),{message:"clickId or providerTrackingId is required"});
 
 function authorized(req:Request){
-  const secret=process.env.CONVERSION_INGEST_SECRET||process.env.OPS_ACCESS_KEY;
-  return Boolean(secret&&req.headers.get("authorization")==="Bearer "+secret);
+  return bearerSecretAuthorized(req,process.env.CONVERSION_INGEST_SECRET||process.env.OPS_ACCESS_KEY);
 }
 
 export async function POST(req:Request){

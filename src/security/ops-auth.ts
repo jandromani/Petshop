@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { OPS_COOKIE,verifyOpsSession } from "@/src/security/ops-session";
+import { bearerSecretAuthorized } from "@/src/security/secrets";
 
 function sameOrigin(req:Request){
   const origin=req.headers.get("origin");
@@ -9,10 +10,7 @@ function sameOrigin(req:Request){
 
 export async function opsAuthorized(req:Request,options:{allowBearer?:boolean;requireSameOriginForCookie?:boolean}={}){
   const allowBearer=options.allowBearer!==false;
-  if(allowBearer){
-    const secret=process.env.OPS_ACCESS_KEY;
-    if(secret&&req.headers.get("authorization")==="Bearer "+secret)return true;
-  }
+  if(allowBearer&&bearerSecretAuthorized(req,process.env.OPS_ACCESS_KEY))return true;
   const jar=await cookies();
   const session=jar.get(OPS_COOKIE)?.value;
   if(!verifyOpsSession(session))return false;
@@ -22,6 +20,5 @@ export async function opsAuthorized(req:Request,options:{allowBearer?:boolean;re
 }
 
 export function cronAuthorized(req:Request){
-  const secret=process.env.CRON_SECRET;
-  return Boolean(secret&&req.headers.get("authorization")==="Bearer "+secret);
+  return bearerSecretAuthorized(req,process.env.CRON_SECRET);
 }
