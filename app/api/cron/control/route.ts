@@ -3,16 +3,12 @@ import { dailyControlWorkflow } from "@/workflows/daily-control";
 import {
   claimScheduledRun,dailyScheduleSlot,markScheduledRunStarted,releaseScheduledRunClaim,
 } from "@/src/db/scheduled-runs";
+import { cronAuthorized } from "@/src/security/ops-auth";
 
 export const runtime = "nodejs";
 
-function authorized(req: Request) {
-  const secret = process.env.CRON_SECRET;
-  return Boolean(secret && req.headers.get("authorization") === "Bearer " + secret);
-}
-
 export async function GET(req: Request) {
-  if (!authorized(req)) return new Response("Unauthorized", { status: 401 });
+  if (!cronAuthorized(req)) return new Response("Unauthorized", { status: 401 });
 
   const slotKey=dailyScheduleSlot();
   const claim=await claimScheduledRun("daily-control",slotKey);

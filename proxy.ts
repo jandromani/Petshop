@@ -26,6 +26,8 @@ export function proxy(request:NextRequest){
     });
   }
 
+  if(request.nextUrl.pathname.startsWith("/api/"))return NextResponse.next();
+
   const response=NextResponse.next();
   const consent=consentChoiceFromValues(
     request.cookies.get(CONSENT_COOKIE)?.value,
@@ -69,4 +71,4 @@ export function proxy(request:NextRequest){
   return response;
 }
 
-export const config={matcher:["/((?!api|_next/static|_next/image|favicon.ico).*)"]};
+export const config={matcher:["/((?!_next/static|_next/image|favicon.ico).*)"]};

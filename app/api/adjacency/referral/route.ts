@@ -2,10 +2,13 @@ import { cookies } from "next/headers";
 import { after } from "next/server";
 import { adjacencyPartner,safeAdjacencyTarget,type AdjacencyKind } from "@/src/adjacency/registry";
 import { persistAdjacencyClick } from "@/src/db/adjacency";
+import { enforceRateLimit,requestFingerprint } from "@/src/security/rate-limit";
 
 export const runtime="nodejs";
 
 export async function GET(req:Request){
+  const gate=await enforceRateLimit({key:requestFingerprint(req,"adjacency-referral"),limit:120,windowSeconds:60});
+  if(!gate.allowed)return new Response("Too many referral requests",{status:429,headers:{"Cache-Control":"no-store"}});
   if(process.env.ADJACENCY_RUNTIME_ENABLED==="false")return new Response("Adjacency runtime disabled",{status:503});
   const url=new URL(req.url);
   const kind=url.searchParams.get("kind") as AdjacencyKind|null;
