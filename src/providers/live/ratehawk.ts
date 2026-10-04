@@ -37,6 +37,8 @@ type RateHawkRate={
   payment_options?:{payment_types?:RateHawkPaymentType[]};
 };
 
+const RATEHAWK_BOOK_TRANSACTION_IMPLEMENTED=false;
+
 export type RateHawkResponse={
   data?:{
     hotels?:Array<{id?:string;hid?:number;rates?:RateHawkRate[]}>;
@@ -77,7 +79,7 @@ export function parseRateHawkResponse(
         board:rate.meal,
         verifiedAt,
         stage,
-        commercialFulfillment:stage==="prebook" && apiBookingCapable ? "api" as const : "none" as const,
+        commercialFulfillment:stage==="prebook" && apiBookingCapable && RATEHAWK_BOOK_TRANSACTION_IMPLEMENTED ? "api" as const : "none" as const,
         raw:{hotelId,rate},
       };
     });
@@ -90,11 +92,15 @@ export class RateHawkClient {
   status():LiveProviderStatus{
     const missingEnv=["RATEHAWK_KEY_ID","RATEHAWK_API_KEY"].filter(key=>!process.env[key]);
     const base=process.env.RATEHAWK_API_BASE || "https://api-sandbox.ratehawk.com";
+    const blockers=["booking transaction is not implemented in Atlas"];
+    if(process.env.RATEHAWK_BOOKING_ENABLED!=="true")blockers.push("booking capability disabled");
     return{
       provider:this.provider,
       configured:missingEnv.length===0,
       environment:base.includes("sandbox")?"sandbox":"production",
       missingEnv,
+      commercialReady:false,
+      blockers,
       notes:[
         "SERP is discovery only and is never a customer-selectable commercial rate",
         "Recommended flow: SERP → hotelpage → hotel/prebook",
@@ -188,6 +194,6 @@ export class RateHawkClient {
       body:JSON.stringify({hash,price_increase_percent:priceIncreasePercent}),
     },{timeoutMs:60_000,retries:1});
     const bookingEnabled=process.env.RATEHAWK_BOOKING_ENABLED==="true";
-    return parseRateHawkResponse(data,"prebook",bookingEnabled);
+    return parseRateHawkResponse(data,"prebook",bookingEnabled&&RATEHAWK_BOOK_TRANSACTION_IMPLEMENTED);
   }
 }
