@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { realHotelById } from "@/src/data/real-hotels";
-import { createSourcingRequest,listSourcingRequests } from "@/src/db/sourcing";
+import { createSourcingRequest,listSourcingRequests,updateSourcingRequestStatus } from "@/src/db/sourcing";
 import { enforceRateLimit,requestFingerprint } from "@/src/security/rate-limit";
 import { opsAuthorized } from "@/src/security/ops-auth";
 
@@ -38,4 +38,13 @@ export async function POST(req:Request){
 export async function GET(req:Request){
   if(!(await opsAuthorized(req)))return new Response("Unauthorized",{status:401});
   return Response.json({requests:await listSourcingRequests(200)},{headers:{"Cache-Control":"no-store"}});
+}
+
+const StatusInput=z.object({id:z.string().uuid(),status:z.enum(["OPEN","SOURCING","MATCHED","CLOSED"])});
+export async function PATCH(req:Request){
+  if(!(await opsAuthorized(req)))return new Response("Unauthorized",{status:401});
+  const parsed=StatusInput.safeParse(await req.json().catch(()=>null));
+  if(!parsed.success)return Response.json({error:"invalid-status-update"},{status:400});
+  const row=await updateSourcingRequestStatus(parsed.data.id,parsed.data.status);
+  return row?Response.json({ok:true,request:row}):Response.json({error:"not-found"},{status:404});
 }
