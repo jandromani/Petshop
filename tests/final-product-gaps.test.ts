@@ -1,6 +1,6 @@
 import { describe,expect,it } from "vitest";
 import { ES_DISCOVERY,esDiscoveryBySlug,esSlugForSource } from "@/src/seo/es-catalog";
-import { parseSavedStays,toggleSavedStay,type SavedStay } from "@/src/core/saved-stays";
+import { mergeSavedStays,parseSavedStays,toggleSavedStay,type SavedStay } from "@/src/core/saved-stays";
 
 describe("final public product gaps",()=>{
   it("maps every Spanish SEO page to one canonical live intent",()=>{
@@ -18,5 +18,7 @@ describe("final public product gaps",()=>{
     expect(parseSavedStays("not-json")).toEqual([]);
     expect(toggleSavedStay([],stay)).toHaveLength(1);
     expect(toggleSavedStay([stay],stay)).toEqual([]);
+    const newer={...stay,savedMonthly:1300,savedAt:"2026-10-03T21:01:00Z"};
+    expect(mergeSavedStays([stay],[newer])).toEqual([newer]);
   });
 });
