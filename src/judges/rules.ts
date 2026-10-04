@@ -53,6 +53,17 @@ export function deterministicRevenueJudge(artifact:string):JudgeResult{
   return result("revenue",reasons);
 }
 
+export function deterministicAuthorityJudge(artifact:string):JudgeResult{
+  const reasons:string[]=[];
+  if(/self[- ]approve|approve my own|ignore (?:the )?(?:judge|approval|policy)|bypass (?:the )?(?:judge|review|approval|policy)/i.test(artifact)){
+    reasons.push("artifact attempts to bypass independent approval or self-approve");
+  }
+  if(/no (?:human|manual) (?:approval|review) (?:is )?(?:needed|required)|override (?:human|policy) authority/i.test(artifact)){
+    reasons.push("artifact attempts to remove the human authority boundary");
+  }
+  return result("authority",reasons,"reject");
+}
+
 export function deterministicSecurityJudge(artifact:string):JudgeResult{
   const reasons:string[]=[];
   if(/sk-[a-z0-9_-]{12,}|api[_ -]?key\s*[:=]\s*\S+|bearer\s+[a-z0-9._-]{12,}/i.test(artifact)) reasons.push("possible secret material in artifact");
@@ -74,6 +85,7 @@ export function deterministicJudge(name:string,artifact:string):JudgeResult{
     case "seo": return deterministicSeoJudge(artifact);
     case "conversion": return deterministicConversionJudge(artifact);
     case "revenue": return deterministicRevenueJudge(artifact);
+    case "authority": return deterministicAuthorityJudge(artifact);
     case "security": return deterministicSecurityJudge(artifact);
     case "reliability": return deterministicReliabilityJudge(artifact);
     default:return{judge:name,verdict:"REVISION",score:50,reasons:["required deterministic judge is not implemented"]};
@@ -81,6 +93,6 @@ export function deterministicJudge(name:string,artifact:string):JudgeResult{
 }
 
 export function runRequiredJudges(required:string[],artifact:string){
-  const names=[...new Set(["truth",...required])];
+  const names=[...new Set(["truth","authority",...required])];
   return names.map(name=>deterministicJudge(name,artifact));
 }
