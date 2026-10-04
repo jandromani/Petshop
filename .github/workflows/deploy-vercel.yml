@@ -32,33 +32,48 @@ jobs:
 
       - run: npm ci --no-audit --no-fund
 
-      - name: Await exact Git-linked Vercel deployment
+      - name: Resolve production application SHA
+        id: production
         shell: bash
         run: |
-          node <<'NODE'
-          const base=process.env.PRODUCTION_URL;
-          const expected=process.env.EXPECTED_SHA;
-          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-          let last="";
-          for(let i=0;i<30;i++){
-            try{
-              const res=await fetch(base+"/api/health",{cache:"no-store"});
-              if(res.ok){
-                const body=await res.json();
-                last=String(body?.deployment?.commitSha||"");
-                if(last===expected){
-                  console.log("Exact tested SHA is live:",expected);
-                  process.exit(0);
-                }
-              }
-            }catch(error){last=String(error);}
-            await sleep(10_000);
-          }
-          throw new Error("Production alias did not reach expected SHA "+expected+"; last observed "+last);
-          NODE
+          set -euo pipefail
+          expected="$EXPECTED_SHA"
+          live_sha=""
 
-      - name: Smoke exact production
+          for attempt in $(seq 1 18); do
+            body="$(curl --fail --silent --show-error "$PRODUCTION_URL/api/health" || true)"
+            live_sha="$(printf '%s' "$body" | jq -r '.deployment.commitSha // empty' 2>/dev/null || true)"
+            if [ "$live_sha" = "$expected" ]; then
+              echo "Exact tested SHA is live: $expected"
+              echo "app_sha=$expected" >> "$GITHUB_OUTPUT"
+              echo "deployment_skipped=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep 10
+          done
+
+          if [ -z "$live_sha" ]; then
+            echo "Production did not expose an application SHA." >&2
+            exit 1
+          fi
+
+          git fetch --no-tags --depth=1 origin "$live_sha"
+          changed="$(git diff --name-only "$live_sha" "$expected")"
+          printf 'Production app SHA: %s\nExpected source SHA: %s\nChanged paths:\n%s\n' "$live_sha" "$expected" "$changed"
+
+          runtime_changed="$(printf '%s\n' "$changed" | grep -E '^(app/|components/|src/|workflows/|public/|db/|scripts/|package(-lock)?\.json$|next\.config\.|proxy\.ts$|vercel\.json$|tsconfig\.json$|playwright\.config\.ts$)' || true)"
+          if [ -n "$runtime_changed" ]; then
+            echo "Runtime-affecting changes exist but production did not reach the expected SHA:" >&2
+            printf '%s\n' "$runtime_changed" >&2
+            exit 1
+          fi
+
+          echo "Vercel deployment skip accepted: source changes are non-runtime only."
+          echo "app_sha=$live_sha" >> "$GITHUB_OUTPUT"
+          echo "deployment_skipped=true" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke production application
         env:
           DEPLOYMENT_URL: ${{ env.PRODUCTION_URL }}
-          EXPECTED_SHA: ${{ env.EXPECTED_SHA }}
+          EXPECTED_SHA: ${{ steps.production.outputs.app_sha }}
         run: npm run smoke:production
