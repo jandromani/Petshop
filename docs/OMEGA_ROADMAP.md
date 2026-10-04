@@ -104,7 +104,7 @@ Exit gate: abusive traffic is controlled before compute/DB, and secrets/incident
   - agent run failure/cost
 - warning/critical Daily Control signals have an optional HTTPS notification webhook; a real operator destination must still be configured
 - surface database latency and connection failures
-- add workflow duration/retry metrics
+- acquisition-wave and governed-agent p50/p95/max durations are derived from persisted started/completed evidence; workflow-engine retry counts remain explicitly unavailable instead of estimated
 - AI token/cost/model/provider metrics are aggregated by governed role and exposed in protected Ops observability
 - provider acquisition error budgets are derived from observed clean/error waves; no-sample remains null
 - deterministic 7-day operating scorecard is exposed in the protected Control Tower/API and never promotes NO_SAMPLE to PASS
@@ -170,7 +170,7 @@ Exit gate: at least 10 fresh SELLABLE offers are visible from real commercial ev
 - reconcile click → booking → commission
 - define commission rules with effective dates
 - support cancellation/reversal/settlement lifecycle
-- define FX treatment and reporting currency
+- reporting currency is EUR; transaction native currency remains immutable and non-EUR values are excluded from consolidated EUR totals until explicit matching FX-rate evidence exists
 - conversion identity is idempotent by provider conversion ID; first attribution is window-gated and DB-tested while later cancellation/settlement updates remain allowed
 - reconcile provider totals against Atlas ledger
 - define invoice/tax/accounting treatment with accountant
@@ -230,12 +230,12 @@ Exit gate: agents can be replayed, audited, stopped and proven not to exceed aut
 
 - Neon PITR/backups enabled
 - quarterly restore drill
-- database connection exhaustion test
+- Postgres connection-exhaustion behavior is exercised in CI with a one-connection role; Atlas health fails closed when the configured role cannot acquire another connection
 - provider timeout/429/500/network recovery tests are implemented in CI; live partner outage drill remains unproven
 - AI outage tests prove Gateway → OpenRouter recovery, OpenRouter primary → free-model fallback, and fail-closed no-paid-fallback policy; live outage drill remains unproven
 - queue retry/backoff and poison-message cutoff are implemented and deterministically tested; live queue failure drill remains unproven
 - durable per-slot cron claims and DB idempotency tests are implemented; duplicate-delivery production drill remains unproven
-- production rollback drill
+- production rollback/recovery drill completed on 2026-10-04: #67 → #66 → #67, health 200 both directions and no runtime error clusters after restoration
 - RPO/RTO documented
 - incident runbook links to one-click rollback/revoke procedures
 
@@ -246,10 +246,10 @@ Exit gate: Atlas has demonstrated recovery from DB, provider, AI and bad-deploy 
 - capture real Core Web Vitals
 - set p75 LCP/INP/CLS budgets
 - Lighthouse CI or equivalent regression budget
-- Chromium, Firefox and WebKit E2E run in CI
+- Chromium, Firefox, WebKit and Pixel 7 mobile E2E run in CI
 - WCAG 2.2 AA audit
-- keyboard-only critical path
-- screen-reader labels for planner/map/results
+- keyboard-only planner critical path is enforced in Playwright
+- public-surface regression checks enforce main landmarks, visible h1s, image alt text and accessible names for buttons, links and form controls; deeper screen-reader audit remains external
 - load test public read paths and rate-limited write paths
 - validate mobile devices with slow network/CPU
 - search zero-result rate and trackable-session abandonment are derived from consented search/referral telemetry and surfaced in Control Tower
@@ -277,6 +277,8 @@ Exit gate: real-user performance and accessibility meet documented budgets, not 
 - keep board/VC dashboard separate from synthetic software proof
 
 Exit gate: Atlas can show repeatable demand, supply and unit economics. No engineering score can substitute for this gate.
+
+External account/contract activation evidence is tracked in GitHub issue #68 so these gates are not confused with repository work.
 
 ## Definition of 10/10
 
