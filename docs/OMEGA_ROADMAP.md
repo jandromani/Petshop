@@ -105,8 +105,8 @@ Exit gate: abusive traffic is controlled before compute/DB, and secrets/incident
 - add alert thresholds and notification destination
 - surface database latency and connection failures
 - add workflow duration/retry metrics
-- add AI token/cost/model metrics by role
-- add provider error budgets
+- AI token/cost/model/provider metrics are aggregated by governed role and exposed in protected Ops observability
+- provider acquisition error budgets are derived from observed clean/error waves; no-sample remains null
 - deterministic 7-day operating scorecard is exposed in the protected Control Tower/API and never promotes NO_SAMPLE to PASS
 - do not use absence of errors as evidence of user success
 
