@@ -4,8 +4,8 @@ import { getDirectoryHotel,importDirectoryHotels,listDirectoryHotels } from "@/s
 
 describe("directory database",()=>{
   it("creates the directory provenance schema",async()=>{
-    const sql=getDatabase();expect(sql).toBeTruthy();
-    const rows=await sql!<Array<{exists:boolean}>>`select to_regclass('public.hotel_directory_sources') is not null as exists`;
+    const sql=getDatabase();expect(sql).toBeTruthy();if(!sql)throw new Error("database unavailable");
+    const rows=await sql<Array<{exists:boolean}>>`select to_regclass('public.hotel_directory_sources') is not null as exists`;
     expect(rows[0].exists).toBe(true);
   });
   it("imports, canonicalizes and reads a real-property identity",async()=>{
