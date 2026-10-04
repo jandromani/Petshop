@@ -10,6 +10,7 @@ export async function runDataRetention(){
   if(!sql)return{configured:false};
   const days=boundedDays(process.env.DATA_RETENTION_DAYS,90);
   const leadDays=boundedDays(process.env.HOTEL_LEAD_RETENTION_DAYS,365);
+  const consumerDays=boundedDays(process.env.CONSUMER_MEMORY_RETENTION_DAYS,365);
 
   const expiredShares=await sql<{count:number}[]>`
     with deleted as (delete from shared_plans where expires_at<=now() returning 1)
@@ -56,8 +57,15 @@ export async function runDataRetention(){
       returning 1
     ) select count(*)::int from scrubbed
   `;
+  const consumerProfiles=await sql<{count:number}[]>`
+    with deleted as (
+      delete from consumer_profiles
+      where last_seen_at<now()-make_interval(days => ${consumerDays})
+      returning 1
+    ) select count(*)::int from deleted
+  `;
   return{
-    configured:true,days,leadDays,
+    configured:true,days,leadDays,consumerDays,
     expiredShares:Number(expiredShares[0]?.count||0),
     rateBuckets:Number(rateBuckets[0]?.count||0),
     deletedGrowthEvents:Number(growth[0]?.count||0),
@@ -65,5 +73,6 @@ export async function runDataRetention(){
     scrubbedConversionPayloads:Number(conversions[0]?.count||0),
     deletedAgentRuns:Number(agents[0]?.count||0),
     scrubbedAbandonedLeads:Number(abandonedLeads[0]?.count||0),
+    deletedConsumerProfiles:Number(consumerProfiles[0]?.count||0),
   };
 }
