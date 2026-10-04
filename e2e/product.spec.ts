@@ -42,3 +42,30 @@ test("legal surfaces expose the commercial launch gate",async({page})=>{
   await page.goto("/terms");
   await expect(page.getByRole("heading",{name:/Terms of use/i})).toBeVisible();
 });
+
+
+test("mobile layout has no material horizontal overflow",async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.goto("/");
+  const dimensions=await page.evaluate(()=>({
+    scrollWidth:document.documentElement.scrollWidth,
+    clientWidth:document.documentElement.clientWidth,
+  }));
+  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth+2);
+});
+
+test("primary planner path is keyboard reachable",async({page})=>{
+  await page.goto("/");
+  await page.keyboard.press("Tab");
+  let found=false;
+  for(let i=0;i<30;i++){
+    const focused=await page.evaluate(()=>({
+      tag:document.activeElement?.tagName||"",
+      text:(document.activeElement?.textContent||"").trim(),
+      aria:document.activeElement?.getAttribute("aria-label")||"",
+    }));
+    if(/show .* stays/i.test(focused.text)||/show .* stays/i.test(focused.aria)){found=true;break;}
+    await page.keyboard.press("Tab");
+  }
+  expect(found).toBe(true);
+});
