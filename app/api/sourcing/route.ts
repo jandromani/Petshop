@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { resolveDirectoryHotel } from "@/src/services/directory";
 import { createSourcingRequest,listSourcingRequests,updateSourcingRequestStatus } from "@/src/db/sourcing";
+import { ensureHotelLead } from "@/src/db/direct-supply";
 import { enforceRateLimit,requestFingerprint } from "@/src/security/rate-limit";
 import { opsAuthorized } from "@/src/security/ops-auth";
 
@@ -32,7 +33,9 @@ export async function POST(req:Request){
     sourcePath:parsed.data.sourcePath,
   });
   if(!row)return Response.json({error:"database-unavailable"},{status:503});
-  return Response.json({ok:true,id:row.id,status:row.status,message:"Atlas Supply request created."},{status:202,headers:{"Cache-Control":"no-store"}});
+  const canonicalHotelId=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(hotel.canonicalId)?hotel.canonicalId:undefined;
+  const leadId=await ensureHotelLead({canonicalHotelId,hotelName:hotel.name,city:hotel.city,country:hotel.country,region:hotel.region,lat:hotel.lat??undefined,lng:hotel.lng??undefined,website:hotel.website??undefined,source:"customer-sourcing",notes:{directoryHotelId:hotel.id,sourcingRequestId:row.id,checkIn:parsed.data.checkIn,nights:parsed.data.nights,occupancy:parsed.data.occupancy,targetMonthlyEur:parsed.data.targetMonthlyEur??null}}).catch(()=>null);
+  return Response.json({ok:true,id:row.id,status:row.status,leadId,message:"Atlas Supply request created and routed to Direct Hotel OS."},{status:202,headers:{"Cache-Control":"no-store"}});
 }
 
 export async function GET(req:Request){
