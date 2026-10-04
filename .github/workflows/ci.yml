@@ -1,11 +1,15 @@
 name: CI
 on:
   push:
-    branches: ["master", "build/**", "omega/**"]
+    branches: ["master", "build/**"]
   pull_request:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   verify:
