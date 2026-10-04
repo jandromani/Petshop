@@ -1,0 +1,58 @@
+name: Neon platform setup
+
+on:
+  push:
+    branches:
+      - chore/neon-platform-setup
+
+permissions:
+  contents: write
+
+jobs:
+  setup-and-deploy:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    env:
+      NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+          cache: npm
+
+      - name: Install Neon CLI
+        run: |
+          npm i -g neon@latest
+          neon --version
+
+      - name: Install Neon agent skills
+        run: neon skills -y --agent codex
+
+      - name: Configure Neon MCP
+        run: neon mcp -y --agent codex --oauth
+
+      - name: Initialize Neon config packages
+        run: neon config init --services functions,object-storage
+
+      - name: Persist generated package metadata
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(neon): install config dependencies"
+            git push origin HEAD:chore/neon-platform-setup
+          fi
+
+      - name: Link Neon production branch
+        run: |
+          if [ -z "$NEON_API_KEY" ]; then
+            echo "::error::NEON_API_KEY is not configured in GitHub Actions secrets; Neon deploy cannot authenticate non-interactively."
+            exit 86
+          fi
+          neon link --project-id morning-brook-21821002 --branch production -y
+
+      - name: Deploy Neon config
+        run: neon deploy
