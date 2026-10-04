@@ -12,7 +12,8 @@
     "db:migrate": "node scripts/migrate.mjs",
     "security:secrets": "node scripts/check-secrets.mjs",
     "smoke:production": "node scripts/smoke-production.mjs",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "directory:import": "node scripts/import-directory.mjs"
   },
   "dependencies": {
     "@neon/config": "^1.8.3",
