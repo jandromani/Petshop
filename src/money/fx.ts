@@ -45,7 +45,9 @@ export function convertToReportingCurrency(
     && currency(evidence.quoteCurrency)===REPORTING_CURRENCY
     && Number.isFinite(evidence.rate)
     && evidence.rate>0
-    && evidence.source.trim()
+    && typeof evidence.source==="string"
+    && evidence.source.trim().length>0
+    && typeof evidence.observedAt==="string"
     && !Number.isNaN(Date.parse(evidence.observedAt)),
   );
   if(!valid){
