@@ -16,9 +16,22 @@ export function agentModelConfigured(){
   );
 }
 
+type ProviderPreference="auto"|"openrouter"|"vercel-ai-gateway";
+
+function providerPreference():ProviderPreference{
+  const configured=(process.env.AGENT_LLM_PROVIDER||"auto").trim().toLowerCase();
+  if(configured==="openrouter"||configured==="vercel-ai-gateway")return configured;
+  return"auto";
+}
+
 export function agentRuntimeProvider(){
-  if(process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN||vercelOidcPotentiallyAvailable())return"vercel-ai-gateway";
-  if(process.env.OPENROUTER_API_KEY)return"openrouter";
+  const preference=providerPreference();
+  const openRouter=Boolean(process.env.OPENROUTER_API_KEY);
+  const gateway=Boolean(process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN||vercelOidcPotentiallyAvailable());
+  if(preference==="openrouter"&&openRouter)return"openrouter";
+  if(preference==="vercel-ai-gateway"&&gateway)return"vercel-ai-gateway";
+  if(gateway)return"vercel-ai-gateway";
+  if(openRouter)return"openrouter";
   return"none";
 }
 
@@ -36,9 +49,8 @@ async function resolveGatewayToken(){
 }
 
 export async function agentRuntimeCredentialsAvailable(){
-  const gatewayToken=await resolveGatewayToken();
-  if(gatewayToken)return true;
-  return Boolean(process.env.OPENROUTER_API_KEY);
+  if(process.env.OPENROUTER_API_KEY)return true;
+  return Boolean(await resolveGatewayToken());
 }
 
 function gatewayModel(role:LlmRole){
@@ -117,24 +129,58 @@ export async function llmCompletion(
 ){
   const gatewayToken=await resolveGatewayToken();
   const openRouterKey=process.env.OPENROUTER_API_KEY;
+  const preference=providerPreference();
   const maxTokens=Math.max(64,Math.min(1400,options.maxTokens??700));
   const temperature=options.temperature??.2;
 
-  if(gatewayToken){
+  const tryOpenRouter=async()=>{
+    if(!openRouterKey)throw new Error("OpenRouter is not configured");
+    return openRouterCompletion(openRouterKey,messages,options.role,maxTokens,temperature);
+  };
+  const tryGateway=async()=>{
+    if(!gatewayToken)throw new Error("Vercel AI Gateway is not configured");
+    return gatewayCompletion(gatewayToken,messages,options.role,maxTokens,temperature);
+  };
+
+  if(preference==="openrouter"&&openRouterKey){
     try{
-      return await gatewayCompletion(gatewayToken,messages,options.role,maxTokens,temperature);
+      return await tryOpenRouter();
+    }catch(error){
+      console.error(JSON.stringify({
+        level:"warning",event:"openrouter_completion_failed",role:options.role,error:String(error).slice(0,500),
+        fallbackConfigured:Boolean(gatewayToken),
+      }));
+      if(gatewayToken)return tryGateway();
+      throw error;
+    }
+  }
+
+  if(preference==="vercel-ai-gateway"&&gatewayToken){
+    try{
+      return await tryGateway();
     }catch(error){
       console.error(JSON.stringify({
         level:"warning",event:"ai_gateway_completion_failed",role:options.role,error:String(error).slice(0,500),
         fallbackConfigured:Boolean(openRouterKey),
       }));
-      if(!openRouterKey)throw error;
+      if(openRouterKey)return tryOpenRouter();
+      throw error;
     }
   }
 
-  if(openRouterKey){
-    return openRouterCompletion(openRouterKey,messages,options.role,maxTokens,temperature);
+  if(gatewayToken){
+    try{
+      return await tryGateway();
+    }catch(error){
+      console.error(JSON.stringify({
+        level:"warning",event:"ai_gateway_completion_failed",role:options.role,error:String(error).slice(0,500),
+        fallbackConfigured:Boolean(openRouterKey),
+      }));
+      if(openRouterKey)return tryOpenRouter();
+      throw error;
+    }
   }
 
+  if(openRouterKey)return tryOpenRouter();
   throw new Error("No governed model runtime is configured");
 }
