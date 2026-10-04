@@ -96,9 +96,9 @@ async function gatewayCompletion(
 }
 
 async function openRouterCompletion(
-  key:string,messages:LlmMessage[],role:LlmRole,maxTokens:number,temperature:number,
+  key:string,messages:LlmMessage[],role:LlmRole,maxTokens:number,temperature:number,modelOverride?:string,
 ){
-  const model=openRouterModel(role);
+  const model=modelOverride||openRouterModel(role);
   const res=await fetch("https://openrouter.ai/api/v1/chat/completions",{
     method:"POST",
     signal:AbortSignal.timeout(llmTimeoutMs()),
@@ -133,9 +133,25 @@ export async function llmCompletion(
   const maxTokens=Math.max(64,Math.min(1400,options.maxTokens??700));
   const temperature=options.temperature??.2;
 
-  const tryOpenRouter=async()=>{
+  const tryOpenRouter=async(modelOverride?:string)=>{
     if(!openRouterKey)throw new Error("OpenRouter is not configured");
-    return openRouterCompletion(openRouterKey,messages,options.role,maxTokens,temperature);
+    return openRouterCompletion(openRouterKey,messages,options.role,maxTokens,temperature,modelOverride);
+  };
+  const tryOpenRouterWithFreeFallback=async()=>{
+    try{
+      return await tryOpenRouter();
+    }catch(primaryError){
+      const fallback=(process.env.OPENROUTER_FALLBACK_MODEL||"openrouter/free").trim();
+      const primary=openRouterModel(options.role);
+      if(fallback&&fallback!==primary){
+        console.error(JSON.stringify({
+          level:"warning",event:"openrouter_primary_failed",role:options.role,
+          model:primary,error:String(primaryError).slice(0,500),fallbackModel:fallback,
+        }));
+        return tryOpenRouter(fallback);
+      }
+      throw primaryError;
+    }
   };
   const tryGateway=async()=>{
     if(!gatewayToken)throw new Error("Vercel AI Gateway is not configured");
@@ -144,13 +160,14 @@ export async function llmCompletion(
 
   if(preference==="openrouter"&&openRouterKey){
     try{
-      return await tryOpenRouter();
+      return await tryOpenRouterWithFreeFallback();
     }catch(error){
+      const paidFallback=process.env.AGENT_ALLOW_PAID_FALLBACK==="true";
       console.error(JSON.stringify({
         level:"warning",event:"openrouter_completion_failed",role:options.role,error:String(error).slice(0,500),
-        fallbackConfigured:Boolean(gatewayToken),
+        paidFallbackConfigured:Boolean(gatewayToken&&paidFallback),
       }));
-      if(gatewayToken)return tryGateway();
+      if(gatewayToken&&paidFallback)return tryGateway();
       throw error;
     }
   }
@@ -163,7 +180,7 @@ export async function llmCompletion(
         level:"warning",event:"ai_gateway_completion_failed",role:options.role,error:String(error).slice(0,500),
         fallbackConfigured:Boolean(openRouterKey),
       }));
-      if(openRouterKey)return tryOpenRouter();
+      if(openRouterKey)return tryOpenRouterWithFreeFallback();
       throw error;
     }
   }
@@ -176,7 +193,7 @@ export async function llmCompletion(
         level:"warning",event:"ai_gateway_completion_failed",role:options.role,error:String(error).slice(0,500),
         fallbackConfigured:Boolean(openRouterKey),
       }));
-      if(openRouterKey)return tryOpenRouter();
+      if(openRouterKey)return tryOpenRouterWithFreeFallback();
       throw error;
     }
   }
