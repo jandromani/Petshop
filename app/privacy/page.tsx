@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { legalIdentity } from "@/src/system/legal";
+import { LEGAL_DOCUMENT_VERSION,legalIdentity } from "@/src/system/legal";
 import ConsentSettings from "@/components/ConsentSettings";
 
 export const metadata:Metadata={title:"Privacy notice",robots:{index:false,follow:false}};
@@ -11,7 +11,7 @@ export default function PrivacyPage(){
   return <main className="seoPage"><div className="shell">
     <a className="eyebrow" href="/legal">← legal & commercial disclosure</a>
     <section className="seoHero" style={{marginTop:20}}>
-      <div className="eyebrow">PRIVACY NOTICE</div>
+      <div className="eyebrow">PRIVACY NOTICE · {LEGAL_DOCUMENT_VERSION}</div>
       <h1>Privacy notice.</h1>
       <p style={{fontSize:20,maxWidth:780}}>Atlas is designed to minimize personal data and to keep analytics consent separate from essential commercial attribution.</p>
     </section>

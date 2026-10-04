@@ -1,5 +1,5 @@
 import { NextRequest,NextResponse } from "next/server";
-import { ANALYTICS_CONSENT,CONSENT_COOKIE } from "@/src/privacy/consent";
+import { CONSENT_COOKIE,CONSENT_VERSION_COOKIE,consentChoiceFromValues } from "@/src/privacy/consent";
 
 const YEAR=60*60*24*365;
 const SESSION=60*30;
@@ -27,8 +27,11 @@ export function proxy(request:NextRequest){
   }
 
   const response=NextResponse.next();
-  const consent=request.cookies.get(CONSENT_COOKIE)?.value;
-  if(consent!==ANALYTICS_CONSENT){
+  const consent=consentChoiceFromValues(
+    request.cookies.get(CONSENT_COOKIE)?.value,
+    request.cookies.get(CONSENT_VERSION_COOKIE)?.value,
+  );
+  if(consent!=="analytics"){
     clearTracking(response);
     return response;
   }

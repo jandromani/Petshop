@@ -2,7 +2,7 @@ import { afterEach,describe,expect,it } from "vitest";
 import { usageCostCents } from "@/src/db/agents";
 import { filterLiveDiscovery,liveDiscoveryMode,uniqueDiscoveryNarrative } from "@/src/seo/live";
 import { legalIdentity } from "@/src/system/legal";
-import { hasAnalyticsConsent } from "@/src/privacy/consent";
+import { CONSENT_VERSION,CONSENT_VERSION_COOKIE,hasAnalyticsConsent } from "@/src/privacy/consent";
 import { runGovernedAgent } from "@/src/services/governed-agent";
 import { llmTimeoutMs } from "@/src/agents/llm";
 import type { LiveCatalogOffer } from "@/src/core/live-offers";
@@ -103,7 +103,8 @@ describe("R9-R11 governance contracts",()=>{
   it("requires explicit analytics consent before persistent measurement",()=>{
     expect(hasAnalyticsConsent("")).toBe(false);
     expect(hasAnalyticsConsent("rv_consent=essential")).toBe(false);
-    expect(hasAnalyticsConsent("foo=1; rv_consent=analytics; bar=2")).toBe(true);
+    expect(hasAnalyticsConsent("foo=1; rv_consent=analytics; bar=2")).toBe(false);
+    expect(hasAnalyticsConsent("foo=1; rv_consent=analytics; "+CONSENT_VERSION_COOKIE+"="+CONSENT_VERSION+"; bar=2")).toBe(true);
   });
 
   it("blocks commercial activation until operator identity is configured",()=>{
