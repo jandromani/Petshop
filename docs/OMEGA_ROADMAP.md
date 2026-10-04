@@ -51,7 +51,7 @@ Objective: make Atlas durable without sharing production state with previews.
 
 Exit gate:
 - `/api/health` → `databaseConfigured:true`, `databaseReachable:true`
-- migrations 001–012 are recorded with checksums
+- migrations 001–014 are recorded with checksums
 - a preview deployment uses an isolated Neon branch
 - a restore drill succeeds
 
