@@ -84,3 +84,27 @@ export async function setProviderSyncCursor(provider:string,stream:string,cursor
   `;
   return true;
 }
+
+
+export async function revenueCurrencyExposure(days=30){
+  const sql=getDatabase();if(!sql)return[] as Array<{currency:string;status:string;count:number;bookingValue:number;commission:number}>;
+  const bounded=Math.max(1,Math.min(365,days));
+  try{
+    const rows=await sql<Array<{currency:string;status:string;count:number;booking_value:number;commission:number}>>`
+      select coalesce(currency,'UNKNOWN') as currency,status,count(*)::int,
+        coalesce(sum(booking_value),0)::float as booking_value,
+        coalesce(sum(commission),0)::float as commission
+      from conversions
+      where received_at>=now()-make_interval(days => ${bounded})
+      group by coalesce(currency,'UNKNOWN'),status
+      order by currency,status
+    `;
+    return rows.map(row=>({
+      currency:row.currency,status:row.status,count:Number(row.count||0),
+      bookingValue:Number(row.booking_value||0),commission:Number(row.commission||0),
+    }));
+  }catch(error){
+    console.error(JSON.stringify({level:"error",event:"revenue_currency_exposure_failed",error:String(error).slice(0,300)}));
+    return[];
+  }
+}
