@@ -15,6 +15,7 @@ import {
   agentActionIdempotencyKey,executeSafeAgentAction,
 } from "@/src/agents/actions";
 import { optimizeHeroExperiment } from "@/src/growth/autopilot";
+import { SLO_TARGETS } from "@/src/system/slo";
 
 export type ControlSignal={key:string;severity:"info"|"warning"|"critical";message:string};
 
@@ -26,13 +27,25 @@ export async function collectControlSignals():Promise<ControlSignal[]>{
 
   if(!db.configured)signals.push({key:"infra.database",severity:"critical",message:"Persistent database is not configured"});
   else if(!db.reachable)signals.push({key:"infra.database",severity:"critical",message:"Persistent database is configured but unreachable"});
+  else if(typeof db.latencyMs==="number"&&db.latencyMs>SLO_TARGETS.databaseProbeP95Ms)signals.push({key:"infra.database-latency",severity:"warning",message:"Database probe latency "+db.latencyMs+"ms exceeds "+SLO_TARGETS.databaseProbeP95Ms+"ms target"});
   const disabled=providers.filter(p=>!p.configured).map(p=>p.provider);
   if(disabled.length)signals.push({key:"supply.providers",severity:"warning",message:"Disabled providers: "+disabled.join(", ")});
   if(db.reachable&&ops.liveOffers===0)signals.push({key:"supply.live",severity:"warning",message:"No fresh SELLABLE redirect offers in the public catalog"});
   const failedWaves=ops.acquisitionRuns.filter(r=>r.status==="FAILED"||r.errors>0);
   if(failedWaves.length)signals.push({key:"supply.waves",severity:"warning",message:failedWaves.length+" recent acquisition waves have errors"});
+  if(ops.acquisitionRuns.length>=3){
+    const clean=ops.acquisitionRuns.filter(r=>r.status==="COMPLETE"&&r.errors===0).length;
+    const pct=clean/ops.acquisitionRuns.length*100;
+    if(pct<SLO_TARGETS.providerWaveSuccessPct)signals.push({key:"supply.slo",severity:"warning",message:"Recent provider-wave success "+pct.toFixed(1)+"% is below "+SLO_TARGETS.providerWaveSuccessPct+"% target"});
+  }
   const failedAgents=ops.agentRuns.filter(r=>r.status==="FAILED");
   if(failedAgents.length)signals.push({key:"agents.failures",severity:"warning",message:failedAgents.length+" recent agent runs failed"});
+  const completedAgents=ops.agentRuns.filter(r=>r.status==="COMPLETE").length;
+  const agentSample=completedAgents+failedAgents.length;
+  if(agentSample>=3){
+    const pct=completedAgents/agentSample*100;
+    if(pct<SLO_TARGETS.agentRunSuccessPct)signals.push({key:"agents.slo",severity:"warning",message:"Recent agent success "+pct.toFixed(1)+"% is below "+SLO_TARGETS.agentRunSuccessPct+"% target"});
+  }
   signals.push({key:"agents.authority",severity:"info",message:Object.keys(AGENTS).length+" bounded roles; only allowlisted read-only/idempotent actions can auto-execute"});
   return signals;
 }
