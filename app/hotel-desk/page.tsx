@@ -2,13 +2,14 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { OPS_COOKIE,verifyOpsSession } from "@/src/security/ops-session";
 import { listHotelDesk } from "@/src/db/direct-supply";
+import { listSourcingRequests } from "@/src/db/sourcing";
 
 export const metadata={title:"Hotel Desk",robots:{index:false,follow:false}};
 
 export default async function HotelDesk(){
   const jar=await cookies();
   if(!verifyOpsSession(jar.get(OPS_COOKIE)?.value)) notFound();
-  const desk=await listHotelDesk();
+  const [desk,sourcing]=await Promise.all([listHotelDesk(),listSourcingRequests(100)]);
 
   return <main className="controlPage"><div className="shell">
     <a className="eyebrow" style={{color:"#0a1630"}} href="/control">← Control Tower</a>
@@ -16,10 +17,21 @@ export default async function HotelDesk(){
     <p style={{color:"#91a0b8",maxWidth:820}}>Direct long-stay contracting. Discovery is not publication: rates remain DRAFT until contract evidence and a booking path exist.</p>
 
     <div className="metrics">
+      <div className="metricDark"><b>{sourcing.filter(r=>r.status==="OPEN"||r.status==="SOURCING").length}</b><span>customer sourcing queue</span></div>
       <div className="metricDark"><b>{desk.leads.length}</b><span>hotel leads</span></div>
       <div className="metricDark"><b>{desk.rates.length}</b><span>direct rate records</span></div>
       <div className="metricDark"><b>{desk.rates.filter((r:any)=>r.contract_verified).length}</b><span>contract verified</span></div>
       <div className="metricDark"><b>{desk.rates.filter((r:any)=>r.publication_state==="READY_FOR_REVIEW").length}</b><span>ready for truth review</span></div>
+    </div>
+
+    <h2 style={{marginTop:36}}>Customer sourcing queue</h2>
+    <div className="table">
+      {sourcing.length?sourcing.map(r=><div className="tr" key={r.id}>
+        <b>{r.hotel_name}</b>
+        <span>{r.city}, {r.country}</span>
+        <span>{r.nights}d · {r.occupancy} guest{r.occupancy===1?"":"s"} · {r.check_in}</span>
+        <span className={r.status==="MATCHED"?"green":"amber"}>{r.status}{r.target_monthly_eur?" · €"+Math.round(r.target_monthly_eur)+"/mo target":""}</span>
+      </div>):<div className="tr"><b>No customer sourcing requests yet</b><span>Rate-pending hotel pages can create them</span><span>30–365d</span><span className="amber">WAITING</span></div>}
     </div>
 
     <h2 style={{marginTop:36}}>Leads</h2>
