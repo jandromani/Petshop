@@ -12,7 +12,7 @@ import { agentRuntimeCredentialsAvailable,agentRuntimeProvider } from "@/src/age
 import { getHeroOverride } from "@/src/growth/autopilot";
 import { getSloSnapshot } from "@/src/system/slo";
 import { getEconomicsSnapshot } from "@/src/system/economics";
-import { agentRoleMetrics,providerErrorBudgets } from "@/src/db/observability";
+import { agentRoleMetrics,providerErrorBudgets,runtimeDurationMetrics } from "@/src/db/observability";
 import { deriveWeeklyOperatingScorecard } from "@/src/system/scorecard";
 
 export const metadata={title:"Control Tower",robots:{index:false,follow:false}};
@@ -22,7 +22,7 @@ export default async function ControlTower(){
   if(!verifyOpsSession(jar.get(OPS_COOKIE)?.value)) notFound();
 
   const providers=liveProviderStatuses();
-  const [ops,incidents,funnel,heroExperiment,friction,agentTasks,heroOverride,dbHealth,agentCredentials,slo,economics,agentMetrics,providerBudgets]=await Promise.all([
+  const [ops,incidents,funnel,heroExperiment,friction,agentTasks,heroOverride,dbHealth,agentCredentials,slo,economics,agentMetrics,providerBudgets,durationMetrics]=await Promise.all([
     getOpsSnapshot(),
     listOpenIncidents(20),
     growthFunnel(30),
@@ -36,6 +36,7 @@ export default async function ControlTower(){
     getEconomicsSnapshot(30),
     agentRoleMetrics(30),
     providerErrorBudgets(30),
+    runtimeDurationMetrics(30),
   ]);
   const db=dbHealth.reachable;
   const agentConfigured=agentCredentials&&process.env.AGENT_RUNTIME_ENABLED!=="false";
@@ -124,6 +125,17 @@ export default async function ControlTower(){
         </div>):<div className="tr"><b>No acquisition sample</b><span>NO SAMPLE</span><span>—</span><span>provider waves required</span></div>}
       </div>
 
+      <h2 style={{marginTop:36}}>Observed runtime duration · 30d</h2>
+      <div className="table">
+        <div className="tr"><b>Runtime</b><b>p50 / p95</b><b>Max</b><b>Failure / retries</b></div>
+        {durationMetrics.length?durationMetrics.map(m=><div className="tr" key={m.kind}>
+          <b>{m.kind}</b>
+          <span>{m.p50Ms===null?"NO SAMPLE":m.p50Ms+" ms"} / {m.p95Ms===null?"NO SAMPLE":m.p95Ms+" ms"}</span>
+          <span>{m.maxMs===null?"—":m.maxMs+" ms"} · {m.sample} completed</span>
+          <span>{m.failed} failed · engine retries NOT EXPOSED</span>
+        </div>):<div className="tr"><b>No duration sample</b><span>NO SAMPLE</span><span>—</span><span>DB/runtime evidence required</span></div>}
+      </div>
+
       <h2 style={{marginTop:36}}>Observed economics · 30d</h2>
       <div className="metrics">
         <div className="metricDark"><b>{economics.observed.referralClicks}</b><span>referral clicks</span></div>
@@ -132,6 +144,14 @@ export default async function ControlTower(){
         <div className="metricDark"><b>€{economics.observed.commissionEur.toFixed(2)}</b><span>observed commission</span></div>
         <div className="metricDark"><b>{economics.observed.commissionPerConversionEur===null?"—":"€"+economics.observed.commissionPerConversionEur.toFixed(2)}</b><span>commission / conversion</span></div>
       </div>
+
+      <div className="table" style={{marginTop:18}}>
+        <div className="tr"><b>Currency</b><b>Status</b><b>Booking value</b><b>Commission</b></div>
+        {economics.observed.currencyExposure.length?economics.observed.currencyExposure.map((row,i)=><div className="tr" key={row.currency+":"+row.status+":"+i}>
+          <b>{row.currency}</b><span>{row.status} · {row.count} conversion(s)</span><span>{row.bookingValue.toFixed(2)} {row.currency}</span><span>{row.commission.toFixed(2)} {row.currency}</span>
+        </div>):<div className="tr"><b>No currency exposure</b><span>NO SAMPLE</span><span>—</span><span>Reporting currency: {economics.reportingCurrency}</span></div>}
+      </div>
+      <p style={{color:"#91a0b8",fontSize:12}}>FX policy {economics.fxPolicy.version}: {economics.fxPolicy.rule}</p>
 
       <h2 style={{marginTop:36}}>Open incidents</h2>
       <div className="table">
