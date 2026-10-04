@@ -108,6 +108,7 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
       <nav className="navlinks"><a href="/es">ES</a><a href="/saved">Saved</a><a href="#explore">Stays</a><a href="#planner">Build my year</a><a href="#agent">Ask Atlas</a><a className="btn" href="#explore">Find a stay →</a></nav>
     </div></header>
 
+    <main id="main-content">
     <section className="hero silverHero"><div className="shell">
       <div className="eyebrow"><i className="dot"/> LONG-STAY HOTEL LIVING · 30–180 DAYS</div>
       <h1>Live somewhere better.<br/><em>Stay for a season.</em></h1>
@@ -138,7 +139,7 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
             ["Other recurring income",otherIncome,setOtherIncome,0,4000],
           ].map(([label,value,setter,min,max])=><div className="control" key={String(label)}>
             <div className="label"><span>{String(label)}</span><b>{euro(Number(value))}</b></div>
-            <input type="range" min={Number(min)} max={Number(max)} step="50" value={Number(value)} onChange={e=>(setter as (x:number)=>void)(Number(e.target.value))}/>
+            <input aria-label={String(label)} type="range" min={Number(min)} max={Number(max)} step="50" value={Number(value)} onChange={e=>(setter as (x:number)=>void)(Number(e.target.value))}/>
           </div>)}
           <div className="financeSummary" data-testid="monthly-resources">
             <div><span>MONTHLY RESOURCES</span><b>{euro(finances.monthlyResources)}</b></div>
@@ -146,7 +147,7 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
           </div>
           <div className="control">
             <div className="label"><span>Keep untouched every month</span><b>{euro(finances.reserve)}</b></div>
-            <input data-testid="reserve-slider" type="range" min="0" max={Math.max(0,finances.monthlyResources)} step="50" value={Math.min(reserve,finances.monthlyResources)} onChange={e=>setReserve(Number(e.target.value))}/>
+            <input data-testid="reserve-slider" aria-label="Keep untouched every month" type="range" min="0" max={Math.max(0,finances.monthlyResources)} step="50" value={Math.min(reserve,finances.monthlyResources)} onChange={e=>setReserve(Number(e.target.value))}/>
           </div>
           <div className="financeBudget" data-testid="living-budget"><span>MAXIMUM AVAILABLE TO LIVE</span><b>{euro(livingBudget)}<small>/month</small></b></div>
           <div className="control"><div className="label"><span>Travelling as</span><b>{party}</b></div><div className="segment"><button className={party==="solo"?"active":""} onClick={()=>setParty("solo")}>Solo</button><button className={party==="couple"?"active":""} onClick={()=>setParty("couple")}>Couple</button></div></div>
@@ -184,9 +185,9 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
     <section id="explore" className="discovery"><div className="shell">
       <div className="sectionTitle"><h2>{visible.length} long-stay stays<br/>inside your budget.</h2><p>Every demo result below respects the same budget, region, traveller and text filters as the search count above.</p></div>
       <div className="toolbar">
-        <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search city, country, pool, sea, clinic…"/>
-        <select value={region} onChange={e=>setRegion(e.target.value as SearchRegion)}><option>All</option><option>Europe</option><option>Asia</option><option>Africa</option><option>Americas</option></select>
-        <select value={sort} onChange={e=>setSort(e.target.value)}><option value="value">Best value</option><option value="price">Lowest monthly</option><option value="score">Silver score</option></select>
+        <input aria-label="Filter stays" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search city, country, pool, sea, clinic…"/>
+        <select aria-label="Filter stays by region" value={region} onChange={e=>setRegion(e.target.value as SearchRegion)}><option>All</option><option>Europe</option><option>Asia</option><option>Africa</option><option>Americas</option></select>
+        <select aria-label="Sort stays" value={sort} onChange={e=>setSort(e.target.value)}><option value="value">Best value</option><option value="price">Lowest monthly</option><option value="score">Silver score</option></select>
       </div>
       <div className="hotels">{visible.map(h=><SilverHotelCard key={h.id} hotel={h} party={party} duration={duration}/>)}</div>
     </div></section>
@@ -194,13 +195,14 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
     <section id="agent" className="agentBand"><div className="shell">
       <div className="sectionTitle"><h2>Ask Atlas.<br/>Your long-stay concierge.</h2><p>The concierge receives only the budget and travel preferences it needs—not your pension or home-income breakdown.</p></div>
       <div className="agentGrid">
-        <div className="chat"><div className="chatlog">{chat.map((m,i)=><div className={"msg "+m.role} key={i}>{m.text}</div>)}</div><div className="chatrow"><input value={draft} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>e.key==="Enter"&&askAgent()} placeholder="e.g. warm sea, healthcare, under my budget…"/><button className="btn lime" onClick={askAgent}>{thinking?"…":"Ask"}</button></div></div>
+        <div className="chat"><div className="chatlog">{chat.map((m,i)=><div className={"msg "+m.role} key={i}>{m.text}</div>)}</div><div className="chatrow"><input aria-label="Ask Atlas" value={draft} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>e.key==="Enter"&&askAgent()} placeholder="e.g. warm sea, healthcare, under my budget…"/><button className="btn lime" onClick={askAgent}>{thinking?"…":"Ask"}</button></div></div>
         <div className="truth"><div className="metric"><b>{hotels.length}</b><span>demo catalogue records</span></div><div className="metric"><b>3</b><span>live provider adapters</span></div><div className="metric"><b>365</b><span>days in generated year</span></div><div className="metric"><b>0</b><span>LLM-written prices allowed</span></div><div className="metric"><b>5</b><span>stay cadences</span></div><div className="metric"><b>1</b><span>budget truth shared across search + route</span></div></div>
       </div>
     </div></section>
 
     <AdjacencyRail/>
     <SilverPromise/>
+    </main>
     <footer className="footer"><div className="shell footerGrid"><span>ATLAS · LONG-STAY LIVING</span><span>Prototype and live commercial inventory remain explicitly separated.</span><span><a href="/system">System proof</a> · <a href="/legal">Commercial & data disclosure</a></span></div></footer>
   </>;
 }
