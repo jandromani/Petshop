@@ -281,6 +281,8 @@ The remaining cross-functional 10/10 gates are tracked in `docs/OMEGA_ROADMAP.md
 - no pension, income, email, name or payment data is stored in consumer memory
 - existing local saved stays synchronize into durable memory when the database becomes available
 - deletes propagate to durable memory
+- self-service clear-all deletes the anonymous server profile, cascades saved stays, clears the HttpOnly profile cookie and clears local saved references
+- every saved-memory API response is `Cache-Control: no-store`
 - saved offers are still revalidated against the live catalogue before being presented as current
 - inactive consumer profiles expire through the retention workflow and cascade-delete saved references
 - cookie and privacy disclosures describe the anonymous memory layer
