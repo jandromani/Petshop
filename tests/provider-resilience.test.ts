@@ -19,7 +19,7 @@ describe("provider HTTP resilience",()=>{
 
   it("retries transient 5xx then fails with typed provider evidence",async()=>{
     const mocked=vi.spyOn(globalThis,"fetch")
-      .mockResolvedValue(new Response("upstream-down",{status:503}));
+      .mockImplementation(async()=>new Response("upstream-down",{status:503}));
 
     const error=await fetchJson("example","https://provider.test",{},{
       retries:1,timeoutMs:1000,
