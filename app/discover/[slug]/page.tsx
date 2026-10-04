@@ -6,6 +6,7 @@ import { liveDiscoveryEvidence } from "@/src/seo/live";
 import { canonicalSiteUrl } from "@/src/system/site-url";
 import LiveOfferCard from "@/components/LiveOfferCard";
 import { esSlugForSource } from "@/src/seo/es-catalog";
+import { buildDiscoveryItemListStructuredData } from "@/src/seo/structured-data";
 
 export const dynamic="force-dynamic";
 const euro=(n:number,currency="EUR")=>new Intl.NumberFormat("en-US",{style:"currency",currency,maximumFractionDigits:0}).format(n);
@@ -42,23 +43,7 @@ export default async function Discovery({params}:{params:Promise<{slug:string}>}
   const indexed=Boolean(live?.gate.index);
 
   const canonical=canonicalSiteUrl()+"/discover/"+slug;
-  const jsonLd=offers.length?{
-    "@context":"https://schema.org",
-    "@type":"ItemList",
-    name:page.title,
-    url:canonical,
-    numberOfItems:offers.length,
-    itemListElement:offers.slice(0,12).map((o,index)=>({
-      "@type":"ListItem",
-      position:index+1,
-      item:{
-        "@type":"Hotel",
-        name:o.name,
-        address:{"@type":"PostalAddress",addressLocality:o.city,addressCountry:o.country},
-        offers:{"@type":"Offer",price:o.displayPrice,priceCurrency:o.currency,url:canonical},
-      },
-    })),
-  }:null;
+  const jsonLd=buildDiscoveryItemListStructuredData({title:page.title,canonical,offers});
   return <main className="seoPage">{jsonLd&&<script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(jsonLd)}}/>}<div className="shell">
     <a href="/" className="eyebrow">← WORLD EXPLORER</a>
     <section className="seoHero" style={{marginTop:20}}>
