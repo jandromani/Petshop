@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { realHotelById } from "@/src/data/real-hotels";
+import { resolveDirectoryHotel } from "@/src/services/directory";
 import { createSourcingRequest,listSourcingRequests,updateSourcingRequestStatus } from "@/src/db/sourcing";
 import { enforceRateLimit,requestFingerprint } from "@/src/security/rate-limit";
 import { opsAuthorized } from "@/src/security/ops-auth";
@@ -19,7 +19,7 @@ export async function POST(req:Request){
   if(!gate.allowed)return Response.json({error:"rate-limited"},{status:429,headers:{"Cache-Control":"no-store"}});
   const parsed=Input.safeParse(await req.json().catch(()=>null));
   if(!parsed.success)return Response.json({error:"invalid-sourcing-request",issues:parsed.error.issues},{status:400});
-  const hotel=realHotelById(parsed.data.hotelId);
+  const hotel=await resolveDirectoryHotel(parsed.data.hotelId);
   if(!hotel)return Response.json({error:"hotel-not-found"},{status:404});
   if(new Date(parsed.data.checkIn+"T00:00:00Z").getTime()<Date.now()-86400000){
     return Response.json({error:"check-in-in-past"},{status:400});
