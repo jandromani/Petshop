@@ -14,7 +14,6 @@ import SilverSearch from "@/components/SilverSearch";
 import SilverPromise from "@/components/SilverPromise";
 import AdjacencyRail from "@/components/AdjacencyRail";
 import RealHotelDirectory from "@/components/RealHotelDirectory";
-import { realHotels } from "@/src/data/real-hotels";
 
 const euro=(n:number)=>"€"+Math.round(n).toLocaleString("en-US");
 
@@ -36,6 +35,7 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
   const [draft,setDraft]=useState("");
   const [thinking,setThinking]=useState(false);
   const [shareLabel,setShareLabel]=useState("Share this life");
+  const [directoryCount,setDirectoryCount]=useState(0);
 
   const finances=useMemo(()=>summarizeFinances({pension,homeIncome,otherIncome,reserve}),[pension,homeIncome,otherIncome,reserve]);
   const livingBudget=finances.livingBudget;
@@ -50,9 +50,7 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
   const headroom=useMemo(()=>routeHeadroom(finances,avg),[finances,avg]);
 
 
-  const directoryCount=useMemo(()=>{const q=query.trim().toLowerCase();return realHotels.filter(h=>(region==="All"||h.region===region)&&(!q||[h.name,h.city,h.country].join(" ").toLowerCase().includes(q))).length;},[query,region]);
-
-  useEffect(()=>{growthEvent("planner_loaded",{catalogue_size:realHotels.length,hero_variant:heroVariant});},[heroVariant]);
+  useEffect(()=>{growthEvent("planner_loaded",{hero_variant:heroVariant});},[heroVariant]);
 
   function jumpToExplore(){
     growthEvent("hero_search",{query,region,party,duration,budget:livingBudget,check_in:checkIn,flexible_days:flexibleDays,matches:directoryCount,hero_variant:heroVariant});
@@ -177,13 +175,13 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
 
     <LiveOffers/>
 
-    <RealHotelDirectory initialQuery={query} initialRegion={region} duration={duration}/>
+    <RealHotelDirectory initialQuery={query} initialRegion={region} duration={duration} checkIn={checkIn} occupancy={party==="couple"?2:1} onCount={setDirectoryCount}/>
 
     <section id="agent" className="agentBand"><div className="shell">
       <div className="sectionTitle"><h2>Ask Atlas.<br/>Your long-stay concierge.</h2><p>The concierge receives only the budget and travel preferences it needs—not your pension or home-income breakdown.</p></div>
       <div className="agentGrid">
         <div className="chat"><div className="chatlog">{chat.map((m,i)=><div className={"msg "+m.role} key={i}>{m.text}</div>)}</div><div className="chatrow"><input aria-label="Ask Atlas" value={draft} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>e.key==="Enter"&&askAgent()} placeholder="e.g. warm sea, healthcare, under my budget…"/><button className="btn lime" onClick={askAgent}>{thinking?"…":"Ask"}</button></div></div>
-        <div className="truth"><div className="metric"><b>{realHotels.length}</b><span>real hotel identities</span></div><div className="metric"><b>3</b><span>live provider adapters</span></div><div className="metric"><b>365</b><span>days in generated year</span></div><div className="metric"><b>0</b><span>LLM-written prices allowed</span></div><div className="metric"><b>6</b><span>stay cadences incl. 365d</span></div><div className="metric"><b>1</b><span>budget truth shared across search + route</span></div></div>
+        <div className="truth"><div className="metric"><b>{directoryCount||"…"}</b><span>real hotel identities</span></div><div className="metric"><b>3</b><span>live provider adapters</span></div><div className="metric"><b>365</b><span>days in generated year</span></div><div className="metric"><b>0</b><span>LLM-written prices allowed</span></div><div className="metric"><b>6</b><span>stay cadences incl. 365d</span></div><div className="metric"><b>1</b><span>budget truth shared across search + route</span></div></div>
       </div>
     </div></section>
 
