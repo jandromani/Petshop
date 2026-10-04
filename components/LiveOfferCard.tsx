@@ -3,7 +3,7 @@ import SaveStayButton from "@/components/SaveStayButton";
 
 const money=(n:number,currency:string)=>new Intl.NumberFormat("en-US",{style:"currency",currency,maximumFractionDigits:0}).format(n);
 
-export default function LiveOfferCard({offer,href}:{offer:LiveCatalogOffer;href:string}){
+export default function LiveOfferCard({offer,href,detailHref}:{offer:LiveCatalogOffer;href:string;detailHref?:string}){
   const photos=(offer.photoUrls||[]).slice(0,3);
   const facilities=(offer.facilities||[]).slice(0,4);
   return <article className="hotel liveHotel liveOfferCard">
@@ -21,6 +21,7 @@ export default function LiveOfferCard({offer,href}:{offer:LiveCatalogOffer;href:
       <SaveStayButton offer={offer}/>
       <h3>{offer.name}</h3>
       <div className="loc">{offer.city}, {offer.country} · {offer.nights} nights · {offer.occupancy} adult{offer.occupancy===1?"":"s"}</div>
+      {detailHref&&<a className="eyebrow" href={detailHref}>View verified hotel detail →</a>}
       <div className="chips">
         {offer.board&&<span className="chip">{offer.board}</span>}
         {offer.roomType&&<span className="chip">Room {offer.roomType}</span>}

@@ -85,7 +85,7 @@ Exit gate: nobody can place an untested commit on production or silently rewrite
   - conversion ingestion endpoints
 - add bot/abuse policy for scraping and credential attacks
 - keep application-level DB rate limiting as defense in depth
-- rotate OPS/CRON/conversion secrets on a documented schedule
+- OPS/CRON/conversion/provider/database secret classes have a documented 90-day-or-shorter rotation policy plus immediate incident triggers; real rotation evidence remains an operator responsibility
 - incident severity, containment and credential-rotation procedure are documented in `docs/INCIDENT_RUNBOOK.md`
 - responsible vulnerability disclosure is documented in `SECURITY.md`; a real operator contact remains a launch dependency
 
@@ -104,7 +104,7 @@ Exit gate: abusive traffic is controlled before compute/DB, and secrets/incident
   - agent run failure/cost
 - warning/critical Daily Control signals have an optional HTTPS notification webhook; a real operator destination must still be configured
 - surface database latency and connection failures
-- add workflow duration/retry metrics
+- acquisition-wave and governed-agent p50/p95/max durations are derived from persisted started/completed evidence; workflow-engine retry counts remain explicitly unavailable instead of estimated
 - AI token/cost/model/provider metrics are aggregated by governed role and exposed in protected Ops observability
 - provider acquisition error budgets are derived from observed clean/error waves; no-sample remains null
 - deterministic 7-day operating scorecard is exposed in the protected Control Tower/API and never promotes NO_SAMPLE to PASS
@@ -142,7 +142,7 @@ Exit gate: commercial launch is legally attributable, privacy rights are operati
 ## OMEGA-6 · Supply density — EXTERNAL
 
 - activate Direct Hotel OS first
-- create a standard long-stay commercial agreement/checklist
+- the technical/commercial onboarding evidence checklist is codified in `docs/DIRECT_HOTEL_ONBOARDING.md`; a jurisdiction-reviewed agreement remains external
 - onboard first verified hotel
 - then 10 hotels across at least 3 destinations
 - require:
@@ -170,16 +170,16 @@ Exit gate: at least 10 fresh SELLABLE offers are visible from real commercial ev
 - reconcile click → booking → commission
 - define commission rules with effective dates
 - support cancellation/reversal/settlement lifecycle
-- define FX treatment and reporting currency
+- reporting currency is EUR; transaction native currency remains immutable and non-EUR values are excluded from consolidated EUR totals until explicit matching FX-rate evidence exists
 - conversion identity is idempotent by provider conversion ID; first attribution is window-gated and DB-tested while later cancellation/settlement updates remain allowed
 - reconcile provider totals against Atlas ledger
 - define invoice/tax/accounting treatment with accountant
 - monitor:
-  - booking value
-  - take rate
-  - expected vs confirmed commission
-  - settled cash
-  - attribution loss
+  - booking value: consolidated EUR evidence is computed for the requested window
+  - take rate: observed EUR commission / eligible EUR booking value
+  - expected vs confirmed commission: expected values remain non-consolidated until currency evidence is explicit
+  - settled cash: settled EUR commission is reported separately from confirmed commission
+  - attribution loss: still requires persisted provider-order unmatched evidence
 
 Exit gate: at least one real booking can be traced end-to-end to settled revenue with immutable evidence.
 
@@ -192,11 +192,11 @@ Exit gate: at least one real booking can be traced end-to-end to settled revenue
 - submit live sitemap only after SELLABLE inventory exists
 - Hotel/Offer/ItemList JSON-LD is generated through shared pure builders with regression tests; external rich-result validation awaits the final domain
 - generate destination pages only from live evidence
-- build internal-link graph from inventory
+- live inventory cards on the homepage and discovery pages link to canonical `/live/{slug}` detail pages; demo inventory never enters the commercial internal-link graph
 - keep demo pages NOINDEX
 - enable Vercel Web Analytics
 - keep Growth Autopilot evidence thresholds
-- add experiment guardrails for bounce/error/revenue quality
+- hero promotion is gated by minimum referral uplift plus conversion, commission-per-exposure and zero-result quality; insufficient commercial/revenue evidence keeps the experiment in learning mode
 - measure organic impressions → qualified search → referral → conversion
 
 Exit gate: indexed pages have real impressions/clicks and no commercial page is indexed from synthetic inventory.
@@ -230,12 +230,12 @@ Exit gate: agents can be replayed, audited, stopped and proven not to exceed aut
 
 - Neon PITR/backups enabled
 - quarterly restore drill
-- database connection exhaustion test
+- Postgres connection-exhaustion behavior is exercised in CI with a one-connection role; Atlas health fails closed when the configured role cannot acquire another connection
 - provider timeout/429/500/network recovery tests are implemented in CI; live partner outage drill remains unproven
 - AI outage tests prove Gateway → OpenRouter recovery, OpenRouter primary → free-model fallback, and fail-closed no-paid-fallback policy; live outage drill remains unproven
 - queue retry/backoff and poison-message cutoff are implemented and deterministically tested; live queue failure drill remains unproven
 - durable per-slot cron claims and DB idempotency tests are implemented; duplicate-delivery production drill remains unproven
-- production rollback drill
+- production rollback/recovery drill completed on 2026-10-04: #67 → #66 → #67, health 200 both directions and no runtime error clusters after restoration
 - RPO/RTO documented
 - incident runbook links to one-click rollback/revoke procedures
 
@@ -245,13 +245,13 @@ Exit gate: Atlas has demonstrated recovery from DB, provider, AI and bad-deploy 
 
 - capture real Core Web Vitals
 - set p75 LCP/INP/CLS budgets
-- Lighthouse CI or equivalent regression budget
-- Chromium, Firefox and WebKit E2E run in CI
+- dependency-free Playwright LAB budgets gate FCP/LCP/CLS and homepage DOM size in Chromium + Pixel 7; these are regression budgets, not substitutes for production RUM
+- Chromium, Firefox, WebKit and Pixel 7 mobile E2E run in CI
 - WCAG 2.2 AA audit
-- keyboard-only critical path
-- screen-reader labels for planner/map/results
-- load test public read paths and rate-limited write paths
-- validate mobile devices with slow network/CPU
+- keyboard-only planner critical path is enforced in Playwright
+- public-surface regression checks enforce main landmarks, visible h1s, image alt text and accessible names for buttons, links and form controls; deeper screen-reader audit remains external
+- CI runs a 20-request concurrent public health burst and verifies the application rate-limit fallback; sustained distributed/edge load testing remains external
+- Pixel 7 emulation is in the browser matrix; slow-network/CPU validation remains pending real lab/RUM evidence
 - search zero-result rate and trackable-session abandonment are derived from consented search/referral telemetry and surfaced in Control Tower
 
 Exit gate: real-user performance and accessibility meet documented budgets, not just local screenshots/E2E.
@@ -277,6 +277,8 @@ Exit gate: real-user performance and accessibility meet documented budgets, not 
 - keep board/VC dashboard separate from synthetic software proof
 
 Exit gate: Atlas can show repeatable demand, supply and unit economics. No engineering score can substitute for this gate.
+
+External account/contract activation evidence is tracked in GitHub issue #68 so these gates are not confused with repository work.
 
 ## Definition of 10/10
 

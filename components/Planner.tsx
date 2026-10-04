@@ -60,7 +60,7 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
   useEffect(()=>{growthEvent("planner_loaded",{catalogue_size:hotels.length,hero_variant:heroVariant});},[hotels.length,heroVariant]);
 
   function jumpToExplore(){
-    growthEvent("hero_search",{query,region,party,duration,budget:livingBudget,check_in:checkIn,flexible_days:flexibleDays,matches:matching.length});
+    growthEvent("hero_search",{query,region,party,duration,budget:livingBudget,check_in:checkIn,flexible_days:flexibleDays,matches:matching.length,hero_variant:heroVariant});
     document.getElementById("explore")?.scrollIntoView({behavior:"smooth"});
   }
 

@@ -39,10 +39,20 @@ export async function acquisitionBreakdown(days=30){
   `;
 }
 
-export async function heroExperimentReadout(days=30){
+export type HeroExperimentReadout={
+  variant:string;
+  exposed_visitors:number;
+  referral_visitors:number;
+  search_visitors:number;
+  zero_result_visitors:number;
+  conversion_visitors:number;
+  commission_eur:number;
+};
+
+export async function heroExperimentReadout(days=30):Promise<HeroExperimentReadout[]>{
   const sql=getDatabase();if(!sql)return[];
   const bounded=Math.max(1,Math.min(365,days));
-  return sql<Array<{variant:string;exposed_visitors:number;referral_visitors:number}>>`
+  return sql<HeroExperimentReadout[]>`
     with exposure as (
       select distinct visitor_id,properties->>'hero_variant' as variant
       from growth_events
@@ -53,11 +63,45 @@ export async function heroExperimentReadout(days=30){
     ), referral as (
       select distinct visitor_id from referral_clicks
       where visitor_id is not null and created_at>=now()-make_interval(days => ${bounded})
+    ), searches as (
+      select visitor_id,properties->>'hero_variant' as variant,
+        bool_or(
+          properties ? 'matches'
+          and properties->>'matches' ~ '^[0-9]+$'
+          and (properties->>'matches')::int=0
+        ) as had_zero_result
+      from growth_events
+      where event_name='hero_search'
+        and visitor_id is not null
+        and properties->>'hero_variant' is not null
+        and created_at>=now()-make_interval(days => ${bounded})
+      group by visitor_id,properties->>'hero_variant'
+    ), commercial as (
+      select r.visitor_id,
+        count(distinct c.provider_conversion_id)::int as conversions,
+        coalesce(sum(
+          case when c.currency='EUR' and c.status not in ('CANCELLED','REVERSED')
+            then c.commission else 0 end
+        ),0)::float as commission_eur
+      from conversions c
+      join referral_clicks r on r.click_id=c.click_id
+      where r.visitor_id is not null
+        and c.received_at>=now()-make_interval(days => ${bounded})
+      group by r.visitor_id
     )
-    select e.variant,count(*)::int as exposed_visitors,
-      count(r.visitor_id)::int as referral_visitors
-    from exposure e left join referral r on r.visitor_id=e.visitor_id
-    group by e.variant order by e.variant
+    select e.variant,
+      count(*)::int as exposed_visitors,
+      count(r.visitor_id)::int as referral_visitors,
+      count(s.visitor_id)::int as search_visitors,
+      count(s.visitor_id) filter (where s.had_zero_result)::int as zero_result_visitors,
+      count(c.visitor_id)::int as conversion_visitors,
+      coalesce(sum(c.commission_eur),0)::float as commission_eur
+    from exposure e
+    left join referral r on r.visitor_id=e.visitor_id
+    left join searches s on s.visitor_id=e.visitor_id and s.variant=e.variant
+    left join commercial c on c.visitor_id=e.visitor_id
+    group by e.variant
+    order by e.variant
   `;
 }
 

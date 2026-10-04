@@ -8,6 +8,7 @@ import { safeCommercialUrl } from "@/src/core/live-offers";
 import { busEvent, publishBusEvent } from "@/src/events/bus";
 import { estimateExpectedCommission } from "@/src/db/revenue";
 import { enforceRateLimit,requestFingerprint } from "@/src/security/rate-limit";
+import { recordServiceOutcome } from "@/src/db/governance";
 
 export const runtime = "nodejs";
 
@@ -17,9 +18,15 @@ async function liveReferral(url:URL,jar:Awaited<ReturnType<typeof cookies>>){
   const offerId=url.searchParams.get("offer");
   if(!offerId || !UUID.test(offerId)) return null;
   const offer=await getSellableOfferForReferral(offerId);
-  if(!offer) return new Response("Offer unavailable",{status:404,headers:{"Cache-Control":"no-store"}});
+  if(!offer){
+    after(async()=>{await recordServiceOutcome({action:"referral.redirect",outcome:"failure",resourceId:offerId,detail:{reason:"offer-unavailable"}});});
+    return new Response("Offer unavailable",{status:404,headers:{"Cache-Control":"no-store"}});
+  }
   const target=safeCommercialUrl(offer.provider,offer.deepLink,offer.approvedHost);
-  if(!target) return new Response("Commercial destination blocked",{status:409,headers:{"Cache-Control":"no-store"}});
+  if(!target){
+    after(async()=>{await recordServiceOutcome({action:"referral.redirect",outcome:"failure",resourceId:offerId,detail:{reason:"commercial-destination-blocked"}});});
+    return new Response("Commercial destination blocked",{status:409,headers:{"Cache-Control":"no-store"}});
+  }
 
   const expectedCommission=await estimateExpectedCommission({provider:offer.provider,bookingValue:offer.displayPrice,currency:offer.currency});
   const click=createReferralClick({
@@ -40,7 +47,11 @@ async function liveReferral(url:URL,jar:Awaited<ReturnType<typeof cookies>>){
   if(offer.provider==="direct"&&offer.trackingParam) target.searchParams.set(offer.trackingParam,click.providerTrackingId);
 
   console.log(referralLog(click));
-  after(async()=>{await Promise.allSettled([persistReferralClick(click),publishBusEvent(busEvent("referral.clicked",click,click.clickId,click.clickId))]);});
+  after(async()=>{await Promise.allSettled([
+    persistReferralClick(click),
+    publishBusEvent(busEvent("referral.clicked",click,click.clickId,click.clickId)),
+    recordServiceOutcome({action:"referral.redirect",outcome:"success",resourceId:click.clickId,detail:{provider:offer.provider,kind:"live"}}),
+  ]);});
   return new Response(null,{
     status:302,
     headers:{Location:target.toString(),"Cache-Control":"no-store","X-Referral-Click":click.clickId},
@@ -61,7 +72,10 @@ export async function GET(req: Request) {
   const slug=url.searchParams.get("hotel") || "";
   const requestedProvider=url.searchParams.get("provider") || "booking";
   const hotel=hotelBySlug(slug);
-  if(!hotel) return Response.json({error:"Unknown hotel"},{status:404});
+  if(!hotel){
+    after(async()=>{await recordServiceOutcome({action:"referral.redirect",outcome:"rejected",detail:{reason:"unknown-demo-hotel"}});});
+    return Response.json({error:"Unknown hotel"},{status:404});
+  }
   const provider="booking-demo-search";
   const click=createReferralClick({
     visitorId:jar.get("rv_vid")?.value,
@@ -74,7 +88,11 @@ export async function GET(req: Request) {
     position:Number(url.searchParams.get("pos")) || undefined,
   });
   console.log(referralLog(click));
-  after(async()=>{await Promise.allSettled([persistReferralClick(click),publishBusEvent(busEvent("referral.clicked",click,click.clickId,click.clickId))]);});
+  after(async()=>{await Promise.allSettled([
+    persistReferralClick(click),
+    publishBusEvent(busEvent("referral.clicked",click,click.clickId,click.clickId)),
+    recordServiceOutcome({action:"referral.redirect",outcome:"success",resourceId:click.clickId,detail:{provider,kind:"demo-search"}}),
+  ]);});
 
   const target=new URL("https://www.booking.com/searchresults.html");
   target.searchParams.set("ss",hotel.city+", "+hotel.country);

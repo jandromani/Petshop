@@ -56,3 +56,25 @@ export async function auditOpsEvent(input:{
   `;
   return true;
 }
+
+
+export async function recordServiceOutcome(input:{
+  action:"referral.redirect"|"conversion.ingest";
+  outcome:"success"|"failure"|"rejected";
+  resourceId?:string;
+  detail?:unknown;
+}){
+  try{
+    return await auditOpsEvent({
+      actor:"runtime",
+      action:input.action,
+      resourceType:"service-request",
+      resourceId:input.resourceId,
+      outcome:input.outcome,
+      detail:input.detail,
+    });
+  }catch(error){
+    console.error(JSON.stringify({level:"error",event:"service_outcome_audit_failed",action:input.action,error:String(error).slice(0,300)}));
+    return false;
+  }
+}

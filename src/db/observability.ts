@@ -157,3 +157,106 @@ export async function agentRoleMetrics(days=30):Promise<AgentRoleMetric[]>{
     return[];
   }
 }
+
+
+export type RuntimeDurationMetric={
+  kind:"acquisition-wave"|"agent-run";
+  sample:number;
+  failed:number;
+  p50Ms:number|null;
+  p95Ms:number|null;
+  maxMs:number|null;
+  engineRetryCount:null;
+};
+
+export async function runtimeDurationMetrics(days=30):Promise<RuntimeDurationMetric[]>{
+  const sql=getDatabase();if(!sql)return[];
+  const bounded=Math.max(1,Math.min(365,days));
+  try{
+    const rows=await sql<Array<{
+      kind:"acquisition-wave"|"agent-run";
+      sample:number;failed:number;p50_ms:number|null;p95_ms:number|null;max_ms:number|null;
+    }>>`
+      with samples as (
+        select 'acquisition-wave'::text as kind,status,
+          extract(epoch from (completed_at-started_at))*1000.0 as duration_ms
+        from acquisition_runs
+        where started_at>=now()-make_interval(days => ${bounded}) and completed_at is not null
+        union all
+        select 'agent-run'::text as kind,status,
+          extract(epoch from (completed_at-started_at))*1000.0 as duration_ms
+        from agent_runs
+        where started_at>=now()-make_interval(days => ${bounded}) and completed_at is not null
+      )
+      select kind,
+        count(*)::int as sample,
+        count(*) filter (where status='FAILED')::int as failed,
+        (percentile_cont(0.50) within group(order by duration_ms))::float as p50_ms,
+        (percentile_cont(0.95) within group(order by duration_ms))::float as p95_ms,
+        max(duration_ms)::float as max_ms
+      from samples
+      group by kind
+      order by kind
+    `;
+    return rows.map(row=>({
+      kind:row.kind,
+      sample:Number(row.sample||0),
+      failed:Number(row.failed||0),
+      p50Ms:row.p50_ms===null?null:Math.round(Number(row.p50_ms)),
+      p95Ms:row.p95_ms===null?null:Math.round(Number(row.p95_ms)),
+      maxMs:row.max_ms===null?null:Math.round(Number(row.max_ms)),
+      engineRetryCount:null,
+    }));
+  }catch(error){
+    console.error(JSON.stringify({level:"error",event:"runtime_duration_metrics_query_failed",error:String(error).slice(0,300)}));
+    return[];
+  }
+}
+
+
+export type ServiceOutcomeMetric={
+  action:"referral.redirect"|"conversion.ingest";
+  success:number;
+  failure:number;
+  rejected:number;
+  denominator:number;
+  successPct:number|null;
+};
+
+export function computeServiceOutcomeMetric(
+  action:ServiceOutcomeMetric["action"],
+  success:number,
+  failure:number,
+  rejected:number,
+):ServiceOutcomeMetric{
+  const ok=Math.max(0,Math.floor(success));
+  const bad=Math.max(0,Math.floor(failure));
+  const policy=Math.max(0,Math.floor(rejected));
+  const denominator=ok+bad;
+  return{
+    action,success:ok,failure:bad,rejected:policy,denominator,
+    successPct:denominator?ok/denominator*100:null,
+  };
+}
+
+export async function serviceOutcomeMetrics(days=30):Promise<ServiceOutcomeMetric[]>{
+  const sql=getDatabase();if(!sql)return[];
+  const bounded=Math.max(1,Math.min(365,days));
+  try{
+    const rows=await sql<Array<{action:ServiceOutcomeMetric["action"];success:number;failure:number;rejected:number}>>`
+      select action,
+        count(*) filter (where outcome='success')::int as success,
+        count(*) filter (where outcome='failure')::int as failure,
+        count(*) filter (where outcome='rejected')::int as rejected
+      from ops_audit_events
+      where action in ('referral.redirect','conversion.ingest')
+        and created_at>=now()-make_interval(days => ${bounded})
+      group by action
+      order by action
+    `;
+    return rows.map(row=>computeServiceOutcomeMetric(row.action,row.success,row.failure,row.rejected));
+  }catch(error){
+    console.error(JSON.stringify({level:"error",event:"service_outcome_metrics_query_failed",error:String(error).slice(0,300)}));
+    return[];
+  }
+}
