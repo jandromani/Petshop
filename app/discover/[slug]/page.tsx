@@ -58,7 +58,7 @@ export default async function Discovery({params}:{params:Promise<{slug:string}>}
     </section>
 
     {offers.length>0?<div className="hotels">
-      {offers.slice(0,12).map((o,index)=><LiveOfferCard key={o.offerId} offer={o} href={"/api/referral?offer="+encodeURIComponent(o.offerId)+"&from="+encodeURIComponent("/discover/"+slug)+"&pos="+(index+1)}/>)}
+      {offers.slice(0,12).map((o,index)=><LiveOfferCard key={o.offerId} offer={o} detailHref={"/live/"+encodeURIComponent(o.slug)} href={"/api/referral?offer="+encodeURIComponent(o.offerId)+"&from="+encodeURIComponent("/discover/"+slug)+"&pos="+(index+1)}/>)}
     </div>:<div className="hotels">
       {demo.map(h=><article className="hotel" key={h.id}>
         <div className="hotelVisual"><span className="flag">{h.flag}</span><span className="score">DEMO · SILVER {h.score}</span></div>
