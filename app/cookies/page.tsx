@@ -11,7 +11,7 @@ export default function CookiesPage(){
       <p style={{fontSize:20,maxWidth:780}}>Atlas separates essential operation from optional analytics.</p>
     </section>
     <div className="seoGrid">
-      <div className="card"><h2>Essential</h2><p>Security/session state required to operate protected product surfaces may be used without enabling optional analytics.</p></div>
+      <div className="card"><h2>Essential</h2><p>Security/session state required to operate protected product surfaces may be used without enabling optional analytics. When you save a verified stay and durable storage is available, Atlas may set an HttpOnly <code>atlas_saved_profile</code> cookie containing only a random pseudonymous ID so your saved list can survive browser storage loss. It contains no email, name or financial data.</p></div>
       <div className="card"><h2>Analytics consent</h2><p>Persistent Atlas visitor/session analytics identifiers, campaign attribution cookies, Vercel Analytics and Speed Insights are only activated after the analytics consent state is selected.</p></div>
       <div className="card"><h2>Commercial referrals</h2><p>When you deliberately follow a commercial referral, Atlas may create a referral identifier so a later conversion can be reconciled. This is distinct from general behavioural analytics.</p></div>
       <div className="card"><h2>Withdrawal</h2><p>Changing the consent choice to essential-only causes Atlas to remove its optional tracking cookies on the next matching request.</p></div>
