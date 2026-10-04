@@ -34,7 +34,7 @@ GitHub `VERCEL_TOKEN` is not required for the canonical Git-linked delivery path
 Required:
 - `DATABASE_URL` exists
 - the database health probe succeeds
-- migrations 001–012 are recorded by the migration ledger
+- migrations 001–014 are recorded by the migration ledger
 - governed agent/task/runtime state can persist
 - cron and conversion secrets are configured
 - preview environments do not write to production state

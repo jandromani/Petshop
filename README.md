@@ -38,7 +38,7 @@ The production build command is:
 npm run vercel-build
 ```
 
-It runs database migrations only when `DATABASE_URL` exists, then performs the Next.js build. Migrations are idempotent and currently run through `db/012_autonomy_os.sql`.
+It runs database migrations only when `DATABASE_URL` exists, then performs the Next.js build. Migrations are idempotent and currently run through `db/014_consumer_memory.sql`.
 
 ## Required commercial activation still outside the repository
 
