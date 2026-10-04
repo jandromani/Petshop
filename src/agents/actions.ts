@@ -1,8 +1,14 @@
 import type { AgentKey } from "@/src/agents/registry";
 import { getOpsSnapshot } from "@/src/db/ops";
 import { growthFunnel,heroExperimentReadout } from "@/src/db/growth";
+import { getRuntimeConfig } from "@/src/db/runtime-config";
 import { indexableDiscoveryPages } from "@/src/seo/live";
 import { reconcileRevenue } from "@/src/services/revenue-reconciliation";
+import { stableEvidenceHash } from "@/src/services/evidence";
+
+export const AGENT_POLICY_VERSION="omega-policy-v1";
+export const AGENT_PROMPT_VERSION="omega-prompt-v1";
+export const AGENT_ACTION_POLICY_VERSION="omega-actions-v1";
 
 export type AgentActionKind=
   |"ops.snapshot"
@@ -40,6 +46,32 @@ export function allowedActionsForAgent(agent:AgentKey){return ALLOWED[agent]||[]
 export function isAutoExecutable(kind:AgentActionKind){return AUTO.has(kind);}
 export function isActionAllowed(agent:AgentKey,kind:AgentActionKind){return allowedActionsForAgent(agent).includes(kind);}
 
+export function agentEmergencyStopActive(){
+  return process.env.AGENT_EMERGENCY_STOP==="true";
+}
+
+function actionEnvKey(kind:AgentActionKind){
+  return "AGENT_ACTION_"+kind.toUpperCase().replace(/[.-]/g,"_")+"_ENABLED";
+}
+
+export async function autoActionDecision(kind:AgentActionKind){
+  if(!isAutoExecutable(kind))return{allowed:false,reason:"human-authority-required"} as const;
+  if(agentEmergencyStopActive())return{allowed:false,reason:"global-emergency-stop"} as const;
+  if(process.env[actionEnvKey(kind)]==="false")return{allowed:false,reason:"action-env-disabled"} as const;
+  const runtime=await getRuntimeConfig<{enabled?:boolean}>("agent.action."+kind);
+  if(runtime?.enabled===false)return{allowed:false,reason:"runtime-action-disabled"} as const;
+  return{allowed:true,reason:"allowlisted"} as const;
+}
+
+export function agentActionIdempotencyKey(agent:AgentKey,proposal:AgentProposal,scope:string){
+  return stableEvidenceHash({
+    version:AGENT_ACTION_POLICY_VERSION,
+    agent,
+    scope,
+    action:proposal.proposedAction,
+  });
+}
+
 function stripFence(raw:string){
   const text=raw.trim();
   if(text.startsWith("```")){
@@ -68,24 +100,43 @@ export function parseAgentProposal(raw:string):AgentProposal|null{
   }catch{return null;}
 }
 
-export async function executeSafeAgentAction(agent:AgentKey,proposal:AgentProposal){
+export async function executeSafeAgentAction(agent:AgentKey,proposal:AgentProposal,options:{scope?:string}={}){
   const action=proposal.proposedAction;
   if(!action)return{executed:false,reason:"no-action"};
   if(!isActionAllowed(agent,action.kind))return{executed:false,reason:"action-not-allowed"};
-  if(!isAutoExecutable(action.kind))return{executed:false,reason:"human-authority-required"};
+  const decision=await autoActionDecision(action.kind);
+  if(!decision.allowed)return{executed:false,reason:decision.reason,kind:action.kind};
+
+  const scope=options.scope||"unspecified";
+  const idempotencyKey=agentActionIdempotencyKey(agent,proposal,scope);
+  let result:unknown;
 
   switch(action.kind){
     case"ops.snapshot":
-      return{executed:true,kind:action.kind,result:await getOpsSnapshot()};
+      result=await getOpsSnapshot();
+      break;
     case"growth.audit":
-      return{executed:true,kind:action.kind,result:{funnel:await growthFunnel(30),hero:await heroExperimentReadout(30)}};
+      result={funnel:await growthFunnel(30),hero:await heroExperimentReadout(30)};
+      break;
     case"seo.audit":{
       const pages=await indexableDiscoveryPages();
-      return{executed:true,kind:action.kind,result:{indexable:pages.map(x=>x.page.slug),count:pages.length}};
+      result={indexable:pages.map(x=>x.page.slug),count:pages.length};
+      break;
     }
     case"revenue.reconcile":
-      return{executed:true,kind:action.kind,result:await reconcileRevenue(30)};
+      result=await reconcileRevenue(30);
+      break;
     default:
-      return{executed:false,reason:"human-authority-required"};
+      return{executed:false,reason:"human-authority-required",kind:action.kind};
   }
+
+  return{
+    executed:true,
+    kind:action.kind,
+    idempotencyKey,
+    evidenceHash:stableEvidenceHash(result),
+    policyVersion:AGENT_POLICY_VERSION,
+    actionPolicyVersion:AGENT_ACTION_POLICY_VERSION,
+    result,
+  };
 }
