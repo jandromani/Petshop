@@ -3,19 +3,15 @@ import { liveSupplyControlWorkflow } from "@/workflows/live-supply-control";
 import {
   claimScheduledRun,dailyScheduleSlot,markScheduledRunStarted,releaseScheduledRunClaim,
 } from "@/src/db/scheduled-runs";
+import { cronAuthorized } from "@/src/security/ops-auth";
 
 export const runtime="nodejs";
-
-function authorized(req:Request){
-  const secret=process.env.CRON_SECRET;
-  return Boolean(secret&&req.headers.get("authorization")==="Bearer "+secret);
-}
 
 export async function GET(req:Request){
   if(process.env.SUPPLY_RUNTIME_ENABLED==="false"){
     return Response.json({error:"supply-runtime-disabled"},{status:503});
   }
-  if(!authorized(req))return new Response("Unauthorized",{status:401});
+  if(!cronAuthorized(req))return new Response("Unauthorized",{status:401});
 
   const slotKey=dailyScheduleSlot();
   const jobKey="live-supply-control";

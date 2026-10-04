@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { databaseConfigured } from "@/src/db/client";
 import { listSellableOffers } from "@/src/db/catalog";
+import { enforceRateLimit,requestFingerprint } from "@/src/security/rate-limit";
 
 export const runtime="nodejs";
 
@@ -16,6 +17,8 @@ const Query=z.object({
 });
 
 export async function GET(req:Request){
+  const gate=await enforceRateLimit({key:requestFingerprint(req,"live-catalog"),limit:120,windowSeconds:60});
+  if(!gate.allowed)return Response.json({error:"rate-limited"},{status:429,headers:{"Cache-Control":"no-store"}});
   if(!databaseConfigured()) return Response.json({configured:false,offers:[]},{headers:{"Cache-Control":"no-store"}});
   const url=new URL(req.url);
   const parsed=Query.safeParse({
