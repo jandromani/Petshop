@@ -126,7 +126,7 @@ Exit gate: a meaningful production regression wakes somebody up without manually
   - rights and complaint authority
 - publish Terms of Use
 - publish Cookie/Analytics policy
-- version consent and legal documents
+- consent is version-bound and old choices fail closed; Privacy, Terms and Cookies expose an explicit legal document version
 - browser-scoped pseudonymous rights controls are implemented:
   - JSON access/export for anonymous consumer memory
   - full server/local deletion of anonymous saved memory
@@ -190,7 +190,7 @@ Exit gate: at least one real booking can be traced end-to-end to settled revenue
 - verify canonical, sitemap, hreflang and OG after cutover
 - connect Google Search Console and Bing Webmaster Tools
 - submit live sitemap only after SELLABLE inventory exists
-- validate Hotel/Offer/ItemList structured data
+- Hotel/Offer/ItemList JSON-LD is generated through shared pure builders with regression tests; external rich-result validation awaits the final domain
 - generate destination pages only from live evidence
 - build internal-link graph from inventory
 - keep demo pages NOINDEX
