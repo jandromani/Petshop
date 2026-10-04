@@ -168,11 +168,16 @@ export class BookingDemandClient {
   status(): LiveProviderStatus {
     const missingEnv = ["BOOKING_API_KEY","BOOKING_AFFILIATE_ID"].filter(key => !process.env[key]);
     const base = process.env.BOOKING_API_BASE || "https://demandapi-sandbox.booking.com/3.2";
+    const environment=base.includes("sandbox") ? "sandbox" as const : "production" as const;
+    const blockers:string[]=[];
+    if(environment==="sandbox")blockers.push("sandbox environment is not commercial production");
     return {
       provider:this.provider,
       configured:missingEnv.length===0,
-      environment:base.includes("sandbox") ? "sandbox" : "production",
+      environment,
       missingEnv,
+      commercialReady:missingEnv.length===0&&environment==="production",
+      blockers,
       notes:[
         "Demand API v3.2 accommodations search/details",
         "Bearer token + X-Affiliate-Id",
