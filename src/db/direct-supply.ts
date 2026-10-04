@@ -4,6 +4,7 @@ import { normalizeLiveCatalogRow, type LiveCatalogOffer } from "@/src/core/live-
 import { resolveCanonicalHotel } from "@/src/services/identity";
 
 export type HotelLeadInput = {
+  canonicalHotelId?: string;
   hotelName: string;
   city: string;
   country: string;
@@ -23,10 +24,10 @@ export async function createHotelLead(input: HotelLeadInput) {
   if (!sql) return null;
   const rows = await sql<{ id: string }[]>`
     insert into hotel_leads (
-      hotel_name, city, country, region, lat, lng, website, contact_name,
+      canonical_hotel_id, hotel_name, city, country, region, lat, lng, website, contact_name,
       contact_role, contact_email, source, notes
     ) values (
-      ${input.hotelName}, ${input.city}, ${input.country}, ${input.region ?? null},
+      ${input.canonicalHotelId ?? null}::uuid, ${input.hotelName}, ${input.city}, ${input.country}, ${input.region ?? null},
       ${input.lat ?? null}, ${input.lng ?? null}, ${input.website ?? null},
       ${input.contactName ?? null}, ${input.contactRole ?? null},
       ${input.contactEmail ?? null}, ${input.source ?? null},
@@ -37,6 +38,32 @@ export async function createHotelLead(input: HotelLeadInput) {
   return rows[0]?.id ?? null;
 }
 
+export async function ensureHotelLead(input: HotelLeadInput) {
+  const sql=getDatabase();if(!sql)return null;
+  const rows=await sql<{id:string}[]>`
+    select id::text from hotel_leads
+    where lower(hotel_name)=lower(${input.hotelName})
+      and lower(city)=lower(${input.city})
+      and lower(country)=lower(${input.country})
+    order by updated_at desc
+    limit 1
+  `;
+  const existing=rows[0]?.id;
+  if(!existing)return createHotelLead(input);
+  await sql`
+    update hotel_leads set
+      canonical_hotel_id=coalesce(${input.canonicalHotelId ?? null}::uuid,canonical_hotel_id),
+      region=coalesce(${input.region ?? null},region),
+      lat=coalesce(${input.lat ?? null},lat),
+      lng=coalesce(${input.lng ?? null},lng),
+      website=coalesce(${input.website ?? null},website),
+      source=coalesce(${input.source ?? null},source),
+      notes=notes || ${sql.json((input.notes || {}) as never)},
+      updated_at=now()
+    where id=${existing}::uuid
+  `;
+  return existing;
+}
 export async function createDirectRate(input: {
   hotelLeadId: string;
   rateCode: string;
