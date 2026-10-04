@@ -12,6 +12,7 @@ import { agentRuntimeCredentialsAvailable,agentRuntimeProvider } from "@/src/age
 import { getHeroOverride } from "@/src/growth/autopilot";
 import { getSloSnapshot } from "@/src/system/slo";
 import { getEconomicsSnapshot } from "@/src/system/economics";
+import { agentRoleMetrics,providerErrorBudgets } from "@/src/db/observability";
 import { deriveWeeklyOperatingScorecard } from "@/src/system/scorecard";
 
 export const metadata={title:"Control Tower",robots:{index:false,follow:false}};
@@ -21,7 +22,7 @@ export default async function ControlTower(){
   if(!verifyOpsSession(jar.get(OPS_COOKIE)?.value)) notFound();
 
   const providers=liveProviderStatuses();
-  const [ops,incidents,funnel,heroExperiment,friction,agentTasks,heroOverride,dbHealth,agentCredentials,slo,economics]=await Promise.all([
+  const [ops,incidents,funnel,heroExperiment,friction,agentTasks,heroOverride,dbHealth,agentCredentials,slo,economics,agentMetrics,providerBudgets]=await Promise.all([
     getOpsSnapshot(),
     listOpenIncidents(20),
     growthFunnel(30),
@@ -33,6 +34,8 @@ export default async function ControlTower(){
     agentRuntimeCredentialsAvailable(),
     getSloSnapshot(),
     getEconomicsSnapshot(30),
+    agentRoleMetrics(30),
+    providerErrorBudgets(30),
   ]);
   const db=dbHealth.reachable;
   const agentConfigured=agentCredentials&&process.env.AGENT_RUNTIME_ENABLED!=="false";
@@ -97,6 +100,28 @@ export default async function ControlTower(){
           <b className={economics.proofState==="COMMERCIAL_EVIDENCE_OBSERVED"?"green":"amber"}>{economics.proofState}</b>
           <span>commercial evidence</span>
         </div>
+      </div>
+
+      <h2 style={{marginTop:36}}>AI runtime by role · 30d</h2>
+      <div className="table">
+        <div className="tr"><b>Role</b><b>Actor → judge</b><b>Runs / tokens</b><b>Observed cost</b></div>
+        {agentMetrics.length?agentMetrics.map((m,i)=><div className="tr" key={m.agentKey+":"+m.actorModel+":"+m.judgeModel+":"+i}>
+          <b>{m.agentKey}</b>
+          <span>{m.actorProvider}/{m.actorModel} → {m.judgeProvider}/{m.judgeModel}</span>
+          <span>{m.runs} runs · {m.totalTokens.toLocaleString()} tokens · {m.failed} failed</span>
+          <span>€{(m.costCents/100).toFixed(2)}</span>
+        </div>):<div className="tr"><b>No persisted AI sample</b><span>—</span><span>0</span><span>DB/runtime evidence required</span></div>}
+      </div>
+
+      <h2 style={{marginTop:36}}>Provider error budgets · 30d</h2>
+      <div className="table">
+        <div className="tr"><b>Provider</b><b>Success</b><b>Error budget</b><b>Evidence</b></div>
+        {providerBudgets.length?providerBudgets.map(p=><div className="tr" key={p.provider}>
+          <b>{p.provider}</b>
+          <span>{p.successPct===null?"NO SAMPLE":p.successPct.toFixed(1)+"%"}</span>
+          <span>{p.remainingFailureBudgetPct===null?"—":p.remainingFailureBudgetPct.toFixed(1)+"pp remaining"}</span>
+          <span>{p.cleanRuns}/{p.runs} clean runs</span>
+        </div>):<div className="tr"><b>No acquisition sample</b><span>NO SAMPLE</span><span>—</span><span>provider waves required</span></div>}
       </div>
 
       <h2 style={{marginTop:36}}>Observed economics · 30d</h2>
