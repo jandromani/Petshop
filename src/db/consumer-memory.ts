@@ -98,3 +98,46 @@ export async function deleteSavedProfile(profileId:string|undefined|null){
   `;
   return Boolean(rows[0]);
 }
+
+
+export async function exportSavedProfileData(profileId:string|undefined|null){
+  const sql=getDatabase();
+  if(!sql||!validSavedProfileId(profileId))return{profile:null,saved:[] as SavedStay[]};
+
+  const profiles=await sql<Array<{id:string;created_at:string;updated_at:string;last_seen_at:string}>>`
+    select id::text,created_at::text,updated_at::text,last_seen_at::text
+    from consumer_profiles
+    where id=${profileId}::uuid
+    limit 1
+  `;
+  const profile=profiles[0];
+  if(!profile)return{profile:null,saved:[] as SavedStay[]};
+
+  const rows=await sql<Array<{
+    offer_id:string;slug:string;name:string;city:string;country:string;provider:string;
+    saved_monthly:number;currency:string;verified_at:string;expires_at:string|null;saved_at:string;
+  }>>`
+    select offer_id,slug,name,city,country,provider,saved_monthly,currency,
+      verified_at::text,expires_at::text,saved_at::text
+    from consumer_saved_stays
+    where profile_id=${profileId}::uuid
+    order by saved_at desc
+    limit 30
+  `;
+
+  return{
+    profile:{
+      id:profile.id,
+      createdAt:new Date(profile.created_at).toISOString(),
+      updatedAt:new Date(profile.updated_at).toISOString(),
+      lastSeenAt:new Date(profile.last_seen_at).toISOString(),
+    },
+    saved:rows.map(row=>({
+      offerId:row.offer_id,slug:row.slug,name:row.name,city:row.city,country:row.country,provider:row.provider,
+      savedMonthly:Number(row.saved_monthly),currency:row.currency,
+      verifiedAt:new Date(row.verified_at).toISOString(),
+      expiresAt:row.expires_at?new Date(row.expires_at).toISOString():null,
+      savedAt:new Date(row.saved_at).toISOString(),
+    })),
+  };
+}

@@ -1,6 +1,6 @@
 import { afterAll,describe,expect,it } from "vitest";
 import { getDatabase } from "@/src/db/client";
-import { deleteSavedProfile,listSavedStaysForProfile,removeSavedStay,upsertSavedStay } from "@/src/db/consumer-memory";
+import { deleteSavedProfile,exportSavedProfileData,listSavedStaysForProfile,removeSavedStay,upsertSavedStay } from "@/src/db/consumer-memory";
 import type { SavedStay } from "@/src/core/saved-stays";
 
 const dbIt=process.env.DATABASE_URL?it:it.skip;
@@ -20,6 +20,12 @@ describe("consumer memory persistence",()=>{
     const rows=await listSavedStaysForProfile(saved.profileId);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({offerId:"ci-offer-1",slug:"ci-hotel",savedMonthly:1234,currency:"EUR"});
+
+    const exported=await exportSavedProfileData(saved.profileId);
+    expect(exported.profile?.id).toBe(saved.profileId);
+    expect(exported.profile?.createdAt).toMatch(/Z$/);
+    expect(exported.saved).toHaveLength(1);
+    expect(exported.saved[0]).toMatchObject({offerId:"ci-offer-1",provider:"direct",currency:"EUR"});
 
     expect(await removeSavedStay(saved.profileId,"ci-offer-1")).toBe(true);
     expect(await listSavedStaysForProfile(saved.profileId)).toEqual([]);

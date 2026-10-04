@@ -127,10 +127,11 @@ Exit gate: a meaningful production regression wakes somebody up without manually
 - publish Terms of Use
 - publish Cookie/Analytics policy
 - version consent and legal documents
-- implement privacy rights workflow for pseudonymous data:
-  - access/export where identifiable
-  - deletion
-  - consent withdrawal
+- browser-scoped pseudonymous rights controls are implemented:
+  - JSON access/export for anonymous consumer memory
+  - full server/local deletion of anonymous saved memory
+  - immediate analytics consent withdrawal and optional-cookie clearing
+- broader rights requests still require the real controller/contact channel
 - maintain subprocessors/DPA inventory
 - document legitimate-interest/consent analysis for referral attribution
 - perform travel-services/package-law review before any bundled offer
