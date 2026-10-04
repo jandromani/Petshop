@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { legalIdentity } from "@/src/system/legal";
+import { LEGAL_DOCUMENT_VERSION,legalIdentity } from "@/src/system/legal";
 
 export const metadata:Metadata={title:"Terms of use",robots:{index:false,follow:false}};
 
@@ -8,7 +8,7 @@ export default function TermsPage(){
   return <main className="seoPage"><div className="shell">
     <a className="eyebrow" href="/legal">← legal & commercial disclosure</a>
     <section className="seoHero" style={{marginTop:20}}>
-      <div className="eyebrow">TERMS OF USE</div>
+      <div className="eyebrow">TERMS OF USE · {LEGAL_DOCUMENT_VERSION}</div>
       <h1>Terms of use.</h1>
       <p style={{fontSize:20,maxWidth:780}}>These terms describe the intended Atlas operating model. Commercial launch remains blocked until the operator identity and final jurisdiction-specific review are complete.</p>
     </section>
