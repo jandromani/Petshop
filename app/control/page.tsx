@@ -172,9 +172,12 @@ export default async function ControlTower(){
         <div className="metricDark"><b className={heroOverride?"green":""}>{heroOverride?.variant||"LEARNING"}</b><span>deterministic hero override</span></div>
       </div>
       <div className="table">
-        <div className="tr"><b>Hero variant</b><b>Exposed visitors</b><b>Referral visitors</b><b>Observed referral rate</b></div>
+        <div className="tr"><b>Hero variant</b><b>Exposed</b><b>Referral rate</b><b>Commercial / search quality</b></div>
         {heroExperiment.length?heroExperiment.map(x=><div className="tr" key={x.variant}>
-          <b>{x.variant}</b><span>{x.exposed_visitors}</span><span>{x.referral_visitors}</span><span>{x.exposed_visitors?((x.referral_visitors/x.exposed_visitors)*100).toFixed(1)+"%":"—"}</span>
+          <b>{x.variant}</b>
+          <span>{x.exposed_visitors}</span>
+          <span>{x.exposed_visitors?((x.referral_visitors/x.exposed_visitors)*100).toFixed(1)+"%":"—"} · {x.referral_visitors} visitors</span>
+          <span>{x.conversion_visitors} converted · €{x.commission_eur.toFixed(2)} · zero-result {x.search_visitors?((x.zero_result_visitors/x.search_visitors)*100).toFixed(1)+"%":"—"}</span>
         </div>):<div className="tr"><b>No experiment data yet</b><span>—</span><span>—</span><span>consent-gated learning</span></div>}
       </div>
 
