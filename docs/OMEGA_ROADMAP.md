@@ -196,7 +196,7 @@ Exit gate: at least one real booking can be traced end-to-end to settled revenue
 - keep demo pages NOINDEX
 - enable Vercel Web Analytics
 - keep Growth Autopilot evidence thresholds
-- add experiment guardrails for bounce/error/revenue quality
+- hero promotion is gated by minimum referral uplift plus conversion, commission-per-exposure and zero-result quality; insufficient commercial/revenue evidence keeps the experiment in learning mode
 - measure organic impressions → qualified search → referral → conversion
 
 Exit gate: indexed pages have real impressions/clicks and no commercial page is indexed from synthetic inventory.
