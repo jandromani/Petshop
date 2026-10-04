@@ -171,7 +171,7 @@ Exit gate: at least 10 fresh SELLABLE offers are visible from real commercial ev
 - define commission rules with effective dates
 - support cancellation/reversal/settlement lifecycle
 - define FX treatment and reporting currency
-- add duplicate/out-of-window attribution tests
+- conversion identity is idempotent by provider conversion ID; first attribution is window-gated and DB-tested while later cancellation/settlement updates remain allowed
 - reconcile provider totals against Atlas ledger
 - define invoice/tax/accounting treatment with accountant
 - monitor:
