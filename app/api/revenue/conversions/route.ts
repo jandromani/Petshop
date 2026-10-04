@@ -43,7 +43,7 @@ export async function POST(req:Request){
   if(!clickId)return Response.json({error:"referral-not-found"},{status:404});
   const conversion={...parsed.data,clickId};
   const result=await persistConversion(conversion);
-  if(!result.persisted)return Response.json({error:result.reason},{status:503});
+  if(!result.persisted)return Response.json({error:result.reason},{status:result.reason==="attribution-window-rejected"?409:503});
   console.log(JSON.stringify({level:"info",event:"conversion_ingested",provider:parsed.data.provider,clickId,providerConversionId:parsed.data.providerConversionId,status:parsed.data.status}));
   after(async()=>{await publishBusEvent(busEvent("conversion.received",conversion,clickId,parsed.data.provider+"-"+parsed.data.providerConversionId));});
   return Response.json({ok:true,status:parsed.data.status});
