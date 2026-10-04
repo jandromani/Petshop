@@ -29,5 +29,5 @@ describe("consumer memory persistence",()=>{
 afterAll(async()=>{
   const sql=getDatabase();
   if(!sql||!created.length)return;
-  await sql`delete from consumer_profiles where id = any(${created}::uuid[])`;
+  for(const id of created)await sql`delete from consumer_profiles where id=${id}::uuid`;
 });
