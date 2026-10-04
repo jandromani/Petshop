@@ -60,7 +60,8 @@ function gatewayModel(role:LlmRole){
 
 function openRouterModel(role:LlmRole){
   if(role==="judge")return process.env.OPENROUTER_JUDGE_MODEL||process.env.OPENROUTER_MODEL||"openrouter/free";
-  return process.env.OPENROUTER_MODEL||"openrouter/free";
+  if(role==="public")return process.env.OPENROUTER_PUBLIC_MODEL||process.env.OPENROUTER_MODEL||"openrouter/free";
+  return process.env.OPENROUTER_ACTOR_MODEL||process.env.OPENROUTER_MODEL||"openrouter/free";
 }
 
 export function llmTimeoutMs(){
