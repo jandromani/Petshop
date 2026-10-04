@@ -18,7 +18,7 @@ describe("operational alert delivery",()=>{
 
   it("sends only warning/critical operational facts to configured destination",async()=>{
     process.env.OPS_ALERT_WEBHOOK_URL="https://alerts.example.test/atlas";
-    const fetchMock=vi.spyOn(globalThis,"fetch").mockResolvedValue(new Response("",{status:204}));
+    const fetchMock=vi.spyOn(globalThis,"fetch").mockResolvedValue(new Response(null,{status:204}));
     const result=await sendOperationalAlerts([
       {key:"infra.database",severity:"critical",message:"Database unreachable"},
       {key:"supply.live",severity:"warning",message:"No live supply"},
