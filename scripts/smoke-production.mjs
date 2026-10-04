@@ -26,13 +26,14 @@ if(expectedSha&&health?.deployment?.commitSha!==expectedSha){
 
 
 async function smokeAgent(){
+  const checkIn=new Date(Date.now()+90*24*60*60*1000).toISOString().slice(0,10);
   const payload={
     prompt:"Reply exactly with: Atlas concierge online.",
     livingBudget:1500,
     party:"solo",
     duration:30,
     mode:"world",
-    checkIn:"2027-01-15",
+    checkIn,
     flexibleDays:7,
     query:"",
     region:"All",
