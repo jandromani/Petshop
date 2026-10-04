@@ -50,7 +50,7 @@ export function deriveWeeklyOperatingScorecard(input:WeeklyScorecardInput){
   if(input.openIncidents>0)priorities.push("Resolve open operational incidents.");
 
   const states=[runtime,supply,demand,money,automation,searchQuality];
-  const score=states.reduce((sum,state)=>sum+(state==="PASS"?1:state==="WATCH"?.5:0),0);
+  const score=states.reduce((sum,state)=>sum+(state==="PASS"?1:state==="WATCH"?0.5:0),0);
   const maxScore=states.length;
 
   return{
