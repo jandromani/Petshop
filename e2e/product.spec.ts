@@ -73,23 +73,26 @@ test("primary planner path is keyboard reachable",async({page})=>{
 
 test("public surfaces keep basic accessibility contracts",async({page})=>{
   for(const path of ["/","/saved","/privacy","/terms","/legal"]){
-    await page.goto(path);
-    await expect(page.locator("main")).toHaveCount(1);
-    await expect(page.locator("h1").first()).toBeVisible();
+    await test.step(path,async()=>{
+      const response=await page.goto(path,{waitUntil:"domcontentloaded"});
+      expect(response?.status(),path+" navigation status").toBe(200);
+      await expect(page.locator("main"),path+" main landmark").toHaveCount(1);
+      await expect(page.locator("h1").first(),path+" h1").toBeVisible();
 
-    const missingAlt=await page.locator("img:not([alt])").count();
-    expect(missingAlt,path+" images missing alt").toBe(0);
+      const missingAlt=await page.locator("img:not([alt])").count();
+      expect(missingAlt,path+" images missing alt").toBe(0);
 
-    const unnamedButtons=await page.locator("button").evaluateAll(nodes=>nodes.filter(node=>{
-      const element=node as HTMLElement;
-      return !((element.innerText||"").trim()||element.getAttribute("aria-label")||element.getAttribute("title"));
-    }).length);
-    expect(unnamedButtons,path+" unnamed buttons").toBe(0);
+      const unnamedButtons=await page.locator("button").evaluateAll(nodes=>nodes.filter(node=>{
+        const element=node as HTMLElement;
+        return !((element.innerText||"").trim()||element.getAttribute("aria-label")||element.getAttribute("title"));
+      }).length);
+      expect(unnamedButtons,path+" unnamed buttons").toBe(0);
 
-    const unnamedLinks=await page.locator("a").evaluateAll(nodes=>nodes.filter(node=>{
-      const element=node as HTMLElement;
-      return !((element.innerText||"").trim()||element.getAttribute("aria-label")||element.getAttribute("title"));
-    }).length);
-    expect(unnamedLinks,path+" unnamed links").toBe(0);
+      const unnamedLinks=await page.locator("a").evaluateAll(nodes=>nodes.filter(node=>{
+        const element=node as HTMLElement;
+        return !((element.innerText||"").trim()||element.getAttribute("aria-label")||element.getAttribute("title"));
+      }).length);
+      expect(unnamedLinks,path+" unnamed links").toBe(0);
+    });
   }
 });
