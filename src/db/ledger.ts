@@ -80,10 +80,13 @@ export async function persistConversion(input:{
   if(!sql) return{persisted:false,reason:"database-not-configured"};
 
   try{
-    await sql`
+    const windowDays=Math.max(1,Math.min(365,Number(process.env.ATTRIBUTION_WINDOW_DAYS||90)));
+    const eventAt=input.occurredAt ?? new Date().toISOString();
+    const rows=await sql<{id:string}[]>`
       insert into conversions (
         click_id,provider,provider_conversion_id,booking_value,commission,currency,status,occurred_at,raw_payload,cancelled_at,settled_at,settlement_reference,updated_at
-      ) values (
+      )
+      select
         ${input.clickId},
         ${input.provider},
         ${input.providerConversionId},
@@ -93,11 +96,23 @@ export async function persistConversion(input:{
         ${input.status ?? "PENDING"},
         ${input.occurredAt ?? null},
         ${sql.json((input.rawPayload||{}) as never)},
-        ${input.status==="CANCELLED"||input.status==="REVERSED" ? input.occurredAt ?? new Date().toISOString() : null},
-        ${input.status==="SETTLED" ? input.occurredAt ?? new Date().toISOString() : null},
+        ${input.status==="CANCELLED"||input.status==="REVERSED" ? eventAt : null},
+        ${input.status==="SETTLED" ? eventAt : null},
         ${input.settlementReference ?? null},
         now()
-      )
+      from referral_clicks referral
+      where referral.click_id=${input.clickId}
+        and (
+          exists (
+            select 1 from conversions existing
+            where existing.provider=${input.provider}
+              and existing.provider_conversion_id=${input.providerConversionId}
+          )
+          or (
+            ${eventAt}::timestamptz >= referral.created_at - interval '5 minutes'
+            and ${eventAt}::timestamptz <= referral.created_at + make_interval(days => ${windowDays})
+          )
+        )
       on conflict (provider,provider_conversion_id)
       do update set
         booking_value=coalesce(excluded.booking_value,conversions.booking_value),
@@ -117,7 +132,9 @@ export async function persistConversion(input:{
         settled_at=coalesce(excluded.settled_at,conversions.settled_at),
         settlement_reference=coalesce(excluded.settlement_reference,conversions.settlement_reference),
         updated_at=now()
+      returning id::text
     `;
+    if(!rows[0])return{persisted:false,reason:"attribution-window-rejected"};
     return{persisted:true};
   }catch(error){
     console.error(JSON.stringify({level:"error",event:"db_conversion_failed",clickId:input.clickId,provider:input.provider,error:String(error)}));
