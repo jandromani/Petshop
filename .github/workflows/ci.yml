@@ -44,6 +44,10 @@ jobs:
           npm run db:migrate
           npm run db:migrate
           psql "$DATABASE_URL" -Atc "select count(*) from atlas_schema_migrations" | grep -qx "14"
+      - name: Verify consumer memory persistence
+        env:
+          DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/atlas_ci
+        run: npx vitest run tests/consumer-memory-db.test.ts
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
