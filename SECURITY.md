@@ -24,6 +24,10 @@ The model runtime is governed by role allowlists, independent-judge requirements
 
 OpenRouter is the preferred runtime. When `AGENT_ALLOW_PAID_FALLBACK=false`, loss of the OpenRouter credential fails closed rather than silently switching to a paid model.
 
+## Secret rotation
+
+Routine and emergency rotation cadence is defined in [docs/SECRET_ROTATION.md](docs/SECRET_ROTATION.md). Production operation must retain rotation evidence without ever storing secret values.
+
 ## Incident handling
 
 If a credential is suspected to have entered repository history, revoke it at the provider, remove it from current source, audit history and downstream logs, and add a regression signature to the secret scanner.
