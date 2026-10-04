@@ -43,11 +43,11 @@ jobs:
         run: |
           npm run db:migrate
           npm run db:migrate
-          psql "$DATABASE_URL" -Atc "select count(*) from atlas_schema_migrations" | grep -qx "15"
+          psql "$DATABASE_URL" -Atc "select count(*) from atlas_schema_migrations" | grep -qx "16"
       - name: Verify DB-backed runtime invariants
         env:
           DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/atlas_ci
-        run: npx vitest run --no-file-parallelism tests/consumer-memory-db.test.ts tests/scheduled-runs-db.test.ts tests/search-friction-db.test.ts tests/attribution-window-db.test.ts tests/db-exhaustion-db.test.ts tests/runtime-duration-db.test.ts tests/service-outcome-db.test.ts tests/revenue-summary-db.test.ts
+        run: npx vitest run --no-file-parallelism tests/consumer-memory-db.test.ts tests/scheduled-runs-db.test.ts tests/search-friction-db.test.ts tests/attribution-window-db.test.ts tests/db-exhaustion-db.test.ts tests/runtime-duration-db.test.ts tests/service-outcome-db.test.ts tests/revenue-summary-db.test.ts tests/sourcing-requests-db.test.ts
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
