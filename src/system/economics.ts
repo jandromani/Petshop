@@ -1,12 +1,15 @@
 import { getOpsSnapshot } from "@/src/db/ops";
 import { growthFunnel,acquisitionBreakdown } from "@/src/db/growth";
+import { revenueCurrencyExposure } from "@/src/db/revenue";
+import { FX_POLICY_VERSION,REPORTING_CURRENCY } from "@/src/money/fx";
 
 export async function getEconomicsSnapshot(days=30){
   const bounded=Math.max(1,Math.min(365,days));
-  const [ops,funnel,acquisition]=await Promise.all([
+  const [ops,funnel,acquisition,currencyExposure]=await Promise.all([
     getOpsSnapshot(),
     growthFunnel(bounded),
     acquisitionBreakdown(bounded),
+    revenueCurrencyExposure(bounded),
   ]);
 
   const clicks=ops.referralClicks30d;
@@ -20,6 +23,11 @@ export async function getEconomicsSnapshot(days=30){
     generatedAt:new Date().toISOString(),
     windowDays:bounded,
     northStar:"confirmed long-stay bookings with traceable referral evidence",
+    reportingCurrency:REPORTING_CURRENCY,
+    fxPolicy:{
+      version:FX_POLICY_VERSION,
+      rule:"Native transaction currency is immutable. Non-EUR amounts are excluded from consolidated EUR totals unless explicit matching FX-rate evidence is persisted.",
+    },
     observed:{
       liveOffers:ops.liveOffers,
       referralClicks:clicks,
@@ -30,6 +38,7 @@ export async function getEconomicsSnapshot(days=30){
       commissionPerConversionEur:commissionPerConversion,
       funnel,
       acquisition,
+      currencyExposure,
     },
     unavailableUntilEvidence:{
       cac:"No paid spend ledger is connected; CAC is intentionally null.",
