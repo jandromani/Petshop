@@ -45,9 +45,70 @@ function gatewayModel(role:LlmRole){
   if(role==="judge")return process.env.AI_GATEWAY_JUDGE_MODEL||"openai/gpt-5.6-sol";
   return process.env.AI_GATEWAY_MODEL||"google/gemini-3.6-flash";
 }
+
 function openRouterModel(role:LlmRole){
   if(role==="judge")return process.env.OPENROUTER_JUDGE_MODEL||process.env.OPENROUTER_MODEL||"openrouter/free";
   return process.env.OPENROUTER_MODEL||"openrouter/free";
+}
+
+export function llmTimeoutMs(){
+  const value=Number(process.env.AGENT_LLM_TIMEOUT_MS||20_000);
+  return Number.isFinite(value)?Math.max(3_000,Math.min(60_000,Math.round(value))):20_000;
+}
+
+async function gatewayCompletion(
+  token:string,messages:LlmMessage[],role:LlmRole,maxTokens:number,temperature:number,
+){
+  const model=gatewayModel(role);
+  const res=await fetch("https://ai-gateway.vercel.sh/v1/chat/completions",{
+    method:"POST",
+    signal:AbortSignal.timeout(llmTimeoutMs()),
+    headers:{
+      Authorization:"Bearer "+token,
+      "Content-Type":"application/json",
+      "ai-reporting-tags":"app:atlas,role:"+role,
+    },
+    body:JSON.stringify({model,messages,temperature,max_tokens:maxTokens,stream:false}),
+  });
+  if(!res.ok){
+    const detail=(await res.text().catch(()=>"")).slice(0,500);
+    throw new Error("AI Gateway status "+res.status+(detail?": "+detail:""));
+  }
+  const data=await res.json();
+  return{
+    text:String(data?.choices?.[0]?.message?.content||""),
+    usage:data?.usage,
+    model:String(data?.model||model),
+    provider:"vercel-ai-gateway" as const,
+  };
+}
+
+async function openRouterCompletion(
+  key:string,messages:LlmMessage[],role:LlmRole,maxTokens:number,temperature:number,
+){
+  const model=openRouterModel(role);
+  const res=await fetch("https://openrouter.ai/api/v1/chat/completions",{
+    method:"POST",
+    signal:AbortSignal.timeout(llmTimeoutMs()),
+    headers:{
+      Authorization:"Bearer "+key,
+      "Content-Type":"application/json",
+      "HTTP-Referer":process.env.NEXT_PUBLIC_SITE_URL||"https://vercel.app",
+      "X-Title":"Atlas Long Stay",
+    },
+    body:JSON.stringify({model,messages,temperature,max_tokens:maxTokens}),
+  });
+  if(!res.ok){
+    const detail=(await res.text().catch(()=>"")).slice(0,500);
+    throw new Error("OpenRouter status "+res.status+(detail?": "+detail:""));
+  }
+  const data=await res.json();
+  return{
+    text:String(data?.choices?.[0]?.message?.content||""),
+    usage:data?.usage,
+    model:String(data?.model||model),
+    provider:"openrouter" as const,
+  };
 }
 
 export async function llmCompletion(
@@ -60,39 +121,19 @@ export async function llmCompletion(
   const temperature=options.temperature??.2;
 
   if(gatewayToken){
-    const model=gatewayModel(options.role);
-    const res=await fetch("https://ai-gateway.vercel.sh/v1/chat/completions",{
-      method:"POST",
-      headers:{
-        Authorization:"Bearer "+gatewayToken,
-        "Content-Type":"application/json",
-        "ai-reporting-tags":"app:atlas,role:"+options.role,
-      },
-      body:JSON.stringify({model,messages,temperature,max_tokens:maxTokens,stream:false}),
-    });
-    if(!res.ok){
-      const detail=(await res.text().catch(()=>"")).slice(0,500);
-      throw new Error("AI Gateway status "+res.status+(detail?": "+detail:""));
+    try{
+      return await gatewayCompletion(gatewayToken,messages,options.role,maxTokens,temperature);
+    }catch(error){
+      console.error(JSON.stringify({
+        level:"warning",event:"ai_gateway_completion_failed",role:options.role,error:String(error).slice(0,500),
+        fallbackConfigured:Boolean(openRouterKey),
+      }));
+      if(!openRouterKey)throw error;
     }
-    const data=await res.json();
-    return{text:String(data?.choices?.[0]?.message?.content||""),usage:data?.usage,model:String(data?.model||model),provider:"vercel-ai-gateway" as const};
   }
 
   if(openRouterKey){
-    const model=openRouterModel(options.role);
-    const res=await fetch("https://openrouter.ai/api/v1/chat/completions",{
-      method:"POST",
-      headers:{
-        Authorization:"Bearer "+openRouterKey,
-        "Content-Type":"application/json",
-        "HTTP-Referer":process.env.NEXT_PUBLIC_SITE_URL||"https://vercel.app",
-        "X-Title":"Atlas Long Stay",
-      },
-      body:JSON.stringify({model,messages,temperature,max_tokens:maxTokens}),
-    });
-    if(!res.ok)throw new Error("OpenRouter status "+res.status);
-    const data=await res.json();
-    return{text:String(data?.choices?.[0]?.message?.content||""),usage:data?.usage,model:String(data?.model||model),provider:"openrouter" as const};
+    return openRouterCompletion(openRouterKey,messages,options.role,maxTokens,temperature);
   }
 
   throw new Error("No governed model runtime is configured");
