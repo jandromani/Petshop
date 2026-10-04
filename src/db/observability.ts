@@ -157,3 +157,58 @@ export async function agentRoleMetrics(days=30):Promise<AgentRoleMetric[]>{
     return[];
   }
 }
+
+
+export type RuntimeDurationMetric={
+  kind:"acquisition-wave"|"agent-run";
+  sample:number;
+  failed:number;
+  p50Ms:number|null;
+  p95Ms:number|null;
+  maxMs:number|null;
+  engineRetryCount:null;
+};
+
+export async function runtimeDurationMetrics(days=30):Promise<RuntimeDurationMetric[]>{
+  const sql=getDatabase();if(!sql)return[];
+  const bounded=Math.max(1,Math.min(365,days));
+  try{
+    const rows=await sql<Array<{
+      kind:"acquisition-wave"|"agent-run";
+      sample:number;failed:number;p50_ms:number|null;p95_ms:number|null;max_ms:number|null;
+    }>>`
+      with samples as (
+        select 'acquisition-wave'::text as kind,status,
+          extract(epoch from (completed_at-started_at))*1000.0 as duration_ms
+        from acquisition_runs
+        where started_at>=now()-make_interval(days => ${bounded}) and completed_at is not null
+        union all
+        select 'agent-run'::text as kind,status,
+          extract(epoch from (completed_at-started_at))*1000.0 as duration_ms
+        from agent_runs
+        where started_at>=now()-make_interval(days => ${bounded}) and completed_at is not null
+      )
+      select kind,
+        count(*)::int as sample,
+        count(*) filter (where status='FAILED')::int as failed,
+        percentile_cont(0.50) within group(order by duration_ms)::float as p50_ms,
+        percentile_cont(0.95) within group(order by duration_ms)::float as p95_ms,
+        max(duration_ms)::float as max_ms
+      from samples
+      group by kind
+      order by kind
+    `;
+    return rows.map(row=>({
+      kind:row.kind,
+      sample:Number(row.sample||0),
+      failed:Number(row.failed||0),
+      p50Ms:row.p50_ms===null?null:Math.round(Number(row.p50_ms)),
+      p95Ms:row.p95_ms===null?null:Math.round(Number(row.p95_ms)),
+      maxMs:row.max_ms===null?null:Math.round(Number(row.max_ms)),
+      engineRetryCount:null,
+    }));
+  }catch(error){
+    console.error(JSON.stringify({level:"error",event:"runtime_duration_metrics_query_failed",error:String(error).slice(0,300)}));
+    return[];
+  }
+}
