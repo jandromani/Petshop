@@ -10,7 +10,10 @@ import { runGovernedAgent } from "@/src/services/governed-agent";
 import { agentForSignal,objectiveForSignal } from "@/src/agents/router";
 import { createAgentTask,recordAgentTaskExecution } from "@/src/db/agent-tasks";
 import { agentModelConfigured } from "@/src/agents/llm";
-import { executeSafeAgentAction } from "@/src/agents/actions";
+import {
+  AGENT_ACTION_POLICY_VERSION,AGENT_POLICY_VERSION,
+  agentActionIdempotencyKey,executeSafeAgentAction,
+} from "@/src/agents/actions";
 import { optimizeHeroExperiment } from "@/src/growth/autopilot";
 
 export type ControlSignal={key:string;severity:"info"|"warning"|"critical";message:string};
@@ -75,15 +78,22 @@ export async function runDailyAdvisor(context:Record<string,unknown>){
 
 export async function dispatchSpecialistAgents(signals:ControlSignal[]){
   "use step";
-  if(!agentModelConfigured()||process.env.AGENT_RUNTIME_ENABLED==="false")return{configured:false,tasks:[]};
+  if(!agentModelConfigured()||process.env.AGENT_RUNTIME_ENABLED==="false"||process.env.AGENT_EMERGENCY_STOP==="true"){
+    return{configured:false,tasks:[]};
+  }
   const actionable=signals.filter(x=>x.severity!=="info").slice(0,5);
   const tasks=[];
+  const dayScope=new Date().toISOString().slice(0,10);
   for(const signal of actionable){
     const agent=agentForSignal(signal.key);
     const objective=objectiveForSignal(signal);
     const run=await runGovernedAgent({agent,objective,context:{signal}});
     if(run.ok){
       const action=run.proposal?.proposedAction||null;
+      const scope=signal.key+":"+dayScope;
+      const idempotencyKey=run.proposal?.proposedAction
+        ?agentActionIdempotencyKey(agent,run.proposal,scope)
+        :null;
       const taskId=await createAgentTask({
         sourceSignal:signal.key,
         agentKey:agent,
@@ -94,18 +104,26 @@ export async function dispatchSpecialistAgents(signals:ControlSignal[]){
         judgeSummary:{externalJudge:run.externalJudge,deterministic:run.deterministic,approved:run.approved,independentJudge:run.independentJudge},
         actionKind:action?.kind,
         actionPayload:action?.payload,
+        idempotencyKey,
+        policyVersion:AGENT_POLICY_VERSION,
+        actionPolicyVersion:AGENT_ACTION_POLICY_VERSION,
       });
       let execution:unknown=null;
       if(taskId&&run.promotionAllowed&&run.proposal){
         try{
-          execution=await executeSafeAgentAction(agent,run.proposal);
-          await recordAgentTaskExecution({id:taskId,ok:Boolean((execution as any)?.executed),result:execution});
+          execution=await executeSafeAgentAction(agent,run.proposal,{scope});
+          await recordAgentTaskExecution({
+            id:taskId,
+            ok:Boolean((execution as any)?.executed),
+            result:execution,
+            evidenceHash:typeof (execution as any)?.evidenceHash==="string"?(execution as any).evidenceHash:null,
+          });
         }catch(error){
           execution={executed:false,error:String(error)};
           await recordAgentTaskExecution({id:taskId,ok:false,result:execution});
         }
       }
-      tasks.push({taskId,agent,approvedByJudges:run.approved,promotionAllowed:run.promotionAllowed,runId:run.runId,execution});
+      tasks.push({taskId,agent,idempotencyKey,approvedByJudges:run.approved,promotionAllowed:run.promotionAllowed,runId:run.runId,execution});
     }else{
       tasks.push({taskId:null,agent,approvedByJudges:false,promotionAllowed:false,error:run.error});
     }
