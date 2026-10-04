@@ -371,11 +371,11 @@ export async function listSellableDirectOffers(input: DirectCatalogQuery = {}): 
         and (${region}::text is null or h.region = ${region})
         and (${maxMonthly}::float is null or r.monthly_price <= ${maxMonthly})
         and (${requestedNights}::int is null or (
-          ${requestedNights} >= r.min_nights
-          and (r.max_nights is null or ${requestedNights} <= r.max_nights)
+          ${requestedNights}::int >= r.min_nights
+          and (r.max_nights is null or ${requestedNights}::int <= r.max_nights)
         ))
         and (${requestedCheckIn}::date is null or (
-          ${requestedCheckIn} between r.valid_from - ${flexibleDays} and r.valid_to
+          ${requestedCheckIn}::date between (r.valid_from - ${flexibleDays}::int) and r.valid_to
           and (greatest(${requestedCheckIn}::date,r.valid_from) + coalesce(${requestedNights}::int, r.min_nights)) <= r.valid_to + 1
         ))
     )
