@@ -12,7 +12,7 @@ import { agentRuntimeCredentialsAvailable,agentRuntimeProvider } from "@/src/age
 import { getHeroOverride } from "@/src/growth/autopilot";
 import { getSloSnapshot } from "@/src/system/slo";
 import { getEconomicsSnapshot } from "@/src/system/economics";
-import { getWeeklyOperatingScorecard } from "@/src/system/scorecard";
+import { deriveWeeklyOperatingScorecard } from "@/src/system/scorecard";
 
 export const metadata={title:"Control Tower",robots:{index:false,follow:false}};
 
@@ -21,7 +21,7 @@ export default async function ControlTower(){
   if(!verifyOpsSession(jar.get(OPS_COOKIE)?.value)) notFound();
 
   const providers=liveProviderStatuses();
-  const [ops,incidents,funnel,heroExperiment,friction,agentTasks,heroOverride,dbHealth,agentCredentials,slo,economics,scorecard]=await Promise.all([
+  const [ops,incidents,funnel,heroExperiment,friction,agentTasks,heroOverride,dbHealth,agentCredentials,slo,economics]=await Promise.all([
     getOpsSnapshot(),
     listOpenIncidents(20),
     growthFunnel(30),
@@ -33,10 +33,23 @@ export default async function ControlTower(){
     agentRuntimeCredentialsAvailable(),
     getSloSnapshot(),
     getEconomicsSnapshot(30),
-    getWeeklyOperatingScorecard(),
   ]);
   const db=dbHealth.reachable;
   const agentConfigured=agentCredentials&&process.env.AGENT_RUNTIME_ENABLED!=="false";
+  const scorecard=deriveWeeklyOperatingScorecard({
+    dbReachable:slo.indicators.database.reachable,
+    dbWithinTarget:slo.indicators.database.withinTarget,
+    liveOffers:economics.observed.liveOffers,
+    providerWaveSuccessPct:slo.indicators.providerWaves.successPct,
+    agentSuccessPct:slo.indicators.agentRuns.successPct,
+    referralClicks:economics.observed.referralClicks,
+    conversions:economics.observed.conversions,
+    commissionEur:economics.observed.commissionEur,
+    proofState:economics.proofState,
+    zeroResultRate:friction?.zeroResultRate??null,
+    abandonmentRate:friction?.abandonmentRate??null,
+    openIncidents:incidents.length,
+  });
 
   return <main className="controlPage">
     <div className="shell">
