@@ -1,0 +1,53 @@
+name: Production runtime smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["master"]
+    paths:
+      - ".github/workflows/production-runtime-smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Wait for exact SHA in production
+        env:
+          BASE_URL: https://atlas-living-ten.vercel.app
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 60); do
+            body="$(curl --fail --silent --show-error "$BASE_URL/api/system/status" || true)"
+            live_sha="$(printf '%s' "$body" | jq -r '.infrastructure.deploymentCommitSha // empty' 2>/dev/null || true)"
+            if [ "$live_sha" = "$EXPECTED_SHA" ]; then
+              echo "Production serves exact SHA $EXPECTED_SHA"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Production did not converge to expected SHA" >&2
+          exit 1
+
+      - name: Exercise public concierge through OpenRouter
+        env:
+          BASE_URL: https://atlas-living-ten.vercel.app
+        run: |
+          set -euo pipefail
+          response="$(curl --fail --silent --show-error \
+            -X POST "$BASE_URL/api/agent" \
+            -H 'content-type: application/json' \
+            -H 'user-agent: atlas-production-smoke/1.0' \
+            --data '{"prompt":"Return one concise demo destination under the supplied budget. Explicitly label demo pricing as an estimate and do not claim live availability.","livingBudget":2050,"party":"solo","duration":90,"mode":"world","checkIn":"2026-12-03","flexibleDays":7,"query":"","region":"All"}')"
+          printf '%s' "$response" | jq -e '
+            .provider == "openrouter"
+            and (.answer | type == "string")
+            and (.answer | length > 0)
+            and (.error == null)
+          ' >/dev/null
+          echo "OpenRouter production concierge smoke passed."
+          printf '%s' "$response" | jq '{provider,catalogueMode,judged,answer}'
