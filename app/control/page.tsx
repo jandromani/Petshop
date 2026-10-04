@@ -6,7 +6,7 @@ import { liveProviderStatuses } from "@/src/providers/live/registry";
 import { databaseHealth } from "@/src/db/client";
 import { getOpsSnapshot } from "@/src/db/ops";
 import { listOpenIncidents } from "@/src/db/governance";
-import { growthFunnel,heroExperimentReadout } from "@/src/db/growth";
+import { growthFunnel,heroExperimentReadout,searchFriction } from "@/src/db/growth";
 import { listAgentTasks } from "@/src/db/agent-tasks";
 import { agentRuntimeCredentialsAvailable,agentRuntimeProvider } from "@/src/agents/llm";
 import { getHeroOverride } from "@/src/growth/autopilot";
@@ -20,11 +20,12 @@ export default async function ControlTower(){
   if(!verifyOpsSession(jar.get(OPS_COOKIE)?.value)) notFound();
 
   const providers=liveProviderStatuses();
-  const [ops,incidents,funnel,heroExperiment,agentTasks,heroOverride,dbHealth,agentCredentials,slo,economics]=await Promise.all([
+  const [ops,incidents,funnel,heroExperiment,friction,agentTasks,heroOverride,dbHealth,agentCredentials,slo,economics]=await Promise.all([
     getOpsSnapshot(),
     listOpenIncidents(20),
     growthFunnel(30),
     heroExperimentReadout(30),
+    searchFriction(30),
     listAgentTasks(30),
     getHeroOverride(),
     databaseHealth(),
@@ -93,6 +94,9 @@ export default async function ControlTower(){
         <div className="metricDark"><b>{funnel?.events.find(x=>x.event_name==="hero_search")?.visitors||0}</b><span>search visitors</span></div>
         <div className="metricDark"><b>{funnel?.referrals.visitors||0}</b><span>referral visitors</span></div>
         <div className="metricDark"><b>{funnel?.conversions.visitors||0}</b><span>converted visitors</span></div>
+        <div className="metricDark"><b>{friction?.zeroResultRate===null||friction?.zeroResultRate===undefined?"—":(friction.zeroResultRate*100).toFixed(1)+"%"}</b><span>search sessions with zero results</span></div>
+        <div className="metricDark"><b>{friction?.abandonmentRate===null||friction?.abandonmentRate===undefined?"—":(friction.abandonmentRate*100).toFixed(1)+"%"}</b><span>trackable search sessions without referral</span></div>
+        <div className="metricDark"><b>{friction?.referralSessions||0}/{friction?.trackableSessions||0}</b><span>search sessions linked to referral</span></div>
         <div className="metricDark"><b className={heroOverride?"green":""}>{heroOverride?.variant||"LEARNING"}</b><span>deterministic hero override</span></div>
       </div>
       <div className="table">
