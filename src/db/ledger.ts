@@ -100,12 +100,19 @@ export async function persistConversion(input:{
       )
       on conflict (provider,provider_conversion_id)
       do update set
-        booking_value=excluded.booking_value,
-        commission=excluded.commission,
-        currency=excluded.currency,
-        status=excluded.status,
-        occurred_at=excluded.occurred_at,
-        raw_payload=excluded.raw_payload,
+        booking_value=coalesce(excluded.booking_value,conversions.booking_value),
+        commission=coalesce(excluded.commission,conversions.commission),
+        currency=coalesce(excluded.currency,conversions.currency),
+        status=case
+          when conversions.status in ('CANCELLED','REVERSED') then conversions.status
+          when excluded.status in ('CANCELLED','REVERSED') then excluded.status
+          when conversions.status='SETTLED' then 'SETTLED'
+          when excluded.status='SETTLED' then 'SETTLED'
+          when conversions.status='CONFIRMED' and excluded.status='PENDING' then 'CONFIRMED'
+          else excluded.status
+        end,
+        occurred_at=coalesce(excluded.occurred_at,conversions.occurred_at),
+        raw_payload=case when excluded.raw_payload='{}'::jsonb then conversions.raw_payload else excluded.raw_payload end,
         cancelled_at=coalesce(excluded.cancelled_at,conversions.cancelled_at),
         settled_at=coalesce(excluded.settled_at,conversions.settled_at),
         settlement_reference=coalesce(excluded.settlement_reference,conversions.settlement_reference),

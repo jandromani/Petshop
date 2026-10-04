@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { start } from "workflow/api";
+import { start } from "@/src/workflow/start";
 import { bookingLiveWaveWorkflow } from "@/workflows/booking-live-wave";
 
 import { opsAuthorized } from "@/src/security/ops-auth";

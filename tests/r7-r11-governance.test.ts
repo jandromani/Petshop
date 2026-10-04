@@ -4,6 +4,7 @@ import { filterLiveDiscovery,liveDiscoveryMode,uniqueDiscoveryNarrative } from "
 import { legalIdentity } from "@/src/system/legal";
 import { hasAnalyticsConsent } from "@/src/privacy/consent";
 import { runGovernedAgent } from "@/src/services/governed-agent";
+import { llmTimeoutMs } from "@/src/agents/llm";
 import type { LiveCatalogOffer } from "@/src/core/live-offers";
 import { runRequiredJudges } from "@/src/judges/rules";
 import { agentForSignal } from "@/src/agents/router";
@@ -29,6 +30,15 @@ describe("R9-R11 governance contracts",()=>{
     const result=await runGovernedAgent({agent:"orchestrator",objective:"test"});
     expect(result).toMatchObject({ok:false,status:503,error:"agent-runtime-disabled"});
     delete process.env.AGENT_RUNTIME_ENABLED;
+  });
+
+  it("bounds external model timeouts",()=>{
+    process.env.AGENT_LLM_TIMEOUT_MS="999999";
+    expect(llmTimeoutMs()).toBe(60000);
+    process.env.AGENT_LLM_TIMEOUT_MS="1";
+    expect(llmTimeoutMs()).toBe(3000);
+    delete process.env.AGENT_LLM_TIMEOUT_MS;
+    expect(llmTimeoutMs()).toBe(20000);
   });
 
   it("normalizes reported model cost to cents without inventing missing cost",()=>{

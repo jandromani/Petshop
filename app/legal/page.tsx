@@ -15,6 +15,7 @@ export default function LegalPage(){
       <div className="eyebrow">COMMERCIAL + DATA DISCLOSURE</div>
       <h1>How Atlas makes money<br/>and what “live” means.</h1>
       <p style={{fontSize:20,maxWidth:780}}>Atlas compares long-stay living options and can refer you to a hotel or booking provider. The commercial destination—not Atlas—normally completes the accommodation booking unless a future checkout explicitly says otherwise.</p>
+      <p><a href="/privacy">Privacy notice</a> · <a href="/terms">Terms of use</a> · <a href="/cookies">Cookies & analytics</a></p>
     </section>
 
     <div className="seoGrid">

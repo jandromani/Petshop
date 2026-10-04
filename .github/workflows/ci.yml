@@ -1,8 +1,11 @@
 name: CI
 on:
   push:
-    branches: ["master", "build/**"]
+    branches: ["master", "build/**", "omega/**"]
   pull_request:
+
+permissions:
+  contents: read
 
 jobs:
   verify:
@@ -22,20 +25,23 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - run: npm run security:secrets
       - run: npm ci --no-audit --no-fund
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
       - name: Verify database migrations from empty schema
         env:
           DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/atlas_ci
         run: |
           npm run db:migrate
           npm run db:migrate
+          psql "$DATABASE_URL" -Atc "select count(*) from atlas_schema_migrations" | grep -qx "13"
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium firefox webkit
       - run: npm run test:e2e

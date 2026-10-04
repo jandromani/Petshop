@@ -1,4 +1,4 @@
-import { start } from "workflow/api";
+import { start } from "@/src/workflow/start";
 import { dailyControlWorkflow } from "@/workflows/daily-control";
 
 import { cronAuthorized,opsAuthorized } from "@/src/security/ops-auth";

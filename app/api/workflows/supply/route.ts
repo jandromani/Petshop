@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { start } from "workflow/api";
+import { start } from "@/src/workflow/start";
 import { supplyWaveWorkflow } from "@/workflows/supply-wave";
 
 import { cronAuthorized,opsAuthorized } from "@/src/security/ops-auth";

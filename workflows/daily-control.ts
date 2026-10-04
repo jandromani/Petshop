@@ -1,6 +1,6 @@
 import { AGENTS } from "@/src/agents/registry";
 import { getOpsSnapshot } from "@/src/db/ops";
-import { databaseConfigured } from "@/src/db/client";
+import { databaseHealth } from "@/src/db/client";
 import { liveProviderStatuses } from "@/src/providers/live/registry";
 import { reconcileRevenue } from "@/src/services/revenue-reconciliation";
 import { syncBookingOrders } from "@/src/services/booking-order-sync";
@@ -10,26 +10,42 @@ import { runGovernedAgent } from "@/src/services/governed-agent";
 import { agentForSignal,objectiveForSignal } from "@/src/agents/router";
 import { createAgentTask,recordAgentTaskExecution } from "@/src/db/agent-tasks";
 import { agentModelConfigured } from "@/src/agents/llm";
-import { executeSafeAgentAction } from "@/src/agents/actions";
+import {
+  AGENT_ACTION_POLICY_VERSION,AGENT_POLICY_VERSION,
+  agentActionIdempotencyKey,executeSafeAgentAction,
+} from "@/src/agents/actions";
 import { optimizeHeroExperiment } from "@/src/growth/autopilot";
+import { SLO_TARGETS } from "@/src/system/slo";
 
 export type ControlSignal={key:string;severity:"info"|"warning"|"critical";message:string};
 
 export async function collectControlSignals():Promise<ControlSignal[]>{
   "use step";
   const signals:ControlSignal[]=[];
-  const db=databaseConfigured();
+  const [db,ops]=await Promise.all([databaseHealth(),getOpsSnapshot()]);
   const providers=liveProviderStatuses();
-  const ops=await getOpsSnapshot();
 
-  if(!db)signals.push({key:"infra.database",severity:"critical",message:"Persistent database is not configured"});
+  if(!db.configured)signals.push({key:"infra.database",severity:"critical",message:"Persistent database is not configured"});
+  else if(!db.reachable)signals.push({key:"infra.database",severity:"critical",message:"Persistent database is configured but unreachable"});
+  else if(typeof db.latencyMs==="number"&&db.latencyMs>SLO_TARGETS.databaseProbeP95Ms)signals.push({key:"infra.database-latency",severity:"warning",message:"Database probe latency "+db.latencyMs+"ms exceeds "+SLO_TARGETS.databaseProbeP95Ms+"ms target"});
   const disabled=providers.filter(p=>!p.configured).map(p=>p.provider);
   if(disabled.length)signals.push({key:"supply.providers",severity:"warning",message:"Disabled providers: "+disabled.join(", ")});
-  if(db&&ops.liveOffers===0)signals.push({key:"supply.live",severity:"warning",message:"No fresh SELLABLE redirect offers in the public catalog"});
+  if(db.reachable&&ops.liveOffers===0)signals.push({key:"supply.live",severity:"warning",message:"No fresh SELLABLE redirect offers in the public catalog"});
   const failedWaves=ops.acquisitionRuns.filter(r=>r.status==="FAILED"||r.errors>0);
   if(failedWaves.length)signals.push({key:"supply.waves",severity:"warning",message:failedWaves.length+" recent acquisition waves have errors"});
+  if(ops.acquisitionRuns.length>=3){
+    const clean=ops.acquisitionRuns.filter(r=>r.status==="COMPLETE"&&r.errors===0).length;
+    const pct=clean/ops.acquisitionRuns.length*100;
+    if(pct<SLO_TARGETS.providerWaveSuccessPct)signals.push({key:"supply.slo",severity:"warning",message:"Recent provider-wave success "+pct.toFixed(1)+"% is below "+SLO_TARGETS.providerWaveSuccessPct+"% target"});
+  }
   const failedAgents=ops.agentRuns.filter(r=>r.status==="FAILED");
   if(failedAgents.length)signals.push({key:"agents.failures",severity:"warning",message:failedAgents.length+" recent agent runs failed"});
+  const completedAgents=ops.agentRuns.filter(r=>r.status==="COMPLETE").length;
+  const agentSample=completedAgents+failedAgents.length;
+  if(agentSample>=3){
+    const pct=completedAgents/agentSample*100;
+    if(pct<SLO_TARGETS.agentRunSuccessPct)signals.push({key:"agents.slo",severity:"warning",message:"Recent agent success "+pct.toFixed(1)+"% is below "+SLO_TARGETS.agentRunSuccessPct+"% target"});
+  }
   signals.push({key:"agents.authority",severity:"info",message:Object.keys(AGENTS).length+" bounded roles; only allowlisted read-only/idempotent actions can auto-execute"});
   return signals;
 }
@@ -75,15 +91,22 @@ export async function runDailyAdvisor(context:Record<string,unknown>){
 
 export async function dispatchSpecialistAgents(signals:ControlSignal[]){
   "use step";
-  if(!agentModelConfigured()||process.env.AGENT_RUNTIME_ENABLED==="false")return{configured:false,tasks:[]};
+  if(!agentModelConfigured()||process.env.AGENT_RUNTIME_ENABLED==="false"||process.env.AGENT_EMERGENCY_STOP==="true"){
+    return{configured:false,tasks:[]};
+  }
   const actionable=signals.filter(x=>x.severity!=="info").slice(0,5);
   const tasks=[];
+  const dayScope=new Date().toISOString().slice(0,10);
   for(const signal of actionable){
     const agent=agentForSignal(signal.key);
     const objective=objectiveForSignal(signal);
     const run=await runGovernedAgent({agent,objective,context:{signal}});
     if(run.ok){
       const action=run.proposal?.proposedAction||null;
+      const scope=signal.key+":"+dayScope;
+      const idempotencyKey=run.proposal?.proposedAction
+        ?agentActionIdempotencyKey(agent,run.proposal,scope)
+        :null;
       const taskId=await createAgentTask({
         sourceSignal:signal.key,
         agentKey:agent,
@@ -94,18 +117,26 @@ export async function dispatchSpecialistAgents(signals:ControlSignal[]){
         judgeSummary:{externalJudge:run.externalJudge,deterministic:run.deterministic,approved:run.approved,independentJudge:run.independentJudge},
         actionKind:action?.kind,
         actionPayload:action?.payload,
+        idempotencyKey,
+        policyVersion:AGENT_POLICY_VERSION,
+        actionPolicyVersion:AGENT_ACTION_POLICY_VERSION,
       });
       let execution:unknown=null;
       if(taskId&&run.promotionAllowed&&run.proposal){
         try{
-          execution=await executeSafeAgentAction(agent,run.proposal);
-          await recordAgentTaskExecution({id:taskId,ok:Boolean((execution as any)?.executed),result:execution});
+          execution=await executeSafeAgentAction(agent,run.proposal,{scope});
+          await recordAgentTaskExecution({
+            id:taskId,
+            ok:Boolean((execution as any)?.executed),
+            result:execution,
+            evidenceHash:typeof (execution as any)?.evidenceHash==="string"?(execution as any).evidenceHash:null,
+          });
         }catch(error){
           execution={executed:false,error:String(error)};
           await recordAgentTaskExecution({id:taskId,ok:false,result:execution});
         }
       }
-      tasks.push({taskId,agent,approvedByJudges:run.approved,promotionAllowed:run.promotionAllowed,runId:run.runId,execution});
+      tasks.push({taskId,agent,idempotencyKey,approvedByJudges:run.approved,promotionAllowed:run.promotionAllowed,runId:run.runId,execution});
     }else{
       tasks.push({taskId:null,agent,approvedByJudges:false,promotionAllowed:false,error:run.error});
     }

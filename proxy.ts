@@ -13,7 +13,19 @@ function clearTracking(response:NextResponse){
   for(const name of TRACKING_COOKIES) response.cookies.delete(name);
 }
 
+function malformedPath(request:NextRequest){
+  const rawPath=request.url.split("?")[0].toLowerCase();
+  return rawPath.includes("%5c")||rawPath.includes("\\")||rawPath.includes("%00");
+}
+
 export function proxy(request:NextRequest){
+  if(malformedPath(request)){
+    return new NextResponse("Not found",{
+      status:404,
+      headers:{"Cache-Control":"no-store","X-Atlas-Rejected-Path":"malformed"},
+    });
+  }
+
   const response=NextResponse.next();
   const consent=request.cookies.get(CONSENT_COOKIE)?.value;
   if(consent!==ANALYTICS_CONSENT){

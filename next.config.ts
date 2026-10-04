@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-import { withWorkflow } from "workflow/next";
+import { withWorkflow } from "@workflow/next";
 
 const securityHeaders=[
   {key:"X-Content-Type-Options",value:"nosniff"},

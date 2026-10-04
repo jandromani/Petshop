@@ -207,7 +207,7 @@ A software release is mergeable only after:
 
 A production release is successful only after:
 
-`tested master SHA → production migrations → prebuilt Vercel deploy → production smoke`
+`CI-tested master SHA → Git-linked Vercel production → exact-SHA wait → production smoke`
 
 READY never means LIVE. ACTIVATION_REQUIRED is not converted into green by mock data, missing credentials or skipped deployment steps.
 
@@ -255,3 +255,20 @@ External activation:
 - first verified direct hotel contract or optional OTA/provider credentials
 - real user traffic before Growth Autopilot can choose a winner
 - final custom domain
+
+
+## OMEGA · 10/10 HARDENING — ACTIVE
+The product roadmap is no longer sufficient as the definition of completion.
+
+Implemented in the OMEGA hardening branch:
+- database health checks reach Postgres rather than trusting env presence
+- direct-hotel inventory can satisfy commercial readiness without an OTA
+- migration advisory lock
+- migration ledger + SHA-256 checksum drift protection
+- direct/unpooled Neon connection preferred for migrations
+- production dependency audit
+- Dependabot
+- CodeQL
+- dependency review
+
+The remaining cross-functional 10/10 gates are tracked in `docs/OMEGA_ROADMAP.md`.
