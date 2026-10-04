@@ -26,3 +26,11 @@ If a credential is suspected to have entered repository history, revoke it at th
 ## Deployment truth
 
 A skipped deploy is not a successful deploy. Production automation must fail closed when deployment credentials are absent, run database migrations against the production environment, deploy the exact CI-tested source SHA, and smoke-test the resulting URL.
+
+## Vulnerability reporting
+
+Prefer GitHub's private vulnerability-reporting / Security Advisory flow when the repository UI exposes **Report a vulnerability**. Do not post exploit details, credentials, personal data, or unredacted production evidence in a public issue.
+
+If private reporting is unavailable, contact the repository owner through a private GitHub-supported channel first and disclose only enough information to establish a secure reporting path. Public issues may be used for non-sensitive hardening requests only.
+
+Security reports should include the affected surface, impact, reproduction prerequisites, and a minimal proof that avoids destructive actions or access to third-party data.

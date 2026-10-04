@@ -192,6 +192,7 @@ External activation:
 - legal operator identity is a launch gate
 - consent layer gates optional analytics
 - lockfile/migrations are reproducible and idempotent
+- daily scheduled workflow starts use durable per-slot claims when the database is active, preventing duplicate cron delivery from starting duplicate workflows
 
 External activation:
 - production DATABASE_URL
@@ -217,6 +218,8 @@ READY never means LIVE. ACTIVATION_REQUIRED is not converted into green by mock 
 - Vercel AI Gateway/OIDC remains an optional fallback and is blocked unless paid fallback is explicitly enabled
 - actor and judge model independence is enforced by default
 - actor output is strict JSON with one bounded proposed action or no action
+- deterministic Truth + Authority gates run for every governed agent
+- adversarial replay covers fabricated commercial certainty, prompt injection, self-approval, role escalation, duplicate action and spend escalation
 - every role has an explicit action allowlist
 - only read-only/idempotent action classes can auto-execute:
   - `ops.snapshot`

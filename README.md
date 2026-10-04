@@ -10,7 +10,7 @@ Atlas turns recurring monthly income into a long-stay living plan: compare 30–
 - **Money OS**: referral lineage, conversion ingestion, commission/revenue reconciliation and settlement state.
 - **SEO autopilot**: demo content stays NOINDEX. Supported live discovery pages become indexable automatically only after fresh SELLABLE evidence, geographic evidence and unique narrative gates pass.
 - **Growth autopilot**: consented experiment data can deterministically promote a winning hero only after minimum sample and uplift thresholds.
-- **Governed agents**: bounded roles, deterministic judges, a downstream independent-model judge, per-agent quotas, daily cost cap, persistent action ledger and allowlisted actuation.
+- **Governed agents**: bounded roles, deterministic truth/authority judges, a downstream independent-model judge, adversarial replay, per-agent quotas, daily cost cap, persistent action ledger and allowlisted actuation.
 - **Human authority boundary**: contracts, prices, hotel outreach, paid spend and code changes never auto-execute.
 - **Control Tower**: runtime supply, referrals, revenue, incidents, experiments, agent runs and action state.
 - **Git-native production**: Vercel is linked directly to `jandromani/Petshop` on `master`; production verification checks that the exact CI-tested SHA is live.
@@ -38,7 +38,7 @@ The production build command is:
 npm run vercel-build
 ```
 
-It runs database migrations only when `DATABASE_URL` exists, then performs the Next.js build. Migrations are idempotent and currently run through `db/014_consumer_memory.sql`.
+It runs database migrations only when `DATABASE_URL` exists, then performs the Next.js build. Migrations are idempotent and currently run through `db/015_scheduled_run_claims.sql`.
 
 ## Required commercial activation still outside the repository
 
