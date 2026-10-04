@@ -1,6 +1,7 @@
 import { afterAll,describe,expect,it } from "vitest";
 import { getDatabase } from "@/src/db/client";
 import { createSourcingRequest,listSourcingRequests } from "@/src/db/sourcing";
+import { ensureHotelLead } from "@/src/db/direct-supply";
 
 const enabled=Boolean(process.env.DATABASE_URL);
 const token=crypto.randomUUID();
@@ -35,5 +36,10 @@ describe.skipIf(!enabled)("sourcing requests persistence",()=>{
     expect(row?.occupancy).toBe(2);
     expect(row?.target_monthly_eur).toBe(2300);
     expect(JSON.stringify(row)).not.toContain(requesterHash);
+
+    const leadA=await ensureHotelLead({hotelName:"CI Real Hotel",city:"Madrid",country:"Spain",region:"Europe",source:"customer-sourcing",notes:{sourcingRequestId:first?.id}});
+    const leadB=await ensureHotelLead({hotelName:"CI Real Hotel",city:"Madrid",country:"Spain",region:"Europe",source:"customer-sourcing",notes:{sourcingRequestId:second?.id}});
+    expect(leadA).toBeTruthy();expect(leadB).toBe(leadA);
+    const sql=getDatabase();if(sql&&leadA)await sql`delete from hotel_leads where id=${leadA}::uuid`;
   });
 });
