@@ -1,6 +1,7 @@
 import { handleCallback } from "@vercel/queue";
 import { reconcileRevenue } from "@/src/services/revenue-reconciliation";
 import { auditOpsEvent } from "@/src/db/governance";
+import { commerceAuditRetryPolicy,isCommerceAuditPoisonDelivery } from "@/src/queues/commerce-audit";
 
 export const POST=handleCallback(
   async (message:any,metadata)=>{
@@ -8,7 +9,7 @@ export const POST=handleCallback(
     try{
       if(message?.type==="conversion.received")await reconcileRevenue(30);
     }catch(error){
-      if(metadata.deliveryCount>=5){
+      if(isCommerceAuditPoisonDelivery(metadata.deliveryCount)){
         await auditOpsEvent({
           actor:"queue:commerce-audit",
           action:"queue.poison-message",
@@ -24,6 +25,6 @@ export const POST=handleCallback(
   },
   {
     visibilityTimeoutSeconds:60,
-    retry:(_error,metadata)=>metadata.deliveryCount>5?{acknowledge:true}:{afterSeconds:Math.min(300,2**metadata.deliveryCount*5)},
+    retry:(_error,metadata)=>commerceAuditRetryPolicy(metadata.deliveryCount),
   },
 );
