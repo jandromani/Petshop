@@ -27,6 +27,7 @@ describe("provider HTTP resilience",()=>{
 
     expect(mocked).toHaveBeenCalledTimes(2);
     expect(error).toBeInstanceOf(ProviderHttpError);
+    if(!(error instanceof ProviderHttpError))throw error;
     expect(error.status).toBe(503);
     expect(error.provider).toBe("example");
     expect(error.responseText).toContain("upstream-down");
