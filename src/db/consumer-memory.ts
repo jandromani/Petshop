@@ -4,7 +4,7 @@ import type { SavedStay } from "@/src/core/saved-stays";
 
 export const SAVED_PROFILE_COOKIE="atlas_saved_profile";
 
-export function validSavedProfileId(value:string|undefined|null){
+export function validSavedProfileId(value:string|undefined|null):value is string{
   return Boolean(value&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value));
 }
 
