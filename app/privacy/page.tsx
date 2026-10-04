@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { legalIdentity } from "@/src/system/legal";
+import ConsentSettings from "@/components/ConsentSettings";
 
 export const metadata:Metadata={title:"Privacy notice",robots:{index:false,follow:false}};
 
@@ -24,5 +25,6 @@ export default function PrivacyPage(){
       <div className="card"><h2>Your rights</h2><p>Where applicable and where data can be associated with you, rights may include access, correction, deletion, objection, restriction, portability and withdrawal of consent. The operational contact above is the rights-request channel once configured.</p></div>
     </div>
     <div className="card" style={{marginTop:24}}><h2>Analytics choice</h2><p>Analytics is opt-in. Refusing analytics does not disable the deterministic planner. Essential security and referral evidence may still be processed when necessary to operate the requested commercial link or protect the service.</p></div>
+    <ConsentSettings/>
   </div></main>;
 }
