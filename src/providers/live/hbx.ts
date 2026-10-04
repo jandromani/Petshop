@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { fetchJson, finiteNumber, type LiveProviderStatus, type LiveSearchBase, type LiveSearchHit } from "./common";
 
 export type HbxPricingMode="commissionable"|"net";
+const HBX_BOOK_TRANSACTION_IMPLEMENTED=false;
 
 export type HbxRate={
   net?:number|string;
@@ -81,7 +82,7 @@ function configuredMarkup(){
 }
 
 function bookingReady(){
-  return process.env.HBX_BOOKING_ENABLED==="true" && process.env.HBX_MTLS_READY==="true";
+  return HBX_BOOK_TRANSACTION_IMPLEMENTED && process.env.HBX_BOOKING_ENABLED==="true" && process.env.HBX_MTLS_READY==="true";
 }
 
 function parseHotelRates(
@@ -131,7 +132,7 @@ export class HbxClient{
   status():LiveProviderStatus{
     const missingEnv=["HBX_API_KEY","HBX_SECRET"].filter(key=>!process.env[key]);
     const base=process.env.HBX_API_BASE || "https://api.test.hotelbeds.com";
-    const blockers:string[]=[];
+    const blockers:string[]=["booking transaction is not implemented in Atlas"];
     if(process.env.HBX_MTLS_READY!=="true") blockers.push("mTLS not marked ready");
     if(process.env.HBX_BOOKING_ENABLED!=="true") blockers.push("booking capability disabled");
     if(pricingMode()==="net" && configuredMarkup()===undefined) blockers.push("net pricing requires explicit HBX_MARKUP_PERCENT");
