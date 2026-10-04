@@ -47,7 +47,7 @@ jobs:
       - name: Verify DB-backed runtime invariants
         env:
           DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/atlas_ci
-        run: npx vitest run tests/consumer-memory-db.test.ts tests/scheduled-runs-db.test.ts
+        run: npx vitest run tests/consumer-memory-db.test.ts tests/scheduled-runs-db.test.ts tests/search-friction-db.test.ts
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
