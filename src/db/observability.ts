@@ -191,8 +191,8 @@ export async function runtimeDurationMetrics(days=30):Promise<RuntimeDurationMet
       select kind,
         count(*)::int as sample,
         count(*) filter (where status='FAILED')::int as failed,
-        percentile_cont(0.50) within group(order by duration_ms)::float as p50_ms,
-        percentile_cont(0.95) within group(order by duration_ms)::float as p95_ms,
+        (percentile_cont(0.50) within group(order by duration_ms))::float as p50_ms,
+        (percentile_cont(0.95) within group(order by duration_ms))::float as p95_ms,
         max(duration_ms)::float as max_ms
       from samples
       group by kind
