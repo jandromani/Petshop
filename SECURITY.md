@@ -4,7 +4,7 @@
 
 Credentials belong in deployment environment variables only. `.env*` files are ignored except `.env.example`, which must contain placeholders only.
 
-CI scans tracked files for known high-risk credential formats before dependency installation. A detected credential blocks the build.
+CI scans tracked files for known high-risk credential formats before dependency installation. A detected credential blocks the build. Production dependencies are audited at HIGH severity or above.
 
 ## Commercial truth
 
@@ -18,6 +18,12 @@ Missing credentials mean `DISABLED`. Credentials alone do not mean `COMMERCIAL_R
 
 Control pages use a signed, HttpOnly ops session derived from `OPS_ACCESS_KEY`. Operational APIs accept that same-origin signed session or explicit bearer authentication for automation. Cron endpoints use `CRON_SECRET`. Unauthorized read surfaces should avoid disclosing internal state.
 
+## AI authority
+
+The model runtime is governed by role allowlists, independent-judge requirements, idempotency keys, cost limits, adversarial replay, durable cron claims, and global/per-action kill switches. Material spend, contracts, legal commitments and unsafe publication are not autonomous authority.
+
+OpenRouter is the preferred runtime. When `AGENT_ALLOW_PAID_FALLBACK=false`, loss of the OpenRouter credential fails closed rather than silently switching to a paid model.
+
 ## Incident handling
 
 If a credential is suspected to have entered repository history, revoke it at the provider, remove it from current source, audit history and downstream logs, and add a regression signature to the secret scanner.
@@ -25,7 +31,19 @@ If a credential is suspected to have entered repository history, revoke it at th
 
 ## Deployment truth
 
-A skipped deploy is not a successful deploy. Production automation must fail closed when deployment credentials are absent, run database migrations against the production environment, deploy the exact CI-tested source SHA, and smoke-test the resulting URL.
+Production is Git-linked to the canonical Vercel project. A source commit is considered production-proven only when:
+
+1. CI, dependency audit, migration proof, typecheck, tests, build and E2E pass.
+2. CodeQL passes.
+3. the stable production alias exposes the expected application SHA, or the verifier proves that only non-runtime files were skipped.
+4. the production smoke passes against the resolved application SHA.
+5. when the agent runtime is configured, the smoke obtains a real judged completion from the expected provider.
+
+Database migrations run automatically during Vercel build when a database URL is configured. They are serialized with a Postgres advisory lock and tracked by filename plus SHA-256 checksum.
+
+## Data minimization
+
+Anonymous saved-stay memory uses an opaque UUID cookie, is capped, expires through the retention workflow, and supports self-service deletion. Saved-memory API responses are `no-store`.
 
 ## Vulnerability reporting
 
