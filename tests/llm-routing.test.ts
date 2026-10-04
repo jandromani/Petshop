@@ -3,7 +3,7 @@ import { agentRuntimeProvider } from "@/src/agents/llm";
 
 describe("LLM provider routing",()=>{
   const keys=[
-    "AGENT_LLM_PROVIDER","OPENROUTER_API_KEY","AI_GATEWAY_API_KEY",
+    "AGENT_LLM_PROVIDER","AGENT_ALLOW_PAID_FALLBACK","OPENROUTER_API_KEY","AI_GATEWAY_API_KEY",
     "VERCEL_OIDC_TOKEN","VERCEL",
   ] as const;
   const original=Object.fromEntries(keys.map(key=>[key,process.env[key]]));
@@ -23,8 +23,17 @@ describe("LLM provider routing",()=>{
     expect(agentRuntimeProvider()).toBe("openrouter");
   });
 
-  it("falls back to Vercel when preferred OpenRouter has no credential",()=>{
+  it("fails closed when preferred OpenRouter has no credential and paid fallback is disabled",()=>{
     process.env.AGENT_LLM_PROVIDER="openrouter";
+    process.env.AGENT_ALLOW_PAID_FALLBACK="false";
+    delete process.env.OPENROUTER_API_KEY;
+    process.env.VERCEL="1";
+    expect(agentRuntimeProvider()).toBe("none");
+  });
+
+  it("uses Vercel only when paid fallback is explicitly enabled",()=>{
+    process.env.AGENT_LLM_PROVIDER="openrouter";
+    process.env.AGENT_ALLOW_PAID_FALLBACK="true";
     delete process.env.OPENROUTER_API_KEY;
     process.env.VERCEL="1";
     expect(agentRuntimeProvider()).toBe("vercel-ai-gateway");

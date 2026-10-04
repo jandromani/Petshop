@@ -8,12 +8,13 @@ function vercelOidcPotentiallyAvailable(){
 }
 
 export function agentModelConfigured(){
-  return Boolean(
-    process.env.AI_GATEWAY_API_KEY||
-    process.env.VERCEL_OIDC_TOKEN||
-    process.env.OPENROUTER_API_KEY||
-    vercelOidcPotentiallyAvailable()
-  );
+  const preference=providerPreference();
+  const openRouter=Boolean(process.env.OPENROUTER_API_KEY);
+  const gateway=Boolean(process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN||vercelOidcPotentiallyAvailable());
+  const paidFallback=process.env.AGENT_ALLOW_PAID_FALLBACK==="true";
+  if(preference==="openrouter")return openRouter||(paidFallback&&gateway);
+  if(preference==="vercel-ai-gateway")return gateway||openRouter;
+  return openRouter||gateway;
 }
 
 type ProviderPreference="auto"|"openrouter"|"vercel-ai-gateway";
@@ -28,7 +29,12 @@ export function agentRuntimeProvider(){
   const preference=providerPreference();
   const openRouter=Boolean(process.env.OPENROUTER_API_KEY);
   const gateway=Boolean(process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN||vercelOidcPotentiallyAvailable());
-  if(preference==="openrouter"&&openRouter)return"openrouter";
+  const paidFallback=process.env.AGENT_ALLOW_PAID_FALLBACK==="true";
+  if(preference==="openrouter"){
+    if(openRouter)return"openrouter";
+    if(paidFallback&&gateway)return"vercel-ai-gateway";
+    return"none";
+  }
   if(preference==="vercel-ai-gateway"&&gateway)return"vercel-ai-gateway";
   if(gateway)return"vercel-ai-gateway";
   if(openRouter)return"openrouter";
@@ -49,6 +55,12 @@ async function resolveGatewayToken(){
 }
 
 export async function agentRuntimeCredentialsAvailable(){
+  const preference=providerPreference();
+  if(preference==="openrouter"){
+    if(process.env.OPENROUTER_API_KEY)return true;
+    if(process.env.AGENT_ALLOW_PAID_FALLBACK!=="true")return false;
+    return Boolean(await resolveGatewayToken());
+  }
   if(process.env.OPENROUTER_API_KEY)return true;
   return Boolean(await resolveGatewayToken());
 }
@@ -159,11 +171,15 @@ export async function llmCompletion(
     return gatewayCompletion(gatewayToken,messages,options.role,maxTokens,temperature);
   };
 
-  if(preference==="openrouter"&&openRouterKey){
+  if(preference==="openrouter"){
+    const paidFallback=process.env.AGENT_ALLOW_PAID_FALLBACK==="true";
+    if(!openRouterKey){
+      if(gatewayToken&&paidFallback)return tryGateway();
+      throw new Error("OpenRouter is required by policy and paid fallback is disabled");
+    }
     try{
       return await tryOpenRouterWithFreeFallback();
     }catch(error){
-      const paidFallback=process.env.AGENT_ALLOW_PAID_FALLBACK==="true";
       console.error(JSON.stringify({
         level:"warning",event:"openrouter_completion_failed",role:options.role,error:String(error).slice(0,500),
         paidFallbackConfigured:Boolean(gatewayToken&&paidFallback),
