@@ -16,6 +16,7 @@ import {
 } from "@/src/agents/actions";
 import { optimizeHeroExperiment } from "@/src/growth/autopilot";
 import { SLO_TARGETS } from "@/src/system/slo";
+import { sendOperationalAlerts } from "@/src/system/alerts";
 
 export type ControlSignal={key:string;severity:"info"|"warning"|"critical";message:string};
 
@@ -53,6 +54,13 @@ export async function collectControlSignals():Promise<ControlSignal[]>{
 export async function persistControlIncidents(signals:ControlSignal[]){
   "use step";
   return syncIncidents(signals.filter((x):x is ControlSignal & {severity:"warning"|"critical"}=>x.severity!=="info"));
+}
+
+export async function dispatchOperationalAlerts(signals:ControlSignal[]){
+  "use step";
+  return sendOperationalAlerts(
+    signals.filter((x):x is ControlSignal & {severity:"warning"|"critical"}=>x.severity!=="info"),
+  );
 }
 
 export async function buildHumanAgenda(signals:ControlSignal[]){
@@ -152,8 +160,8 @@ export async function reconcileDailyRevenue(){
 export async function dailyControlWorkflow(){
   "use workflow";
   const [signals,bookingOrders]=await Promise.all([collectControlSignals(),syncProviderRevenue()]);
-  const [revenue,incidents,retention,specialists,growthAutopilot]=await Promise.all([
-    reconcileDailyRevenue(),persistControlIncidents(signals),applyDataRetention(),dispatchSpecialistAgents(signals),runGrowthAutopilot(),
+  const [revenue,incidents,alerts,retention,specialists,growthAutopilot]=await Promise.all([
+    reconcileDailyRevenue(),persistControlIncidents(signals),dispatchOperationalAlerts(signals),applyDataRetention(),dispatchSpecialistAgents(signals),runGrowthAutopilot(),
   ]);
   const advisor=await runDailyAdvisor({
     signals,
@@ -168,8 +176,9 @@ export async function dailyControlWorkflow(){
       anomalyCount:Array.isArray((revenue as any)?.anomalies)?(revenue as any).anomalies.length:0,
     },
     incidents,
+    alerts,
     growthAutopilot,
   });
   const agenda=await buildHumanAgenda(signals);
-  return{runType:"daily-control",signals,bookingOrders,revenue,incidents,retention,specialists,growthAutopilot,advisor,agenda,generatedAt:new Date().toISOString()};
+  return{runType:"daily-control",signals,bookingOrders,revenue,incidents,alerts,retention,specialists,growthAutopilot,advisor,agenda,generatedAt:new Date().toISOString()};
 }
