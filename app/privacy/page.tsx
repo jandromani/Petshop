@@ -7,6 +7,7 @@ export const metadata:Metadata={title:"Privacy notice",robots:{index:false,follo
 export default function PrivacyPage(){
   const identity=legalIdentity();
   const retention=process.env.DATA_RETENTION_DAYS||"90";
+  const consumerRetention=process.env.CONSUMER_MEMORY_RETENTION_DAYS||"365";
   return <main className="seoPage"><div className="shell">
     <a className="eyebrow" href="/legal">← legal & commercial disclosure</a>
     <section className="seoHero" style={{marginTop:20}}>
@@ -18,9 +19,9 @@ export default function PrivacyPage(){
       <div className="card"><h2>Controller</h2>{identity.configured
         ?<p><b>{identity.operator}</b><br/>{identity.country}<br/><a href={"mailto:"+identity.email}>{identity.email}</a></p>
         :<p><b>Commercial launch gate incomplete.</b> The controller identity and contact email must be configured before commercial launch.</p>}</div>
-      <div className="card"><h2>Data categories</h2><p>Depending on your choices and actions, Atlas may process pseudonymous visitor/session identifiers, consent state, attribution parameters, product events, referral identifiers, booking/conversion evidence and operational hotel-contact data.</p></div>
+      <div className="card"><h2>Data categories</h2><p>Depending on your choices and actions, Atlas may process pseudonymous visitor/session identifiers, consent state, attribution parameters, product events, saved-stay references, referral identifiers, booking/conversion evidence and operational hotel-contact data.</p></div>
       <div className="card"><h2>Purposes</h2><p>Operate the planner, preserve security, measure product usage where consent exists, attribute referrals, reconcile commissions, investigate incidents and maintain verified commercial inventory.</p></div>
-      <div className="card"><h2>Retention</h2><p>Pseudonymous analytics/event retention is configured for approximately {retention} days. Older attribution identifiers and raw conversion payloads are scrubbed by the retention workflow. Contract/accounting records may require a different lawful retention period before commercial launch.</p></div>
+      <div className="card"><h2>Retention</h2><p>Pseudonymous analytics/event retention is configured for approximately {retention} days. Anonymous saved-stay profiles expire after approximately {consumerRetention} days of inactivity and cascade-delete their saved references. Older attribution identifiers and raw conversion payloads are scrubbed by the retention workflow. Contract/accounting records may require a different lawful retention period before commercial launch.</p></div>
       <div className="card"><h2>Recipients and transfers</h2><p>Infrastructure and booking/referral providers may process data required to deliver their service. Atlas must maintain the final subprocessor/DPA and transfer record before commercial launch.</p></div>
       <div className="card"><h2>Your rights</h2><p>Where applicable and where data can be associated with you, rights may include access, correction, deletion, objection, restriction, portability and withdrawal of consent. The operational contact above is the rights-request channel once configured.</p></div>
     </div>

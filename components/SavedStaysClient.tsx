@@ -1,26 +1,51 @@
 "use client";
 import { useEffect,useMemo,useState } from "react";
-import { SAVED_STAYS_KEY,parseSavedStays,type SavedStay } from "@/src/core/saved-stays";
+import { SAVED_STAYS_KEY,mergeSavedStays,parseSavedStays,type SavedStay } from "@/src/core/saved-stays";
 import type { LiveCatalogOffer } from "@/src/core/live-offers";
 
 type Row={saved:SavedStay;live:LiveCatalogOffer|null;checked:boolean};
 
 const money=(n:number,c:string)=>new Intl.NumberFormat("en-US",{style:"currency",currency:c,maximumFractionDigits:0}).format(n);
 
+async function durablePut(stay:SavedStay){
+  return fetch("/api/saved",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(stay),cache:"no-store"});
+}
+
 export default function SavedStaysClient(){
   const [rows,setRows]=useState<Row[]>([]);
+
   useEffect(()=>{
     let alive=true;
-    const saved=parseSavedStays(localStorage.getItem(SAVED_STAYS_KEY));
-    setRows(saved.map(x=>({saved:x,live:null,checked:false})));
-    Promise.all(saved.map(async item=>{
+
+    async function load(){
+      const local=parseSavedStays(localStorage.getItem(SAVED_STAYS_KEY));
+      let saved=local;
       try{
-        const res=await fetch("/api/catalog/live?slug="+encodeURIComponent(item.slug)+"&limit=20",{cache:"no-store"});
-        const data=res.ok?await res.json():null;
-        const offers=Array.isArray(data?.offers)?data.offers as LiveCatalogOffer[]:[];
-        return{saved:item,live:offers.find(o=>o.offerId===item.offerId)||null,checked:true};
-      }catch{return{saved:item,live:null,checked:true};}
-    })).then(next=>{if(alive)setRows(next);});
+        const res=await fetch("/api/saved",{cache:"no-store"});
+        if(res.ok){
+          const data=await res.json();
+          const server=parseSavedStays(JSON.stringify(data?.saved||[]));
+          saved=mergeSavedStays(local,server);
+          localStorage.setItem(SAVED_STAYS_KEY,JSON.stringify(saved));
+          const serverIds=new Set(server.map(x=>x.offerId));
+          void Promise.all(local.filter(x=>!serverIds.has(x.offerId)).map(x=>durablePut(x).catch(()=>null)));
+        }
+      }catch{}
+
+      if(!alive)return;
+      setRows(saved.map(x=>({saved:x,live:null,checked:false})));
+      const next=await Promise.all(saved.map(async item=>{
+        try{
+          const res=await fetch("/api/catalog/live?slug="+encodeURIComponent(item.slug)+"&limit=20",{cache:"no-store"});
+          const data=res.ok?await res.json():null;
+          const offers=Array.isArray(data?.offers)?data.offers as LiveCatalogOffer[]:[];
+          return{saved:item,live:offers.find(o=>o.offerId===item.offerId)||null,checked:true};
+        }catch{return{saved:item,live:null,checked:true};}
+      }));
+      if(alive)setRows(next);
+    }
+
+    void load();
     return()=>{alive=false;};
   },[]);
 
@@ -30,9 +55,10 @@ export default function SavedStaysClient(){
     const next=rows.filter(x=>x.saved.offerId!==id);
     setRows(next);
     localStorage.setItem(SAVED_STAYS_KEY,JSON.stringify(next.map(x=>x.saved)));
+    void fetch("/api/saved?offerId="+encodeURIComponent(id),{method:"DELETE",cache:"no-store"}).catch(()=>{});
   }
 
-  if(!rows.length)return <div className="card"><b>No saved stays yet.</b><p>Save verified offers from the live catalogue and compare them here.</p><a className="btn" href="/#explore">Find stays →</a></div>;
+  if(!rows.length)return <div className="card"><b>No saved stays yet.</b><p>Save verified offers from the live catalogue and compare them here. With a production database, Atlas also keeps the list in anonymous server-side memory.</p><a className="btn" href="/#explore">Find stays →</a></div>;
 
   return <>
     <div className="savedCompare">

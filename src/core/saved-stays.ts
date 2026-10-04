@@ -30,3 +30,18 @@ export function toggleSavedStay(rows:SavedStay[],stay:SavedStay){
   const exists=rows.some(x=>x.offerId===stay.offerId);
   return exists?rows.filter(x=>x.offerId!==stay.offerId):[stay,...rows].slice(0,30);
 }
+
+export function mergeSavedStays(...groups:SavedStay[][]){
+  const byOffer=new Map<string,SavedStay>();
+  for(const group of groups){
+    for(const row of group){
+      const current=byOffer.get(row.offerId);
+      const currentTime=current?Date.parse(current.savedAt)||0:-1;
+      const nextTime=Date.parse(row.savedAt)||0;
+      if(!current||nextTime>=currentTime)byOffer.set(row.offerId,row);
+    }
+  }
+  return [...byOffer.values()]
+    .sort((a,b)=>(Date.parse(b.savedAt)||0)-(Date.parse(a.savedAt)||0))
+    .slice(0,30);
+}
