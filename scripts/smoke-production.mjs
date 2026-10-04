@@ -24,6 +24,44 @@ if(expectedSha&&health?.deployment?.commitSha!==expectedSha){
   throw new Error("deployment SHA mismatch: "+String(health?.deployment?.commitSha)+" != "+expectedSha);
 }
 
+
+async function smokeAgent(){
+  const checkIn=new Date(Date.now()+90*24*60*60*1000).toISOString().slice(0,10);
+  const payload={
+    prompt:"Reply exactly with: Atlas concierge online.",
+    livingBudget:1500,
+    party:"solo",
+    duration:30,
+    mode:"world",
+    checkIn,
+    flexibleDays:7,
+    query:"",
+    region:"All",
+  };
+
+  let last="";
+  for(let attempt=1;attempt<=3;attempt++){
+    try{
+      const res=await fetch(base+"/api/agent",{
+        method:"POST",
+        redirect:"manual",
+        cache:"no-store",
+        headers:{"content-type":"application/json"},
+        body:JSON.stringify(payload),
+      });
+      const body=await res.json().catch(()=>null);
+      if(res.ok&&body?.provider==="openrouter"&&typeof body?.answer==="string"&&body.answer.trim()){
+        return{provider:body.provider,catalogueMode:body.catalogueMode||null,judged:body.judged===true};
+      }
+      last="status="+res.status+" provider="+String(body?.provider||"none")+" answer="+String(body?.answer||body?.error||"").slice(0,160);
+    }catch(error){
+      last=String(error);
+    }
+    await new Promise(resolve=>setTimeout(resolve,2500));
+  }
+  throw new Error("production agent smoke failed after retries: "+last);
+}
+
 const status=await (await get("/api/system/status")).json();
 if(status?.proof?.pass!==true)throw new Error("system status proof failed");
 
@@ -32,9 +70,12 @@ if(!Array.isArray(catalog.offers))throw new Error("live catalog contract invalid
 
 await get("/api/ops/access",404);
 
+const agent=health.agentConfigured?await smokeAgent():null;
+
 console.log(JSON.stringify({
   ok:true,base,commitSha:health?.deployment?.commitSha||null,
   databaseConfigured:health.databaseConfigured,agentConfigured:health.agentConfigured,
+  agentProvider:agent?.provider||null,agentJudged:agent?.judged??null,
   configuredProviders:(health.providers||[]).filter(p=>p.configured).map(p=>p.provider),
   liveOffers:catalog.offers.length,
 },null,2));
