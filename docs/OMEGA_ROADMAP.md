@@ -142,7 +142,7 @@ Exit gate: commercial launch is legally attributable, privacy rights are operati
 ## OMEGA-6 · Supply density — EXTERNAL
 
 - activate Direct Hotel OS first
-- create a standard long-stay commercial agreement/checklist
+- the technical/commercial onboarding evidence checklist is codified in `docs/DIRECT_HOTEL_ONBOARDING.md`; a jurisdiction-reviewed agreement remains external
 - onboard first verified hotel
 - then 10 hotels across at least 3 destinations
 - require:
