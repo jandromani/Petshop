@@ -37,7 +37,8 @@ export function computeErrorBudget(provider:string,runs:number,cleanRuns:number,
 export async function providerErrorBudgets(days=30,targetSuccessPct=95){
   const sql=getDatabase();if(!sql)return[] as ProviderErrorBudget[];
   const bounded=Math.max(1,Math.min(365,days));
-  const rows=await sql<Array<{provider:string;runs:number;clean_runs:number}>>`
+  try{
+    const rows=await sql<Array<{provider:string;runs:number;clean_runs:number}>>`
     select coalesce(provider,'multi') as provider,
       count(*)::int as runs,
       count(*) filter (where status='COMPLETE' and error_count=0)::int as clean_runs
@@ -46,12 +47,16 @@ export async function providerErrorBudgets(days=30,targetSuccessPct=95){
     group by coalesce(provider,'multi')
     order by runs desc,provider
   `;
-  return rows.map(row=>computeErrorBudget(
-    row.provider,
-    Number(row.runs||0),
-    Number(row.clean_runs||0),
-    targetSuccessPct,
-  ));
+    return rows.map(row=>computeErrorBudget(
+      row.provider,
+      Number(row.runs||0),
+      Number(row.clean_runs||0),
+      targetSuccessPct,
+    ));
+  }catch(error){
+    console.error(JSON.stringify({level:"error",event:"provider_error_budget_query_failed",error:String(error).slice(0,300)}));
+    return[];
+  }
 }
 
 export type AgentRoleMetric={
@@ -72,7 +77,8 @@ export type AgentRoleMetric={
 export async function agentRoleMetrics(days=30):Promise<AgentRoleMetric[]>{
   const sql=getDatabase();if(!sql)return[];
   const bounded=Math.max(1,Math.min(365,days));
-  const rows=await sql<Array<{
+  try{
+    const rows=await sql<Array<{
     agent_key:string;actor_provider:string;actor_model:string;judge_provider:string;judge_model:string;
     runs:number;completed:number;failed:number;cost_cents:number;
     prompt_tokens:number;completion_tokens:number;total_tokens:number;
@@ -127,7 +133,7 @@ export async function agentRoleMetrics(days=30):Promise<AgentRoleMetric[]>{
     order by runs desc,ar.agent_key
   `;
 
-  return rows.map(row=>{
+    return rows.map(row=>{
     const promptTokens=Number(row.prompt_tokens||0);
     const completionTokens=Number(row.completion_tokens||0);
     const reportedTotal=Number(row.total_tokens||0);
@@ -145,5 +151,9 @@ export async function agentRoleMetrics(days=30):Promise<AgentRoleMetric[]>{
       completionTokens,
       totalTokens:reportedTotal||promptTokens+completionTokens,
     };
-  });
+    });
+  }catch(error){
+    console.error(JSON.stringify({level:"error",event:"agent_role_metrics_query_failed",error:String(error).slice(0,300)}));
+    return[];
+  }
 }
