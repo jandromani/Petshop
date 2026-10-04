@@ -64,7 +64,7 @@ export default function SavedStaysClient(){
     void fetch("/api/saved?all=1",{method:"DELETE",cache:"no-store"}).catch(()=>{});
   }
 
-  if(!rows.length)return <div className="card"><b>No saved stays yet.</b><p>Save verified offers from the live catalogue and compare them here. With a production database, Atlas also keeps the list in anonymous server-side memory.</p><a className="btn" href="/#explore">Find stays →</a></div>;
+  if(!rows.length)return <div className="card"><b>No saved stays yet.</b><p>Save verified offers from the live catalogue and compare them here. With a production database, Atlas also keeps the list in anonymous server-side memory.</p><div className="actions"><a className="btn" href="/#explore">Find stays →</a><a className="btn ghost" href="/api/saved/export">Export anonymous memory</a></div></div>;
 
   return <>
     <div className="savedCompare">
@@ -73,6 +73,7 @@ export default function SavedStaysClient(){
       <div><b>{rows.length-liveRows.length}</b><span>need re-check</span></div>
     </div>
     <div className="actions" style={{marginBottom:18}}>
+      <a className="btn ghost" href="/api/saved/export">Export my saved memory</a>
       <button className="btn ghost" onClick={clearAll}>Clear all saved memory</button>
     </div>
     <div className="savedGrid">
