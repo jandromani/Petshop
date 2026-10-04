@@ -177,15 +177,7 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
 
     <LiveOffers/>
 
-    <section id="explore" className="discovery"><div className="shell">
-      <div className="sectionTitle"><h2>{visible.length} long-stay stays<br/>inside your budget.</h2><p>Every demo result below respects the same budget, region, traveller and text filters as the search count above.</p></div>
-      <div className="toolbar">
-        <input aria-label="Filter stays" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search city, country, pool, sea, clinic…"/>
-        <select aria-label="Filter stays by region" value={region} onChange={e=>setRegion(e.target.value as SearchRegion)}><option>All</option><option>Europe</option><option>Asia</option><option>Africa</option><option>Americas</option></select>
-        <select aria-label="Sort stays" value={sort} onChange={e=>setSort(e.target.value)}><option value="value">Best value</option><option value="price">Lowest monthly</option><option value="score">Silver score</option></select>
-      </div>
-      <div className="hotels">{visible.map(h=><SilverHotelCard key={h.id} hotel={h} party={party} duration={duration}/>)}</div>
-    </div></section>
+    <RealHotelDirectory initialQuery={query} initialRegion={region} duration={duration}/>
 
     <section id="agent" className="agentBand"><div className="shell">
       <div className="sectionTitle"><h2>Ask Atlas.<br/>Your long-stay concierge.</h2><p>The concierge receives only the budget and travel preferences it needs—not your pension or home-income breakdown.</p></div>
