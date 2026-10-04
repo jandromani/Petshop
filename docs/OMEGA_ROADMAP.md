@@ -107,7 +107,7 @@ Exit gate: abusive traffic is controlled before compute/DB, and secrets/incident
 - add workflow duration/retry metrics
 - add AI token/cost/model metrics by role
 - add provider error budgets
-- create weekly operating scorecard
+- deterministic 7-day operating scorecard is exposed in the protected Control Tower/API and never promotes NO_SAMPLE to PASS
 - do not use absence of errors as evidence of user success
 
 Exit gate: a meaningful production regression wakes somebody up without manually opening dashboards.
