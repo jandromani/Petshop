@@ -149,7 +149,10 @@ export default async function ControlTower(){
         <div className="metricDark"><b>{economics.observed.referralClicks}</b><span>referral clicks</span></div>
         <div className="metricDark"><b>{economics.observed.conversions}</b><span>conversions</span></div>
         <div className="metricDark"><b>{economics.observed.conversionRate===null?"—":(economics.observed.conversionRate*100).toFixed(2)+"%"}</b><span>click → conversion</span></div>
-        <div className="metricDark"><b>€{economics.observed.commissionEur.toFixed(2)}</b><span>observed commission</span></div>
+        <div className="metricDark"><b>€{economics.observed.bookingValueEur.toFixed(2)}</b><span>booking value · EUR evidence only</span></div>
+        <div className="metricDark"><b>€{economics.observed.commissionEur.toFixed(2)}</b><span>confirmed commission · EUR</span></div>
+        <div className="metricDark"><b>{economics.observed.takeRate===null?"—":(economics.observed.takeRate*100).toFixed(2)+"%"}</b><span>observed take rate</span></div>
+        <div className="metricDark"><b>€{economics.observed.settledCommissionEur.toFixed(2)}</b><span>settled commission · {economics.cashProofState}</span></div>
         <div className="metricDark"><b>{economics.observed.commissionPerConversionEur===null?"—":"€"+economics.observed.commissionPerConversionEur.toFixed(2)}</b><span>commission / conversion</span></div>
       </div>
 
