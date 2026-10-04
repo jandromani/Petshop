@@ -60,3 +60,78 @@ export async function heroExperimentReadout(days=30){
     group by e.variant order by e.variant
   `;
 }
+
+
+export type SearchFriction={
+  days:number;
+  searchEvents:number;
+  searchSessions:number;
+  zeroResultEvents:number;
+  zeroResultSessions:number;
+  trackableSessions:number;
+  referralSessions:number;
+  abandonedSessions:number;
+  zeroResultRate:number|null;
+  referralRate:number|null;
+  abandonmentRate:number|null;
+};
+
+export async function searchFriction(days=30):Promise<SearchFriction|null>{
+  const sql=getDatabase();if(!sql)return null;
+  const bounded=Math.max(1,Math.min(365,days));
+  const rows=await sql<Array<{
+    search_events:number;search_sessions:number;zero_result_events:number;zero_result_sessions:number;
+    trackable_sessions:number;referral_sessions:number;
+  }>>`
+    with searches as (
+      select id,session_id,
+        case
+          when properties ? 'matches' and properties->>'matches' ~ '^[0-9]+$'
+            then (properties->>'matches')::int
+          else null
+        end as matches
+      from growth_events
+      where event_name='hero_search'
+        and created_at>=now()-make_interval(days => ${bounded})
+    ),
+    session_rollup as (
+      select session_id
+      from searches
+      where session_id is not null
+      group by session_id
+    ),
+    referral_sessions as (
+      select distinct r.session_id
+      from referral_clicks r
+      join session_rollup s on s.session_id=r.session_id
+      where r.session_id is not null
+        and r.created_at>=now()-make_interval(days => ${bounded})
+    )
+    select
+      count(*)::int as search_events,
+      count(distinct coalesce(session_id,id::text))::int as search_sessions,
+      count(*) filter (where matches=0)::int as zero_result_events,
+      count(distinct coalesce(session_id,id::text)) filter (where matches=0)::int as zero_result_sessions,
+      (select count(*)::int from session_rollup) as trackable_sessions,
+      (select count(*)::int from referral_sessions) as referral_sessions
+    from searches
+  `;
+  const row=rows[0]||{
+    search_events:0,search_sessions:0,zero_result_events:0,zero_result_sessions:0,
+    trackable_sessions:0,referral_sessions:0,
+  };
+  const searchEvents=Number(row.search_events||0);
+  const searchSessions=Number(row.search_sessions||0);
+  const zeroResultEvents=Number(row.zero_result_events||0);
+  const zeroResultSessions=Number(row.zero_result_sessions||0);
+  const trackableSessions=Number(row.trackable_sessions||0);
+  const referralSessions=Number(row.referral_sessions||0);
+  const abandonedSessions=Math.max(0,trackableSessions-referralSessions);
+  return{
+    days:bounded,searchEvents,searchSessions,zeroResultEvents,zeroResultSessions,
+    trackableSessions,referralSessions,abandonedSessions,
+    zeroResultRate:searchSessions?zeroResultSessions/searchSessions:null,
+    referralRate:trackableSessions?referralSessions/trackableSessions:null,
+    abandonmentRate:trackableSessions?abandonedSessions/trackableSessions:null,
+  };
+}

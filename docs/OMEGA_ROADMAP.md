@@ -251,7 +251,7 @@ Exit gate: Atlas has demonstrated recovery from DB, provider, AI and bad-deploy 
 - screen-reader labels for planner/map/results
 - load test public read paths and rate-limited write paths
 - validate mobile devices with slow network/CPU
-- instrument search zero-result and abandonment behavior
+- search zero-result rate and trackable-session abandonment are derived from consented search/referral telemetry and surfaced in Control Tower
 
 Exit gate: real-user performance and accessibility meet documented budgets, not just local screenshots/E2E.
 
