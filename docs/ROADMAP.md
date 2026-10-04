@@ -1,4 +1,4 @@
-# Atlas delivery state — R0 to R12
+# Atlas delivery state — R0 to R13
 
 This document distinguishes software closure from external commercial activation.
 
@@ -184,9 +184,9 @@ External activation:
 ## TRANSVERSAL · PRODUCTION RUNTIME + RELEASE GOVERNANCE — SOFTWARE CLOSED
 - signed operations sessions + explicit bearer automation boundaries
 - liveness, software readiness and commercial readiness are separate states
-- production deploy waits for CI success and checks out the exact tested SHA
-- deployment fails closed when VERCEL_TOKEN is absent
-- production migrations run before prebuilt deployment
+- Vercel Git Integration is the primary production deployment path
+- CI verifies the exact tested SHA when runtime-affecting files changed and accepts deployment skips only for non-runtime diffs
+- production migrations run through `vercel-build` whenever DATABASE_URL exists
 - post-deploy production smoke is mandatory
 - activation manifest exposes missing external dependencies without secret values
 - legal operator identity is a launch gate
@@ -194,9 +194,9 @@ External activation:
 - lockfile/migrations are reproducible and idempotent
 
 External activation:
-- GitHub Actions VERCEL_TOKEN
-- canonical Vercel project linked to Petshop/master
-- DATABASE_URL, OPS_ACCESS_KEY, CRON_SECRET
+- production DATABASE_URL
+- OPS_ACCESS_KEY and CRON_SECRET
+- canonical Vercel project remains linked to Petshop/master
 - LEGAL_OPERATOR_NAME, LEGAL_CONTACT_EMAIL, LEGAL_COUNTRY
 
 ## R0–R11 release invariant
@@ -213,8 +213,8 @@ READY never means LIVE. ACTIVATION_REQUIRED is not converted into green by mock 
 
 
 ## R12 · ACTUATION OS — SOFTWARE CLOSED WHEN CI GATE IS GREEN
-- Vercel AI Gateway/OIDC is the preferred autonomous runtime; no long-lived model key is required on Vercel
-- OpenRouter remains an optional non-Vercel fallback
+- OpenRouter is the default free/low-cost model lane in production
+- Vercel AI Gateway/OIDC remains an optional fallback and is blocked unless paid fallback is explicitly enabled
 - actor and judge model independence is enforced by default
 - actor output is strict JSON with one bounded proposed action or no action
 - every role has an explicit action allowlist
@@ -260,7 +260,7 @@ External activation:
 ## OMEGA · 10/10 HARDENING — ACTIVE
 The product roadmap is no longer sufficient as the definition of completion.
 
-Implemented in the OMEGA hardening branch:
+Implemented on master through the OMEGA hardening program:
 - database health checks reach Postgres rather than trusting env presence
 - direct-hotel inventory can satisfy commercial readiness without an OTA
 - migration advisory lock
@@ -272,3 +272,18 @@ Implemented in the OMEGA hardening branch:
 - dependency review
 
 The remaining cross-functional 10/10 gates are tracked in `docs/OMEGA_ROADMAP.md`.
+
+
+## R13 · CONSUMER MEMORY OS — SOFTWARE CLOSED WHEN CI GATE IS GREEN
+- saved stays remain usable with browser-local fallback when no database exists
+- production persistence uses an opaque HttpOnly saved-profile cookie rather than email/account identity
+- the server stores only pseudonymous saved-stay references and commercial evidence snapshots
+- no pension, income, email, name or payment data is stored in consumer memory
+- existing local saved stays synchronize into durable memory when the database becomes available
+- deletes propagate to durable memory
+- saved offers are still revalidated against the live catalogue before being presented as current
+- inactive consumer profiles expire through the retention workflow and cascade-delete saved references
+- cookie and privacy disclosures describe the anonymous memory layer
+
+External activation:
+- production DATABASE_URL; without it the feature safely remains local-only
