@@ -3,13 +3,15 @@ import { notFound } from "next/navigation";
 import { OPS_COOKIE,verifyOpsSession } from "@/src/security/ops-session";
 import { AGENTS } from "@/src/agents/registry";
 import { liveProviderStatuses } from "@/src/providers/live/registry";
-import { databaseConfigured } from "@/src/db/client";
+import { databaseHealth } from "@/src/db/client";
 import { getOpsSnapshot } from "@/src/db/ops";
 import { listOpenIncidents } from "@/src/db/governance";
 import { growthFunnel,heroExperimentReadout } from "@/src/db/growth";
 import { listAgentTasks } from "@/src/db/agent-tasks";
-import { agentModelConfigured,agentRuntimeProvider } from "@/src/agents/llm";
+import { agentRuntimeCredentialsAvailable,agentRuntimeProvider } from "@/src/agents/llm";
 import { getHeroOverride } from "@/src/growth/autopilot";
+import { getSloSnapshot } from "@/src/system/slo";
+import { getEconomicsSnapshot } from "@/src/system/economics";
 
 export const metadata={title:"Control Tower",robots:{index:false,follow:false}};
 
@@ -18,11 +20,20 @@ export default async function ControlTower(){
   if(!verifyOpsSession(jar.get(OPS_COOKIE)?.value)) notFound();
 
   const providers=liveProviderStatuses();
-  const [ops,incidents,funnel,heroExperiment,agentTasks,heroOverride]=await Promise.all([
-    getOpsSnapshot(),listOpenIncidents(20),growthFunnel(30),heroExperimentReadout(30),listAgentTasks(30),getHeroOverride(),
+  const [ops,incidents,funnel,heroExperiment,agentTasks,heroOverride,dbHealth,agentCredentials,slo,economics]=await Promise.all([
+    getOpsSnapshot(),
+    listOpenIncidents(20),
+    growthFunnel(30),
+    heroExperimentReadout(30),
+    listAgentTasks(30),
+    getHeroOverride(),
+    databaseHealth(),
+    agentRuntimeCredentialsAvailable(),
+    getSloSnapshot(),
+    getEconomicsSnapshot(30),
   ]);
-  const db=databaseConfigured();
-  const agentConfigured=agentModelConfigured()&&process.env.AGENT_RUNTIME_ENABLED!=="false";
+  const db=dbHealth.reachable;
+  const agentConfigured=agentCredentials&&process.env.AGENT_RUNTIME_ENABLED!=="false";
 
   return <main className="controlPage">
     <div className="shell">
@@ -36,6 +47,37 @@ export default async function ControlTower(){
         <div className="metricDark"><b className={ops.liveOffers?"green":"amber"}>{ops.liveOffers}</b><span>SELLABLE live offers · {ops.providerLiveOffers} provider + {ops.directLiveOffers} direct</span></div>
         <div className="metricDark"><b>{ops.referralClicks30d}</b><span>referral clicks · 30d</span></div>
         <div className="metricDark"><b>€{Math.round(ops.commission30d).toLocaleString("en-US")}</b><span>commission EUR · 30d</span></div>
+      </div>
+
+      <h2 style={{marginTop:36}}>Runtime SLOs</h2>
+      <div className="metrics">
+        <div className="metricDark">
+          <b className={dbHealth.reachable&&slo.indicators.database.withinTarget!==false?"green":"amber"}>
+            {dbHealth.reachable?String(dbHealth.latencyMs)+" ms":"OFFLINE"}
+          </b>
+          <span>database probe · target ≤ {slo.targets.databaseProbeP95Ms} ms</span>
+        </div>
+        <div className="metricDark">
+          <b>{slo.indicators.agentRuns.successPct===null?"NO SAMPLE":slo.indicators.agentRuns.successPct.toFixed(1)+"%"}</b>
+          <span>agent success · target {slo.targets.agentRunSuccessPct}%</span>
+        </div>
+        <div className="metricDark">
+          <b>{slo.indicators.providerWaves.successPct===null?"NO SAMPLE":slo.indicators.providerWaves.successPct.toFixed(1)+"%"}</b>
+          <span>provider-wave success · target {slo.targets.providerWaveSuccessPct}%</span>
+        </div>
+        <div className="metricDark">
+          <b className={economics.proofState==="COMMERCIAL_EVIDENCE_OBSERVED"?"green":"amber"}>{economics.proofState}</b>
+          <span>commercial evidence</span>
+        </div>
+      </div>
+
+      <h2 style={{marginTop:36}}>Observed economics · 30d</h2>
+      <div className="metrics">
+        <div className="metricDark"><b>{economics.observed.referralClicks}</b><span>referral clicks</span></div>
+        <div className="metricDark"><b>{economics.observed.conversions}</b><span>conversions</span></div>
+        <div className="metricDark"><b>{economics.observed.conversionRate===null?"—":(economics.observed.conversionRate*100).toFixed(2)+"%"}</b><span>click → conversion</span></div>
+        <div className="metricDark"><b>€{economics.observed.commissionEur.toFixed(2)}</b><span>observed commission</span></div>
+        <div className="metricDark"><b>{economics.observed.commissionPerConversionEur===null?"—":"€"+economics.observed.commissionPerConversionEur.toFixed(2)}</b><span>commission / conversion</span></div>
       </div>
 
       <h2 style={{marginTop:36}}>Open incidents</h2>
