@@ -230,8 +230,8 @@ Exit gate: agents can be replayed, audited, stopped and proven not to exceed aut
 - Neon PITR/backups enabled
 - quarterly restore drill
 - database connection exhaustion test
-- provider timeout/429/500 chaos tests
-- AI Gateway outage test
+- provider timeout/429/500/network recovery tests are implemented in CI; live partner outage drill remains unproven
+- AI outage tests prove Gateway → OpenRouter recovery, OpenRouter primary → free-model fallback, and fail-closed no-paid-fallback policy; live outage drill remains unproven
 - queue retry/backoff and poison-message audit strategy are implemented; failure drill remains unproven
 - durable per-slot cron claims and DB idempotency tests are implemented; duplicate-delivery production drill remains unproven
 - production rollback drill
