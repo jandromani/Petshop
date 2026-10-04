@@ -18,11 +18,11 @@ export type ControlSignal={key:string;severity:"info"|"warning"|"critical";messa
 export async function collectControlSignals():Promise<ControlSignal[]>{
   "use step";
   const signals:ControlSignal[]=[];
-  const db=databaseConfigured();
+  const [db,ops]=await Promise.all([databaseHealth(),getOpsSnapshot()]);
   const providers=liveProviderStatuses();
-  const ops=await getOpsSnapshot();
 
-  if(!db)signals.push({key:"infra.database",severity:"critical",message:"Persistent database is not configured"});
+  if(!db.configured)signals.push({key:"infra.database",severity:"critical",message:"Persistent database is not configured"});
+  else if(!db.reachable)signals.push({key:"infra.database",severity:"critical",message:"Persistent database is configured but unreachable"});
   const disabled=providers.filter(p=>!p.configured).map(p=>p.provider);
   if(disabled.length)signals.push({key:"supply.providers",severity:"warning",message:"Disabled providers: "+disabled.join(", ")});
   if(db.reachable&&ops.liveOffers===0)signals.push({key:"supply.live",severity:"warning",message:"No fresh SELLABLE redirect offers in the public catalog"});
