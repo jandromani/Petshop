@@ -1,33 +1,90 @@
-# Direct Hotel onboarding gate
+# Direct Hotel OS — onboarding evidence checklist
 
-A hotel is not live because a salesperson or agent says it is. Publication requires evidence.
+A hotel is not live because a salesperson or agent says it is. Publication requires deterministic commercial evidence. This is an operational checklist, not a legal agreement.
 
-## Required commercial evidence
+## 1. Counterparty identity
 
-- legal/canonical hotel identity
+- legal hotel / operating company name
+- property trading name and address
+- authorized commercial contact
 - contract/reference identifier
-- approved HTTPS booking hostname
-- booking URL with Atlas tracking parameter
-- currency and price
-- valid-from / valid-to
-- occupancy
-- minimum stay of at least 30 nights
-- cancellation terms
-- taxes/fees treatment where known
-- human publication approval
+- effective and expiry/renewal dates
 
-## Operating sequence
+## 2. Long-stay rate evidence
 
-1. Create hotel lead.
-2. Record proposed direct rate as DRAFT.
-3. Attach/reference the commercial agreement.
-4. Verify URL, host, tracking, dates, occupancy, price and cancellation.
-5. Publish only after deterministic gates pass.
-6. Revalidate before expiry.
-7. Revoke immediately when the commercial path is no longer valid.
+Every proposed rate must state:
 
-## First business milestone
+- room / rate-plan identifier
+- valid-from and valid-to
+- eligible check-in window
+- minimum and maximum nights
+- supported occupancy
+- board basis
+- total or monthly-equivalent price
+- native currency
+- taxes/mandatory charges treatment
+- cancellation/no-show terms
+- inventory/allotment limitations where applicable
+
+A marketing headline, nightly teaser, stale screenshot or LLM output is never sufficient price evidence.
+
+## 3. Fulfilment path
+
+Before publication:
+
+- booking URL uses HTTPS
+- approved booking hostname is stored separately
+- URL host matches the approved host
+- tracking parameter / attribution mechanism is documented
+- booking flow identifies the property/rate being purchased
+- an enquiry-only path is never labelled instant booking
+
+## 4. Commercial economics
+
+Keep the customer price separate from Atlas economics:
+
+- commission type: percentage or fixed
+- commission value and fixed-commission currency
+- effective-from / effective-to
+- cancellation/reversal treatment
+- settlement cadence
+- hotel/provider booking reference usable for reconciliation
+
+## 5. Truth-gate publication
+
+A direct rate may become public only when:
+
+1. contract/reference evidence exists,
+2. the requested stay fits the validity window,
+3. occupancy and stay-length constraints match,
+4. booking URL + approved host pass validation,
+5. publication state is explicitly `LIVE`,
+6. contract verification is true,
+7. the offer is not expired.
+
+Missing or stale evidence degrades to unavailable. Atlas never replaces missing commercial evidence with a demo CTA.
+
+## 6. Re-verification
+
+- Re-check before validity expires.
+- Re-check immediately after rate, cancellation, URL, commission or inventory changes.
+- Hotel-requested suspension is immediate.
+- Never auto-extend a commercial validity window from historical success.
+
+## 7. First-property acceptance evidence
+
+Retain:
+
+- source contract/reference
+- normalized direct-rate record
+- truth-gate result
+- public detail URL
+- referral-path test evidence
+- one booking-path traversal that stops before purchase
+- named human publication approver
+
+## 8. Scale gate
 
 - 1 real verified hotel proves the lane.
-- 10 fresh SELLABLE direct offers across at least 3 destinations proves initial supply density.
-- Demo catalogue entries never count toward either milestone.
+- At least 10 fresh SELLABLE direct offers across 3+ destinations is the initial supply-density gate.
+- Demo catalogue entries never count.
