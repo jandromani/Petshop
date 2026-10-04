@@ -1,7 +1,7 @@
 import type { Hotel } from "@/src/data/hotels";
 import { adjustedMonthly,type Party } from "@/src/core/planner";
 
-export type StayDuration=30|60|90|120|180;
+export type StayDuration=30|60|90|120|180|365;
 export type SearchRegion="All"|"Europe"|"Asia"|"Africa"|"Americas";
 
 export type StaySearch={
