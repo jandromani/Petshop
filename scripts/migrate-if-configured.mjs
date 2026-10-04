@@ -1,7 +1,8 @@
 import { spawnSync } from "node:child_process";
 
-if(!process.env.DATABASE_URL){
-  console.log("DATABASE_URL not configured; skipping database migrations for this build.");
+const configured=Boolean(process.env.DATABASE_URL_UNPOOLED||process.env.DIRECT_URL||process.env.DATABASE_URL);
+if(!configured){
+  console.log("No database URL configured; skipping database migrations for this build.");
   process.exit(0);
 }
 
