@@ -19,6 +19,8 @@ export default function HotelMap({hotels,selectedId,onSelect,onSearchArea}:{hote
   const mapRef=useRef<MapLibreMap|null>(null);
   const [pendingBounds,setPendingBounds]=useState<string|null>(null);
   const data=useMemo(()=>geojson(hotels),[hotels]);
+  const dataRef=useRef(data);
+  dataRef.current=data;
 
   useEffect(()=>{
     if(!host.current||mapRef.current)return;
@@ -27,7 +29,7 @@ export default function HotelMap({hotels,selectedId,onSelect,onSearchArea}:{hote
     map.addControl(new maplibregl.NavigationControl({showCompass:false}),"top-right");
     map.addControl(new maplibregl.AttributionControl({compact:true,customAttribution:"Overture Maps · OpenFreeMap"}),"bottom-right");
     map.on("load",()=>{
-      map.addSource("atlas-hotels",{type:"geojson",data,cluster:true,clusterMaxZoom:12,clusterRadius:48});
+      map.addSource("atlas-hotels",{type:"geojson",data:dataRef.current,cluster:true,clusterMaxZoom:12,clusterRadius:48});
       map.addLayer({id:"hotel-clusters",type:"circle",source:"atlas-hotels",filter:["has","point_count"],paint:{"circle-color":"#0a1630","circle-radius":["step",["get","point_count"],18,25,24,100,31],"circle-stroke-width":3,"circle-stroke-color":"#ffffff"}});
       map.addLayer({id:"hotel-cluster-count",type:"symbol",source:"atlas-hotels",filter:["has","point_count"],layout:{"text-field":["get","point_count_abbreviated"],"text-size":12},paint:{"text-color":"#ffffff"}});
       map.addLayer({id:"hotel-points",type:"circle",source:"atlas-hotels",filter:["!",["has","point_count"]],paint:{"circle-color":["case",["==",["get","verified"],1],"#2358e8","#ffffff"],"circle-radius":["case",["==",["get","verified"],1],9,7],"circle-stroke-width":3,"circle-stroke-color":"#0a1630"}});
