@@ -102,9 +102,16 @@ export async function listSellableOffers(input:LiveCatalogQuery={}):Promise<Live
         and (${nights}::int is null or (o.check_out-o.check_in)::int=${nights})
         and (${occupancy}::int is null or o.occupancy=${occupancy})
         and (
+          ${minMonthly}::float is null or
+          (coalesce(o.display_price,o.total_price)::float/greatest(1,(o.check_out-o.check_in)::int)*30)>=${minMonthly}
+        )
+        and (
           ${maxMonthly}::float is null or
           (coalesce(o.display_price,o.total_price)::float/greatest(1,(o.check_out-o.check_in)::int)*30)<=${maxMonthly}
         )
+        and (${board}::text is null or coalesce(o.board,'') ilike ${board})
+        and (${cancellation}::text is null or coalesce(o.cancellation,'') ilike ${cancellation})
+        and (${provider}::text is null or o.provider=${provider})
     )
     select offer_id,hotel_id,slug,name,city,country,region,lat,lng,provider,check_in,check_out,nights,occupancy,
       board,room_type,cancellation,taxes_included,silver_score,photo_urls,facilities,description,
