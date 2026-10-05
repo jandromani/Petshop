@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import ConsentLayer from "@/components/ConsentLayer";
 import GrowthPageView from "@/components/GrowthPageView";
+import WebVitals from "@/components/WebVitals";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 
@@ -24,5 +25,5 @@ export const metadata:Metadata={
 };
 
 export default function RootLayout({children}:Readonly<{children:React.ReactNode}>){
-  return <html lang="en"><body>{children}<GrowthPageView/><ConsentLayer/></body></html>;
+  return <html lang="en"><body>{children}<GrowthPageView/><WebVitals/><ConsentLayer/></body></html>;
 }
