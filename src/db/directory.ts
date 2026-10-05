@@ -6,6 +6,7 @@ export type DirectoryHotel={
   id:string;canonicalId:string;name:string;city:string;country:string;region:DirectoryRegion;
   lat:number|null;lng:number|null;source:string;sourceId:string;referenceUrl:string|null;website:string|null;
   address:string|null;confidence:number|null;description:string|null;photoUrls:string[];facilities:string[];
+  contentProvider?:string|null;contentLicenseRef?:string|null;contentSourceUrl?:string|null;contentFetchedAt?:string|null;
 };
 type DirectoryRow=Omit<DirectoryHotel,"address"|"confidence"|"description"|"photoUrls"|"facilities">&{
   total:number;raw:unknown;description:string|null;photoUrls:unknown;facilities:unknown;
@@ -41,6 +42,7 @@ export async function listDirectoryHotels(input:{
     select h.slug as id,h.id::text as "canonicalId",h.name,h.city,h.country,h.region,h.lat,h.lng,
       ds.source,ds.source_id as "sourceId",ds.reference_url as "referenceUrl",ds.website,ds.raw,
       hc.description,coalesce(hc.photo_urls,'[]'::jsonb) as "photoUrls",coalesce(hc.facilities,'[]'::jsonb) as facilities,
+      hc.provider as "contentProvider",hc.license_ref as "contentLicenseRef",hc.source_url as "contentSourceUrl",hc.fetched_at::text as "contentFetchedAt",
       count(*) over()::int as total
     from canonical_hotels h
     join lateral (
