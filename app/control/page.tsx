@@ -6,7 +6,7 @@ import { liveProviderStatuses } from "@/src/providers/live/registry";
 import { databaseHealth } from "@/src/db/client";
 import { getOpsSnapshot } from "@/src/db/ops";
 import { listOpenIncidents } from "@/src/db/governance";
-import { growthFunnel,productFunnel,heroExperimentReadout,searchFriction } from "@/src/db/growth";
+import { growthFunnel,productFunnel,heroExperimentReadout,searchFriction,webVitalsSnapshot } from "@/src/db/growth";
 import { listAgentTasks } from "@/src/db/agent-tasks";
 import { agentRuntimeCredentialsAvailable,agentRuntimeProvider } from "@/src/agents/llm";
 import { getHeroOverride } from "@/src/growth/autopilot";
@@ -22,7 +22,7 @@ export default async function ControlTower(){
   if(!verifyOpsSession(jar.get(OPS_COOKIE)?.value)) notFound();
 
   const providers=liveProviderStatuses();
-  const [ops,incidents,funnel,product,heroExperiment,friction,agentTasks,heroOverride,dbHealth,agentCredentials,slo,economics,agentMetrics,providerBudgets,durationMetrics]=await Promise.all([
+  const [ops,incidents,funnel,product,heroExperiment,friction,agentTasks,heroOverride,dbHealth,agentCredentials,slo,economics,agentMetrics,providerBudgets,durationMetrics,webVitals]=await Promise.all([
     getOpsSnapshot(),
     listOpenIncidents(20),
     growthFunnel(30),
@@ -38,6 +38,7 @@ export default async function ControlTower(){
     agentRoleMetrics(30),
     providerErrorBudgets(30),
     runtimeDurationMetrics(30),
+    webVitalsSnapshot(30),
   ]);
   const db=dbHealth.reachable;
   const agentConfigured=agentCredentials&&process.env.AGENT_RUNTIME_ENABLED!=="false";
@@ -110,6 +111,11 @@ export default async function ControlTower(){
           <b className={economics.proofState==="COMMERCIAL_EVIDENCE_OBSERVED"?"green":"amber"}>{economics.proofState}</b>
           <span>commercial evidence</span>
         </div>
+      </div>
+
+      <h2 style={{marginTop:36}}>Core Web Vitals · consented field data · 30d</h2>
+      <div className="metrics">
+        {(["LCP","INP","CLS"] as const).map(name=>{const row=webVitals.find(v=>v.metric===name);return <div className="metricDark" key={name}><b className={row?.good?"green":row?"amber":""}>{row?(name==="CLS"?row.p75.toFixed(3):Math.round(row.p75)+" ms"):"NO SAMPLE"}</b><span>{name} p75 · target {name==="CLS"?"≤ 0.10":name==="LCP"?"≤ 2500 ms":"≤ 200 ms"} · {row?.sample||0} samples</span></div>})}
       </div>
 
       <h2 style={{marginTop:36}}>AI runtime by role · 30d</h2>
