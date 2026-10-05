@@ -66,7 +66,7 @@ The production build command is:
 npm run vercel-build
 ```
 
-It runs idempotent database migrations when `DATABASE_URL` exists and then builds Next.js. The schema currently runs through **`db/023_temporal_inventory_webhook_state.sql`**.
+It runs idempotent database migrations when `DATABASE_URL` exists and then builds Next.js. The schema currently runs through **`db/024_customer_cohorts.sql`**.
 
 ## Commercial proof still outside the repository
 
@@ -82,3 +82,7 @@ Code cannot manufacture the evidence that closes the seed thesis. The remaining 
 Do not call an implemented software path **LIVE** until external runtime evidence exists. `/system` and `/api/health` deliberately distinguish software proof from production, supply and revenue proof.
 
 See `/about`, `/for-hotels`, `/stay-readiness`, `/methodology`, `/trust` and `/system` for the public thesis and evidence model.
+
+
+### Cohort / repeat evidence
+Managed checkout and sourcing share the durable `consumer_profile_id` identity. Economics reporting exposes sourcing→paid conversion and six-month paid-customer cohorts. Repeat rate remains `null` until genuine paid managed orders exist; no synthetic customer history is seeded.

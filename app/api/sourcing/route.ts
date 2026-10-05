@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { z } from "zod";
 import { after } from "next/server";
 import { resolveDirectoryHotel } from "@/src/services/directory";
@@ -9,6 +10,7 @@ import { BookingDemandClient } from "@/src/providers/live/booking";
 import { runBookingLiveWave } from "@/src/services/booking-live-wave";
 import { listSellableOffers } from "@/src/db/catalog";
 import { sendSourcingMatch,sendSourcingReceipt,sourcingEmailStatus } from "@/src/services/sourcing-email";
+import { ensureSavedProfile,SAVED_PROFILE_COOKIE } from "@/src/db/consumer-memory";
 
 export const runtime="nodejs";
 
@@ -65,11 +67,14 @@ export async function POST(req:Request){
   if(!hotel)return Response.json({error:"hotel-not-found"},{status:404});
   if(new Date(parsed.data.checkIn+"T00:00:00Z").getTime()<Date.now()-86400000)return Response.json({error:"check-in-in-past"},{status:400});
 
+  const jar=await cookies();
+  const profileId=await ensureSavedProfile(jar.get(SAVED_PROFILE_COOKIE)?.value);
+  if(profileId)jar.set(SAVED_PROFILE_COOKIE,profileId,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"lax",path:"/",maxAge:60*60*24*365});
   const row=await createSourcingRequest({
     directoryHotelId:hotel.id,hotelName:hotel.name,city:hotel.city,country:hotel.country,
     checkIn:parsed.data.checkIn,nights:parsed.data.nights,occupancy:parsed.data.occupancy,
     targetMonthlyEur:parsed.data.targetMonthlyEur,requesterHash:requestFingerprint(req,"source-stay-identity"),
-    requesterEmail:parsed.data.requesterEmail,contactConsent:true,sourcePath:parsed.data.sourcePath,
+    requesterEmail:parsed.data.requesterEmail,contactConsent:true,sourcePath:parsed.data.sourcePath,consumerProfileId:profileId??undefined,
   });
   if(!row)return Response.json({error:"database-unavailable"},{status:503});
 

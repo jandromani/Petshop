@@ -33,7 +33,7 @@ export async function getMerchantCheckoutQuote(input:{offerId:string;checkIn:str
   return quoteFromRate(rate,input.checkIn,input.nights,input.occupancy,available);
 }
 
-export async function createMerchantOrder(input:{offerId:string;customerEmail:string;checkIn:string;nights:30|60|90;occupancy:1|2;sourcingRequestId?:string}){
+export async function createMerchantOrder(input:{offerId:string;customerEmail:string;checkIn:string;nights:30|60|90;occupancy:1|2;sourcingRequestId?:string;consumerProfileId?:string}){
   const sql=getDatabase();if(!sql)return null;
   return sql.begin(async tx=>{
     const rows=await tx<MerchantRateRow[]>`
@@ -51,8 +51,8 @@ export async function createMerchantOrder(input:{offerId:string;customerEmail:st
     const available=Math.max(0,rate.inventory_units-Number(usage[0]?.used||0));
     const quote=quoteFromRate(rate,input.checkIn,input.nights,input.occupancy,available);if(!quote)return null;
     const orders=await tx<Array<{id:string;status:string}>>`
-      insert into merchant_orders(direct_rate_offer_id,sourcing_request_id,customer_email,check_in,nights,occupancy,currency,customer_total,hotel_cost,platform_revenue,status)
-      values(${input.offerId}::uuid,${input.sourcingRequestId??null}::uuid,${input.customerEmail},${input.checkIn},${input.nights},${input.occupancy},${quote.currency},${quote.customerTotal},${quote.hotelCost},${quote.platformRevenue},'CREATED') returning id::text,status
+      insert into merchant_orders(direct_rate_offer_id,sourcing_request_id,consumer_profile_id,customer_email,check_in,nights,occupancy,currency,customer_total,hotel_cost,platform_revenue,status)
+      values(${input.offerId}::uuid,${input.sourcingRequestId??null}::uuid,${input.consumerProfileId??null}::uuid,${input.customerEmail},${input.checkIn},${input.nights},${input.occupancy},${quote.currency},${quote.customerTotal},${quote.hotelCost},${quote.platformRevenue},'CREATED') returning id::text,status
     `;
     if(!orders[0])return null;
     await tx`
@@ -169,4 +169,39 @@ export async function configureMerchantRate(input:{
     returning id::text
   `;
   return rows[0]?.id??null;
+}
+
+export async function merchantCohortMetrics(months=6){
+  const sql=getDatabase();if(!sql)return{configured:false,customers:0,repeatCustomers:0,repeatRate:null as number|null,cohorts:[] as Array<{cohort:string;customers:number;repeatCustomers:number;paidOrders:number;gmv:number;platformRevenue:number}>};
+  const bounded=Math.max(1,Math.min(24,months));
+  const rows=await sql<Array<{cohort:string;customers:number;repeat_customers:number;paid_orders:number;gmv:number;platform_revenue:number}>>`
+    with paid as (
+      select consumer_profile_id,id,coalesce(paid_at,confirmed_at,updated_at) as event_at,customer_total,platform_revenue
+      from merchant_orders where consumer_profile_id is not null and status in ('PAID','CONFIRMED')
+    ), customer_rollup as (
+      select consumer_profile_id,date_trunc('month',min(event_at))::date::text as cohort,count(*)::int as paid_orders,
+        sum(customer_total)::float as gmv,sum(platform_revenue)::float as platform_revenue
+      from paid group by consumer_profile_id
+    )
+    select cohort,count(*)::int as customers,count(*) filter(where paid_orders>1)::int as repeat_customers,
+      sum(paid_orders)::int as paid_orders,coalesce(sum(gmv),0)::float as gmv,coalesce(sum(platform_revenue),0)::float as platform_revenue
+    from customer_rollup where cohort::date>=date_trunc('month',current_date)-((${bounded}-1)||' months')::interval
+    group by cohort order by cohort
+  `;
+  const cohorts=rows.map(r=>({cohort:r.cohort,customers:Number(r.customers),repeatCustomers:Number(r.repeat_customers),paidOrders:Number(r.paid_orders),gmv:Number(r.gmv),platformRevenue:Number(r.platform_revenue)}));
+  const customers=cohorts.reduce((s,r)=>s+r.customers,0),repeatCustomers=cohorts.reduce((s,r)=>s+r.repeatCustomers,0);
+  return{configured:true,customers,repeatCustomers,repeatRate:customers>0?repeatCustomers/customers:null,cohorts};
+}
+
+export async function sourcingConversionMetrics(days=90){
+  const sql=getDatabase();if(!sql)return{configured:false,sourcingProfiles:0,bookedProfiles:0,conversionRate:null as number|null};
+  const bounded=Math.max(1,Math.min(365,days));
+  const rows=await sql<Array<{sourcing_profiles:number;booked_profiles:number}>>`
+    with sourced as (select distinct consumer_profile_id from sourcing_requests where consumer_profile_id is not null and created_at>=now()-make_interval(days=>${bounded})),
+    booked as (select distinct consumer_profile_id from merchant_orders where consumer_profile_id is not null and status in ('PAID','CONFIRMED') and created_at>=now()-make_interval(days=>${bounded}))
+    select (select count(*)::int from sourced) as sourcing_profiles,
+      (select count(*)::int from sourced s join booked b using(consumer_profile_id)) as booked_profiles
+  `;
+  const r=rows[0]||{sourcing_profiles:0,booked_profiles:0};const sourcingProfiles=Number(r.sourcing_profiles||0),bookedProfiles=Number(r.booked_profiles||0);
+  return{configured:true,sourcingProfiles,bookedProfiles,conversionRate:sourcingProfiles>0?bookedProfiles/sourcingProfiles:null};
 }

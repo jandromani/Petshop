@@ -13,6 +13,7 @@ export type SourcingRequestInput={
   requesterEmail:string;
   contactConsent:boolean;
   sourcePath?:string;
+  consumerProfileId?:string;
 };
 
 export async function createSourcingRequest(input:SourcingRequestInput){
@@ -20,11 +21,11 @@ export async function createSourcingRequest(input:SourcingRequestInput){
   const rows=await sql<Array<{id:string;status:string;created_at:string}>>`
     insert into sourcing_requests (
       directory_hotel_id,hotel_name,city,country,check_in,nights,occupancy,
-      target_monthly_eur,requester_hash,requester_email,contact_consent,source_path
+      target_monthly_eur,requester_hash,requester_email,contact_consent,source_path,consumer_profile_id
     ) values (
       ${input.directoryHotelId},${input.hotelName},${input.city},${input.country},
       ${input.checkIn},${input.nights},${input.occupancy},
-      ${input.targetMonthlyEur ?? null},${input.requesterHash},${input.requesterEmail},${input.contactConsent},${input.sourcePath ?? null}
+      ${input.targetMonthlyEur ?? null},${input.requesterHash},${input.requesterEmail},${input.contactConsent},${input.sourcePath ?? null},${input.consumerProfileId??null}::uuid
     )
     on conflict (requester_hash,directory_hotel_id,check_in,nights,occupancy)
     do update set
@@ -32,6 +33,7 @@ export async function createSourcingRequest(input:SourcingRequestInput){
       requester_email=excluded.requester_email,
       contact_consent=excluded.contact_consent,
       source_path=coalesce(excluded.source_path,sourcing_requests.source_path),
+      consumer_profile_id=coalesce(excluded.consumer_profile_id,sourcing_requests.consumer_profile_id),
       updated_at=now()
     returning id::text,status,created_at::text
   `;

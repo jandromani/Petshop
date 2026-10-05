@@ -43,7 +43,7 @@ jobs:
         run: |
           npm run db:migrate
           npm run db:migrate
-          psql "$DATABASE_URL" -Atc "select count(*) from atlas_schema_migrations" | grep -qx "23"
+          psql "$DATABASE_URL" -Atc "select count(*) from atlas_schema_migrations" | grep -qx "24"
       - name: Verify DB-backed runtime invariants
         env:
           DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/atlas_ci

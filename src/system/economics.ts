@@ -1,13 +1,13 @@
 import { getOpsSnapshot } from "@/src/db/ops";
 import { growthFunnel,acquisitionBreakdown,paidAttributionBreakdown } from "@/src/db/growth";
 import { acquisitionSpendSummary } from "@/src/db/acquisition-spend";
-import { merchantMetrics } from "@/src/db/merchant";
+import { merchantCohortMetrics,merchantMetrics,sourcingConversionMetrics } from "@/src/db/merchant";
 import { revenueCurrencyExposure,revenueEurSummary } from "@/src/db/revenue";
 import { FX_POLICY_VERSION,REPORTING_CURRENCY } from "@/src/money/fx";
 
 export async function getEconomicsSnapshot(days=30){
   const bounded=Math.max(1,Math.min(365,days));
-  const [ops,funnel,acquisition,currencyExposure,eurSummary,paidAttribution,spend,merchant]=await Promise.all([
+  const [ops,funnel,acquisition,currencyExposure,eurSummary,paidAttribution,spend,merchant,cohorts,sourcingConversion]=await Promise.all([
     getOpsSnapshot(),
     growthFunnel(bounded),
     acquisitionBreakdown(bounded),
@@ -16,6 +16,8 @@ export async function getEconomicsSnapshot(days=30){
     paidAttributionBreakdown(bounded),
     acquisitionSpendSummary(bounded),
     merchantMetrics(bounded),
+    merchantCohortMetrics(6),
+    sourcingConversionMetrics(bounded),
   ]);
 
   const clicks=funnel?.referrals.clicks||0;
@@ -56,12 +58,14 @@ export async function getEconomicsSnapshot(days=30){
       paidCacEur,
       organicOrUnattributedConversions,
       merchant,
+      cohorts,
+      sourcingConversion,
       currencyExposure,
     },
     unavailableUntilEvidence:{
       cac:paidCacEur===null?"CAC remains null until both paid spend and attributable conversions exist.":"Observed paid CAC is available above.",
       contributionMargin:"Merchant hotel cost and gross platform revenue are now observable; full contribution margin still requires payment, support, tax and infrastructure costs.",
-      repeatRate:"Consumer identity/lifecycle persistence is not yet sufficient for a defensible repeat-rate claim.",
+      repeatRate:cohorts.repeatRate===null?"Repeat rate remains null until at least one paid managed customer exists.":"Observed repeat-customer rate is available above.",
       directVsOtaMargin:merchant.paidOrders>0&&conversions>0?"Merchant and referral economics can now be compared from observed transactions.":"Requires both merchant orders and referral conversions.",
     },
     proofState:(conversions>0&&commission>0)||merchant.paidOrders>0?"COMMERCIAL_EVIDENCE_OBSERVED":"UNPROVEN",
