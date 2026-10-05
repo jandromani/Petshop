@@ -79,6 +79,8 @@ export async function getDirectoryHotel(id:string):Promise<DirectoryHotel|null>{
       limit 1
     ) ds on true
     left join hotel_content hc on hc.hotel_id=h.id
+      and hc.display_allowed=true
+      and (hc.expires_at is null or hc.expires_at>now())
     where h.slug=${id}
     limit 1
   `;
