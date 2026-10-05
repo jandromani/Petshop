@@ -8,7 +8,7 @@ export async function growthFunnel(days=30){
       count(distinct session_id)::int as sessions,count(distinct visitor_id)::int as visitors
     from growth_events
     where created_at>=now()-make_interval(days => ${bounded})
-      and event_name in ('planner_loaded','hero_search','route_shared','live_catalog_loaded','agent_question')
+      and event_name in ('page_view','planner_loaded','hero_search','ai_search_submit','ai_filters_applied','ai_search_navigation','results_loaded','hotel_impression','hotel_card_click','map_marker_click','hotel_official_site_click','hotel_saved','hotel_unsaved','source_rate_start','source_rate_success','source_rate_error','search_this_area','route_shared','live_catalog_loaded','agent_question')
     group by event_name
   `;
   const referrals=await sql<{clicks:number;sessions:number;visitors:number}[]>`
@@ -22,6 +22,108 @@ export async function growthFunnel(days=30){
       and c.status not in ('CANCELLED','REVERSED')
   `;
   return{days:bounded,events,referrals:referrals[0]||{clicks:0,sessions:0,visitors:0},conversions:conversions[0]||{conversions:0,visitors:0}};
+}
+
+
+export type ProductFunnel={
+  days:number;
+  pageSessions:number;
+  searchSessions:number;
+  aiSearchSessions:number;
+  resultSessions:number;
+  impressionSessions:number;
+  hotelEngagementSessions:number;
+  savedSessions:number;
+  sourcingStartSessions:number;
+  sourcingSuccessSessions:number;
+  referralSessions:number;
+  conversionSessions:number;
+  searchToResults:number|null;
+  resultsToEngagement:number|null;
+  engagementToSourcing:number|null;
+  engagementToReferral:number|null;
+  referralToConversion:number|null;
+};
+
+const ratio=(num:number,den:number)=>den>0?num/den:null;
+
+export async function productFunnel(days=30):Promise<ProductFunnel|null>{
+  const sql=getDatabase();if(!sql)return null;
+  const bounded=Math.max(1,Math.min(365,days));
+  const rows=await sql<Array<{
+    page_sessions:number;search_sessions:number;ai_search_sessions:number;result_sessions:number;
+    impression_sessions:number;engagement_sessions:number;saved_sessions:number;
+    sourcing_start_sessions:number;sourcing_success_sessions:number;
+    referral_sessions:number;conversion_sessions:number;
+  }>>`
+    with event_sessions as (
+      select session_id,event_name
+      from growth_events
+      where created_at>=now()-make_interval(days => ${bounded})
+        and session_id is not null
+        and event_name in (
+          'page_view','hero_search','ai_search_submit','ai_filters_applied','results_loaded',
+          'hotel_impression','hotel_card_click','map_marker_click','hotel_official_site_click',
+          'hotel_saved','source_rate_start','source_rate_success'
+        )
+      group by session_id,event_name
+    ),
+    rollup as (
+      select
+        count(distinct session_id) filter (where event_name='page_view')::int as page_sessions,
+        count(distinct session_id) filter (where event_name in ('hero_search','ai_search_submit'))::int as search_sessions,
+        count(distinct session_id) filter (where event_name='ai_search_submit')::int as ai_search_sessions,
+        count(distinct session_id) filter (where event_name='results_loaded')::int as result_sessions,
+        count(distinct session_id) filter (where event_name='hotel_impression')::int as impression_sessions,
+        count(distinct session_id) filter (where event_name in ('hotel_card_click','map_marker_click','hotel_official_site_click'))::int as engagement_sessions,
+        count(distinct session_id) filter (where event_name='hotel_saved')::int as saved_sessions,
+        count(distinct session_id) filter (where event_name='source_rate_start')::int as sourcing_start_sessions,
+        count(distinct session_id) filter (where event_name='source_rate_success')::int as sourcing_success_sessions
+      from event_sessions
+    ),
+    referrals as (
+      select count(distinct session_id)::int as referral_sessions
+      from referral_clicks
+      where created_at>=now()-make_interval(days => ${bounded})
+        and session_id is not null
+    ),
+    commercial as (
+      select count(distinct r.session_id)::int as conversion_sessions
+      from conversions c
+      join referral_clicks r on r.click_id=c.click_id
+      where c.received_at>=now()-make_interval(days => ${bounded})
+        and c.status not in ('CANCELLED','REVERSED')
+        and r.session_id is not null
+    )
+    select r.*,f.referral_sessions,c.conversion_sessions
+    from rollup r cross join referrals f cross join commercial c
+  `;
+  const row=rows[0]||{
+    page_sessions:0,search_sessions:0,ai_search_sessions:0,result_sessions:0,impression_sessions:0,
+    engagement_sessions:0,saved_sessions:0,sourcing_start_sessions:0,sourcing_success_sessions:0,
+    referral_sessions:0,conversion_sessions:0,
+  };
+  const pageSessions=Number(row.page_sessions||0);
+  const searchSessions=Number(row.search_sessions||0);
+  const aiSearchSessions=Number(row.ai_search_sessions||0);
+  const resultSessions=Number(row.result_sessions||0);
+  const impressionSessions=Number(row.impression_sessions||0);
+  const hotelEngagementSessions=Number(row.engagement_sessions||0);
+  const savedSessions=Number(row.saved_sessions||0);
+  const sourcingStartSessions=Number(row.sourcing_start_sessions||0);
+  const sourcingSuccessSessions=Number(row.sourcing_success_sessions||0);
+  const referralSessions=Number(row.referral_sessions||0);
+  const conversionSessions=Number(row.conversion_sessions||0);
+  return{
+    days:bounded,pageSessions,searchSessions,aiSearchSessions,resultSessions,impressionSessions,
+    hotelEngagementSessions,savedSessions,sourcingStartSessions,sourcingSuccessSessions,
+    referralSessions,conversionSessions,
+    searchToResults:ratio(resultSessions,searchSessions),
+    resultsToEngagement:ratio(hotelEngagementSessions,resultSessions),
+    engagementToSourcing:ratio(sourcingSuccessSessions,hotelEngagementSessions),
+    engagementToReferral:ratio(referralSessions,hotelEngagementSessions),
+    referralToConversion:ratio(conversionSessions,referralSessions),
+  };
 }
 
 export async function acquisitionBreakdown(days=30){
