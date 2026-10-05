@@ -157,8 +157,12 @@ test("real hotel search exposes list and map modes on mobile",async({page,reques
 
   await page.setViewportSize({width:390,height:844});
   await page.goto("/stays?q=Madrid");
+  const webgl2=await page.evaluate(()=>Boolean(document.createElement("canvas").getContext("webgl2")));
   await expect(page.getByRole("button",{name:/Map ·/i})).toBeVisible();
   await page.getByRole("button",{name:/Map ·/i}).click();
   await expect(page.locator(".hotelMapPane")).toBeVisible();
-  await expect(page.locator(".hotelMapShell")).toHaveAttribute("data-map-ready","true",{timeout:15000});
+  await expect(page.locator(".hotelMapShell")).toBeAttached();
+  if(webgl2){
+    await expect(page.locator(".hotelMapShell")).toHaveAttribute("data-map-ready","true",{timeout:15000});
+  }
 });
