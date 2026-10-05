@@ -28,21 +28,21 @@ const money=(n:number,c="EUR")=>new Intl.NumberFormat("en-US",{style:"currency",
 
 export default function RealHotelDirectory({
   initialQuery="",initialRegion="All",duration=90,checkIn,occupancy=1,maxMonthly,flexibleDays=7,
-  initialAmenities=[],initialFeaturesMode="rank",initialVerifiedOnly=false,initialMinMonthly,initialBoard="",initialCancellation="",initialProvider="",initialBrand="",initialBrandedOnly=false,initialSort="recommended",initialPage=0,onCount,onQueryChange,onRegionChange,initialData,
+  initialAmenities=[],initialFeaturesMode="rank",initialVerifiedOnly=false,initialMinMonthly,initialBoard="",initialCancellation="",initialProvider="",initialBrand="",initialBrandedOnly=false,initialSort="recommended",initialPage=0,initialBbox="",onCount,onQueryChange,onRegionChange,initialData,
 }:{
   initialQuery?:string;initialRegion?:SearchRegion;duration?:StayDuration;checkIn?:string;occupancy?:1|2;maxMonthly?:number;
-  flexibleDays?:0|7|30;initialAmenities?:string[];initialFeaturesMode?:"rank"|"strict";initialVerifiedOnly?:boolean;initialMinMonthly?:number;initialBoard?:string;initialCancellation?:string;initialProvider?:string;initialBrand?:string;initialBrandedOnly?:boolean;initialSort?:"recommended"|"price"|"confidence"|"name";initialPage?:number;onCount?:(count:number)=>void;onQueryChange?:(q:string)=>void;
+  flexibleDays?:0|7|30;initialAmenities?:string[];initialFeaturesMode?:"rank"|"strict";initialVerifiedOnly?:boolean;initialMinMonthly?:number;initialBoard?:string;initialCancellation?:string;initialProvider?:string;initialBrand?:string;initialBrandedOnly?:boolean;initialSort?:"recommended"|"price"|"confidence"|"name";initialPage?:number;initialBbox?:string;onCount?:(count:number)=>void;onQueryChange?:(q:string)=>void;
   onRegionChange?:(r:SearchRegion)=>void;initialData?:DirectoryPayload;
 }){
   const[q,setQ]=useState(initialQuery);const[region,setRegion]=useState<SearchRegion>(initialRegion);const[page,setPage]=useState(Math.max(0,initialPage));
   const[data,setData]=useState<DirectoryPayload|null>(initialData||null);const[mapData,setMapData]=useState<MapPayload|null>(null);const[loading,setLoading]=useState(!initialData);
-  const[selectedId,setSelectedId]=useState<string|null>(null);const[bbox,setBbox]=useState<string|null>(null);const[mobileView,setMobileView]=useState<"list"|"map">("list");
+  const[selectedId,setSelectedId]=useState<string|null>(null);const[bbox,setBbox]=useState<string|null>(initialBbox||null);const[mobileView,setMobileView]=useState<"list"|"map">("list");
   const[features,setFeatures]=useState<string[]>(initialAmenities);const[featuresMode,setFeaturesMode]=useState<"rank"|"strict">(initialFeaturesMode);
   const[verifiedOnly,setVerifiedOnly]=useState(initialVerifiedOnly);const[minMonthly,setMinMonthly]=useState<number|undefined>(initialMinMonthly);
   const[board,setBoard]=useState(initialBoard);const[cancellation,setCancellation]=useState(initialCancellation);const[provider,setProvider]=useState(initialProvider);
   const[brand,setBrand]=useState(initialBrand);const[brandedOnly,setBrandedOnly]=useState(initialBrandedOnly);const[sort,setSort]=useState<"recommended"|"price"|"confidence"|"name">(initialSort);
   const[mapVisible,setMapVisible]=useState(false);const[shareLabel,setShareLabel]=useState("Share search");
-  const mapPaneRef=useRef<HTMLElement|null>(null);const seen=useRef(new Set<string>());const zeroSeen=useRef(new Set<string>());
+  const mapPaneRef=useRef<HTMLElement|null>(null);const seen=useRef(new Set<string>());const zeroSeen=useRef(new Set<string>());const urlMode=useRef<"replace"|"push">("replace");
   const pageSize=24;
 
   useEffect(()=>{setQ(initialQuery);setPage(0);setBbox(null)},[initialQuery]);
@@ -82,16 +82,18 @@ export default function RealHotelDirectory({
   useEffect(()=>{
     if(typeof window==="undefined"||window.location.pathname!=="/stays")return;
     const p=new URLSearchParams(baseParams);if(page)p.set("page",String(page));
-    window.history.replaceState(null,"","/stays"+(p.size?"?"+p.toString():""));
+    const next="/stays"+(p.size?"?"+p.toString():"");
+    if(urlMode.current==="push")window.history.pushState(null,"",next);else window.history.replaceState(null,"",next);
+    urlMode.current="replace";
   },[baseParams,page]);
 
   function changeQuery(value:string){setQ(value);setPage(0);setBbox(null);onQueryChange?.(value)}
-  function changeRegion(value:SearchRegion){setRegion(value);setPage(0);setBbox(null);onRegionChange?.(value);growthEvent("filter_change",{filter:"region",value})}
+  function changeRegion(value:SearchRegion){urlMode.current="push";setRegion(value);setPage(0);setBbox(null);onRegionChange?.(value);growthEvent("filter_change",{filter:"region",value})}
   function chooseFromMap(id:string){setSelectedId(id||null);if(!id)return;if(mobileView==="list")requestAnimationFrame(()=>document.getElementById("hotel-card-"+id)?.scrollIntoView({behavior:"smooth",block:"center"}))}
-  function searchArea(next:string){setBbox(next);setPage(0)}
-  function toggleFeature(value:string){setFeatures(v=>{const next=v.includes(value)?v.filter(x=>x!==value):[...v,value];growthEvent("filter_change",{filter:"preference",value,active:!v.includes(value)});setPage(0);return next})}
-  function setFilter(name:string,value:string|boolean|number){growthEvent("filter_change",{filter:name,value});setPage(0)}
-  function relax(action:string){
+  function searchArea(next:string){urlMode.current="push";setBbox(next);setPage(0)}
+  function toggleFeature(value:string){urlMode.current="push";setFeatures(v=>{const next=v.includes(value)?v.filter(x=>x!==value):[...v,value];growthEvent("filter_change",{filter:"preference",value,active:!v.includes(value)});setPage(0);return next})}
+  function setFilter(name:string,value:string|boolean|number){urlMode.current="push";growthEvent("filter_change",{filter:name,value});setPage(0)}
+  function relax(action:string){urlMode.current="push";
     if(action==="clear_bbox")setBbox(null);
     if(action==="show_rate_pending")setVerifiedOnly(false);
     if(action==="rank_features")setFeaturesMode("rank");
@@ -153,7 +155,7 @@ export default function RealHotelDirectory({
           {features.length&&h.unconfirmedPreferences?.length?<small className="evidenceUnknown">Unconfirmed: {h.unconfirmedPreferences.join(", ")}</small>:null}
           <div className="priceRow directoryActions"><div>{offer?<><b>{money(offer.monthlyEquivalent,offer.currency)}</b><small>/30-day equivalent · verified {new Date(offer.verifiedAt).toLocaleDateString()}</small></>:<><b>Rate pending</b><small>Ask Atlas Supply to source your dates</small></>}</div><div className="directoryLinks"><a className="linkbtn" onClick={()=>growthEvent("hotel_card_click",{hotel_id:h.id,position:page*pageSize+index+1,state:offer?"verified":"pending"})} href={"/stays/"+encodeURIComponent(h.id)+"?"+detailQuery}>{offer?"View verified stay →":"Find my rate →"}</a>{h.website&&<a className="eyebrow" href={h.website} target="_blank" rel="noreferrer" onClick={()=>growthEvent("hotel_official_site_click",{hotel_id:h.id,position:page*pageSize+index+1})}>Official site ↗</a>}</div></div></div>
         </article>})}</div>
-        {!loading&&data&&data.total>0?<div className="directoryPager"><button className="btn ghost" disabled={page===0} onClick={()=>setPage(p=>Math.max(0,p-1))}>← Previous</button><span>{Math.min(page*pageSize+1,data.total)}–{Math.min((page+1)*pageSize,data.total)} of {data.total}</span><button className="btn ghost" disabled={(page+1)*pageSize>=data.total} onClick={()=>setPage(p=>p+1)}>Next →</button></div>:null}
+        {!loading&&data&&data.total>0?<div className="directoryPager"><button className="btn ghost" disabled={page===0} onClick={()=>{urlMode.current="push";setPage(p=>Math.max(0,p-1))}}>← Previous</button><span>{Math.min(page*pageSize+1,data.total)}–{Math.min((page+1)*pageSize,data.total)} of {data.total}</span><button className="btn ghost" disabled={(page+1)*pageSize>=data.total} onClick={()=>{urlMode.current="push";setPage(p=>p+1)}}>Next →</button></div>:null}
       </div>
       <aside ref={mapPaneRef} className="hotelMapPane">{mapEnabled?<HotelMap hotels={mapped} selectedId={selectedId} onSelect={chooseFromMap} onSearchArea={searchArea} detailQuery={detailQuery} fitKey={mapFitKey}/>:<div className="hotelMapLoading">Interactive map loads when you reach the results.</div>}</aside>
     </div>
