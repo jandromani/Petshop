@@ -1,6 +1,6 @@
 import { afterAll,describe,expect,it } from "vitest";
 import { getDatabase } from "@/src/db/client";
-import { productFunnel } from "@/src/db/growth";
+import { productFunnel,webVitalsSnapshot } from "@/src/db/growth";
 
 const enabled=Boolean(process.env.DATABASE_URL);
 const token=crypto.randomUUID();
@@ -14,6 +14,23 @@ describe.skipIf(!enabled)("real hotel product funnel DB metrics",()=>{
     await sql`delete from conversions where provider_conversion_id=${conversionId}`;
     await sql`delete from referral_clicks where click_id=${clickId}`;
     await sql`delete from growth_events where properties->>'test_token'=${token}`;
+  });
+
+  it("computes Core Web Vitals p75 from consented field events",async()=>{
+    const sql=getDatabase();if(!sql)throw new Error("database unavailable");
+    await sql`
+      insert into growth_events(session_id,event_name,properties)
+      values
+        (${sessions[0]},'web_vital',${sql.json({test_token:token,metric:"LCP",value:1800})}),
+        (${sessions[0]},'web_vital',${sql.json({test_token:token,metric:"LCP",value:2400})}),
+        (${sessions[1]},'web_vital',${sql.json({test_token:token,metric:"LCP",value:2600})}),
+        (${sessions[0]},'web_vital',${sql.json({test_token:token,metric:"INP",value:150})}),
+        (${sessions[1]},'web_vital',${sql.json({test_token:token,metric:"CLS",value:0.08})})
+    `;
+    const rows=await webVitalsSnapshot(1);
+    expect(rows.find(x=>x.metric==="LCP")).toMatchObject({sample:3,target:2500});
+    expect(rows.find(x=>x.metric==="INP")).toMatchObject({sample:1,target:200,good:true});
+    expect(rows.find(x=>x.metric==="CLS")).toMatchObject({sample:1,target:0.1,good:true});
   });
 
   it("tracks search through hotel action, sourcing, referral and conversion by session",async()=>{
