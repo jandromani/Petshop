@@ -85,3 +85,20 @@ export function buildArticleStructuredData(input:{headline:string;description:st
     publisher:{"@type":"Organization","name":"Atlas Long Stay"},
   };
 }
+
+
+export function buildDatasetStructuredData(input:{name:string;description:string;canonical:string;dateModified:string;spatial:string;variables:string[]}){
+  return{
+    "@context":"https://schema.org",
+    "@type":"Dataset",
+    name:input.name,
+    description:input.description,
+    url:input.canonical,
+    dateModified:input.dateModified,
+    creator:{"@type":"Organization","name":"Atlas Long Stay"},
+    spatialCoverage:input.spatial,
+    variableMeasured:input.variables,
+    license:"https://creativecommons.org/licenses/by/4.0/",
+    isAccessibleForFree:true,
+  };
+}
