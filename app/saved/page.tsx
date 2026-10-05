@@ -9,9 +9,9 @@ export default function SavedStaysPage(){
   return <main className="seoPage"><div className="shell">
     <a href="/" className="eyebrow">← ATLAS LONG STAY</a>
     <section className="seoHero" style={{marginTop:20}}>
-      <div className="eyebrow">SAVED · REVALIDATED</div>
+      <div className="eyebrow">YOUR SAVED STAYS</div>
       <h1>Compare the stays<br/>you would actually live in.</h1>
-      <p style={{fontSize:20,maxWidth:760}}>Save real hotels before a price exists, and save verified offers separately. Atlas never turns a property bookmark into a commercial claim.</p>
+      <p style={{fontSize:20,maxWidth:760}}>Keep the places you like in one private shortlist. Prices are checked again when you open a stay.</p>
     </section>
     <RateAlertsClient/>
     <SavedHotelsClient/>
