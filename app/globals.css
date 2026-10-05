@@ -317,3 +317,7 @@ input[type=range]{width:100%;accent-color:var(--lime)}
 .hotelMapShell.mapExpanded .hotelMap{height:100dvh!important;min-height:100dvh!important}
 @media(max-width:900px){.advancedHotelGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:720px){.advancedHotelGrid{grid-template-columns:1fr}.advancedHotelFilters summary{align-items:flex-start;flex-direction:column}.mapExpand{display:block}.hotelMapShell.mapExpanded .mapExpand{right:14px;top:14px;bottom:auto}}
+
+.staysSearchPage{background:#f7f9fc}.staysSearchHero{padding:34px 0 24px;background:radial-gradient(circle at 82% 0%,rgba(200,255,106,.55),transparent 32%),linear-gradient(180deg,#eef4ff 0%,#f7f9fc 100%);border-bottom:1px solid var(--line)}
+.staysSearchIntro{display:flex;justify-content:space-between;gap:32px;align-items:end;margin:24px 0}.staysSearchIntro h1{font-size:clamp(48px,7vw,92px);line-height:.9;letter-spacing:-.065em;margin:12px 0}.staysSearchIntro p{max-width:760px;color:#5f6e87;line-height:1.55;font-size:16px}.staysSearchMetric{min-width:180px;text-align:right;background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:var(--shadow)}.staysSearchMetric b{display:block;font-size:38px;letter-spacing:-.06em}.staysSearchMetric span{font-size:10px;color:#748097}
+@media(max-width:760px){.staysSearchIntro{display:block}.staysSearchMetric{display:none}.staysSearchHero{padding-top:22px}}
