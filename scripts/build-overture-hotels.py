@@ -69,6 +69,9 @@ path=f"s3://overturemaps-us-west-2/release/{RELEASE}/theme=places/type=place/*"
 records={}
 
 for fallback_city,fallback_country,region,(xmin,ymin,xmax,ymax) in BOXES:
+    expected_code=next((code for code,country in COUNTRY_NAMES.items() if country==fallback_country),None)
+    if not expected_code:
+        raise RuntimeError(f"missing country code for {fallback_country}")
     query=f"""
       SELECT
         id,
@@ -86,6 +89,7 @@ for fallback_city,fallback_country,region,(xmin,ymin,xmax,ymax) in BOXES:
         AND names.primary IS NOT NULL
         AND confidence >= 0.70
         AND (operating_status IS NULL OR operating_status='open')
+        AND addresses[1].country = '{expected_code}'
         AND bbox.xmin BETWEEN {xmin} AND {xmax}
         AND bbox.ymin BETWEEN {ymin} AND {ymax}
       ORDER BY confidence DESC NULLS LAST
@@ -100,7 +104,9 @@ for fallback_city,fallback_country,region,(xmin,ymin,xmax,ymax) in BOXES:
     for oid,name,confidence,status,website,address,locality,country_code,lng,lat in rows:
         if not name or not math.isfinite(float(lat)) or not math.isfinite(float(lng)):
             continue
-        country=COUNTRY_NAMES.get(country_code or "", fallback_country)
+        country=COUNTRY_NAMES.get(country_code or "")
+        if country!=fallback_country:
+            continue
         city=(locality or fallback_city).strip()
         sid=str(oid)
         web=str(website).strip() if website else None
@@ -112,6 +118,7 @@ for fallback_city,fallback_country,region,(xmin,ymin,xmax,ymax) in BOXES:
           "sourceId":sid,
           "name":str(name).strip(),
           "city":city,
+          "market":fallback_city,
           "country":country,
           "region":region,
           "lat":round(float(lat),6),
