@@ -63,7 +63,7 @@ export async function runBookingLiveWave(input:BookingLiveWaveInput):Promise<Boo
   const client=new BookingDemandClient();
   const status=client.status();
   if(!status.configured) throw new Error("Booking provider disabled: "+status.missingEnv.join(", "));
-  if(!status.commercialReady) throw new Error("Booking provider is not commercial-ready: "+status.blockers.join(", "));
+  if(!status.commercialReady) throw new Error("Booking provider is not commercial-ready: "+(status.blockers||[]).join(", "));
 
   const shouldPersist=input.persist!==false && databaseConfigured();
   const checkOut=addDays(input.checkIn,input.nights);
