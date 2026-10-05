@@ -55,22 +55,29 @@ export async function GET(req:Request){
   const all=[...merged.values()].sort((a,b)=>(b.confidence||0)-(a.confidence||0)||a.name.localeCompare(b.name)||a.city.localeCompare(b.city));
 
   let live:Array<any>=[];
-  if(parsed.data.view==="list"&&databaseConfigured()){
+  if(databaseConfigured()){
     live=await listSellableOffers({q:parsed.data.q,region:parsed.data.region,checkIn:parsed.data.checkIn,flexibleDays:parsed.data.flexibleDays,nights:parsed.data.duration,occupancy:parsed.data.occupancy,maxMonthly:parsed.data.maxMonthly,limit:50}).catch(()=>[]);
   }
   const liveById=new Map(live.map(o=>[o.hotelId,o]));const liveByKey=new Map(live.map(o=>[keyOf(o),o]));
   const enriched=all.map(h=>{const offer=liveById.get(h.canonicalId)||liveByKey.get(keyOf(h));const summary=offerSummary(offer);const known=[...(h.facilities||[]),...(summary?.facilities||[]),h.description||""].join(" ").toLowerCase();const matched=wanted.filter(x=>known.includes(x));return{...h,entityState:"REAL_PROPERTY" as const,commercialState:offer?"VERIFIED_RATE" as const:"RATE_PENDING" as const,liveOffer:summary,preferenceScore:wanted.length?matched.length/wanted.length:0,matchedPreferences:matched};}).sort((a,b)=>b.preferenceScore-a.preferenceScore+(a.preferenceScore===b.preferenceScore?((b.commercialState==="VERIFIED_RATE"?1:0)-(a.commercialState==="VERIFIED_RATE"?1:0)):0));
 
-  const rows=parsed.data.view==="map"?enriched.filter(h=>Number.isFinite(h.lat)&&Number.isFinite(h.lng)).slice(0,5000):enriched.slice(parsed.data.offset,parsed.data.offset+parsed.data.limit);
+  const mappedRows=enriched.filter(h=>Number.isFinite(h.lat)&&Number.isFinite(h.lng)).slice(0,5000);
   const attribution=[
-    rows.some(h=>h.source==="overture")?"Overture Maps Foundation":null,
-    rows.some(h=>h.source==="openstreetmap")?"OpenStreetMap contributors":null,
+    mappedRows.some(h=>h.source==="overture")?"Overture Maps Foundation":null,
+    mappedRows.some(h=>h.source==="openstreetmap")?"OpenStreetMap contributors":null,
   ].filter(Boolean).join(" · ")||null;
+  const rows=parsed.data.view==="map"
+    ? mappedRows.map(h=>({
+        id:h.id,name:h.name,city:h.city,country:h.country,lat:h.lat,lng:h.lng,
+        commercialState:h.commercialState,
+        liveOffer:h.liveOffer?{monthlyEquivalent:h.liveOffer.monthlyEquivalent,currency:h.liveOffer.currency}:null,
+      }))
+    : enriched.slice(parsed.data.offset,parsed.data.offset+parsed.data.limit);
 
   return Response.json({
     source:imported.length?"merged-directory":overtureHotels.length?"overture-snapshot+curated":"public-entity-seed",
     snapshotDate:REAL_HOTEL_SNAPSHOT_DATE,note:REAL_HOTEL_SOURCE_NOTE,attribution,total:enriched.length,
-    mapped:enriched.filter(h=>Number.isFinite(h.lat)&&Number.isFinite(h.lng)).length,
+    mapped:mappedRows.length,
     offset:parsed.data.view==="map"?0:parsed.data.offset,limit:parsed.data.view==="map"?rows.length:parsed.data.limit,
     hotels:rows,
   },{headers:{"Cache-Control":"public, s-maxage=300, stale-while-revalidate=3600"}});
