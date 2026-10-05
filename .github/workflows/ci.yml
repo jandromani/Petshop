@@ -60,23 +60,14 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v7
-      - name: Check whether snapshot is already populated
-        id: snapshot
-        run: |
-          bytes=$(wc -c < src/data/overture-hotels.generated.json)
-          if [ "$bytes" -lt 1000 ]; then echo "needed=true" >> "$GITHUB_OUTPUT"; else echo "needed=false" >> "$GITHUB_OUTPUT"; fi
       - uses: actions/setup-python@v5
-        if: steps.snapshot.outputs.needed == 'true'
         with:
           python-version: "3.13"
       - name: Install DuckDB
-        if: steps.snapshot.outputs.needed == 'true'
         run: python -m pip install --disable-pip-version-check "duckdb>=1.4,<2"
       - name: Build Overture hotel snapshot
-        if: steps.snapshot.outputs.needed == 'true'
         run: python scripts/build-overture-hotels.py
       - name: Upload generated snapshot
-        if: steps.snapshot.outputs.needed == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: overture-hotels
