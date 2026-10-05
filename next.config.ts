@@ -21,7 +21,8 @@ const securityHeaders=[
     "font-src 'self' data:",
     "style-src 'self' 'unsafe-inline'",
     "script-src 'self' 'unsafe-inline'",
-    "connect-src 'self' https://openrouter.ai https://*.vercel-insights.com",
+    "connect-src 'self' https://openrouter.ai https://*.vercel-insights.com https://tiles.openfreemap.org",
+    "worker-src 'self' blob:",
   ].join("; ")},
 ];
 
