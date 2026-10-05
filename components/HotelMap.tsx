@@ -1,6 +1,7 @@
 "use client";
 import { useEffect,useMemo,useRef,useState } from "react";
-import maplibregl,{type GeoJSONSource,type Map as MapLibreMap} from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
+import type { GeoJSONSource,Map as MapLibreMap } from "maplibre-gl";
 import { growthEvent } from "@/src/growth/client";
 
 export type MappedHotel={id:string;name:string;city:string;country:string;lat:number|null;lng:number|null;commercialState:"RATE_PENDING"|"VERIFIED_RATE";liveOffer?:{monthlyEquivalent:number;currency:string}|null};
@@ -32,12 +33,12 @@ export default function HotelMap({hotels,selectedId,onSelect,onSearchArea}:{hote
       map.addLayer({id:"hotel-points",type:"circle",source:"atlas-hotels",filter:["!",["has","point_count"]],paint:{"circle-color":["case",["==",["get","verified"],1],"#2358e8","#ffffff"],"circle-radius":["case",["==",["get","verified"],1],9,7],"circle-stroke-width":3,"circle-stroke-color":"#0a1630"}});
       map.addLayer({id:"hotel-selected",type:"circle",source:"atlas-hotels",filter:["==",["get","id"],""],paint:{"circle-color":"#c8ff6a","circle-radius":13,"circle-stroke-width":4,"circle-stroke-color":"#0a1630"}});
     });
-    map.on("click","hotel-clusters",async e=>{
+    map.on("click","hotel-clusters",async (e:any)=>{
       const feature=map.queryRenderedFeatures(e.point,{layers:["hotel-clusters"]})[0];const clusterId=Number(feature?.properties?.cluster_id);
       const source=map.getSource("atlas-hotels") as GeoJSONSource;const zoom=await source.getClusterExpansionZoom(clusterId);
       const coordinates=(feature?.geometry as any)?.coordinates;if(coordinates)map.easeTo({center:coordinates,zoom});
     });
-    map.on("click","hotel-points",e=>{const f=map.queryRenderedFeatures(e.point,{layers:["hotel-points"]})[0];const id=String(f?.properties?.id||"");if(id){growthEvent("map_marker_click",{hotel_id:id});onSelect(id);}});
+    map.on("click","hotel-points",(e:any)=>{const f=map.queryRenderedFeatures(e.point,{layers:["hotel-points"]})[0];const id=String(f?.properties?.id||"");if(id){growthEvent("map_marker_click",{hotel_id:id});onSelect(id);}});
     for(const layer of ["hotel-clusters","hotel-points"]){map.on("mouseenter",layer,()=>{map.getCanvas().style.cursor="pointer"});map.on("mouseleave",layer,()=>{map.getCanvas().style.cursor=""});}
     map.on("moveend",()=>{const b=map.getBounds();setPendingBounds([b.getWest(),b.getSouth(),b.getEast(),b.getNorth()].map(v=>v.toFixed(5)).join(","));});
     return()=>{map.remove();mapRef.current=null;};
