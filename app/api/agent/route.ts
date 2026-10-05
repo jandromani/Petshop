@@ -1,8 +1,9 @@
 import { z } from "zod";
-import { hotels } from "@/src/data/hotels";
+import { realHotels } from "@/src/data/real-hotels";
+import { overtureHotels } from "@/src/data/overture-hotels";
 import { listSellableOffers } from "@/src/db/catalog";
 import { databaseConfigured } from "@/src/db/client";
-import { filterDemoHotels } from "@/src/core/search";
+import { listDirectoryHotels } from "@/src/db/directory";
 import { deterministicBrandJudge,deterministicTruthJudge } from "@/src/judges/rules";
 import { enforceRateLimit,requestFingerprint } from "@/src/security/rate-limit";
 import { agentModelConfigured,llmCompletion } from "@/src/agents/llm";
@@ -39,20 +40,28 @@ export async function POST(req:Request){
     }catch{}
   }
 
-  const demo=filterDemoHotels(hotels,{
-    query:parsed.data.query,region:parsed.data.region,checkIn:parsed.data.checkIn,flexibleDays:parsed.data.flexibleDays,
-    duration:parsed.data.duration,party:parsed.data.party,maxMonthly:parsed.data.livingBudget,
-  }).slice(0,18);
+  let realDirectory:Array<{id:string;name:string;city:string;country:string;region:string;facilities?:string[]}>= [];
+  if(databaseConfigured()){
+    const rows=await listDirectoryHotels({q:parsed.data.query,region:parsed.data.region,limit:18,offset:0,maxRows:18}).catch(()=>null);
+    realDirectory=(rows?.hotels||[]).map(h=>({id:h.id,name:h.name,city:h.city,country:h.country,region:h.region,facilities:h.facilities}));
+  }
+  if(!realDirectory.length){
+    const q=parsed.data.query.trim().toLowerCase();
+    realDirectory=[...overtureHotels,...realHotels]
+      .filter(h=>(parsed.data.region==="All"||h.region===parsed.data.region)&&(!q||[h.name,h.city,h.country].join(" ").toLowerCase().includes(q)))
+      .slice(0,18)
+      .map(h=>({id:h.id,name:h.name,city:h.city,country:h.country,region:h.region}));
+  }
 
   const context=liveOffers.length
-    ? liveOffers.map(o=>({source:"live_verified",city:o.city,country:o.country,monthly:o.monthlyEquivalent,nights:o.nights,occupancy:o.occupancy,board:o.board,provider:o.provider,verifiedAt:o.verifiedAt,expiresAt:o.expiresAt,confidence:o.confidence}))
-    : demo.map(h=>({source:"demo",city:h.city,country:h.country,monthly:h.monthly,score:h.score,board:h.board,tags:h.tags,provider:h.provider}));
+    ? liveOffers.map(o=>({source:"live_verified",hotelId:o.hotelId,name:o.name,city:o.city,country:o.country,monthly:o.monthlyEquivalent,nights:o.nights,occupancy:o.occupancy,board:o.board,provider:o.provider,verifiedAt:o.verifiedAt,expiresAt:o.expiresAt,confidence:o.confidence,facilities:o.facilities}))
+    : realDirectory.map(h=>({source:"real_identity_rate_pending",hotelId:h.id,name:h.name,city:h.city,country:h.country,region:h.region,facilities:h.facilities||[]}));
 
   const system=[
     "You are the Atlas long-stay concierge.",
     "Recommend only catalogue entries supplied in this request and only within the supplied monthly budget.",
     "Never invent availability, price, visa rules, medical advice, commission, cancellation or execution.",
-    "live_verified entries passed deterministic commercial gates. demo entries are scenarios only and must be labelled as estimates.",
+    "live_verified entries passed deterministic commercial gates. real_identity_rate_pending entries are real hotel identities but have no verified price or availability; label them rate pending and never infer commercial facts.",
     "Do not ask for or infer pension, rent, wealth or income sources. You receive only the maximum living budget needed for the task.",
     "Be concise, practical and freedom-first. If a live fact is absent, say it requires provider verification."
   ].join(" ");
@@ -66,9 +75,9 @@ export async function POST(req:Request){
     const checks=[deterministicTruthJudge(answer),deterministicBrandJudge(answer)];
     if(checks.some(x=>x.verdict!=="PASS")){
       console.warn(JSON.stringify({level:"warning",event:"public_agent_judge_block",checks}));
-      return Response.json({answer:"I can suggest destinations and explain trade-offs, but I cannot present an unsupported price or availability claim. Use the verified-offer lane for bookable facts.",catalogueMode:liveOffers.length?"live_verified":"demo",judged:true});
+      return Response.json({answer:"I can suggest destinations and explain trade-offs, but I cannot present an unsupported price or availability claim. Use the verified-offer lane for bookable facts.",catalogueMode:liveOffers.length?"live_verified":"real_identity",judged:true});
     }
-    return Response.json({answer:answer||"No agent response.",catalogueMode:liveOffers.length?"live_verified":"demo",judged:true,provider:completion.provider});
+    return Response.json({answer:answer||"No agent response.",catalogueMode:liveOffers.length?"live_verified":"real_identity",judged:true,provider:completion.provider});
   }catch(error){
     console.error(JSON.stringify({level:"error",event:"agent_error",error:String(error)}));
     return Response.json({answer:"The concierge model is temporarily unavailable. The deterministic planner is unaffected."});
