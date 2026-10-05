@@ -26,7 +26,8 @@ A searchable hotel is therefore **not** counted as contracted inventory.
 - **Private sourcing loop**: consumer demand becomes a durable sourcing case, provider probe and Direct Hotel OS lead.
 - **Direct Hotel OS**: direct rates remain draft until contract evidence, validity, terms and booking-host controls clear publication.
 - **Provider adapters**: Booking, RateHawk and HBX can broaden supply when commercially configured.
-- **Managed Marketplace OS**: direct rates can graduate from referral to MERCHANT/EXCLUSIVE_MERCHANT only with contract evidence, hotel net, customer price, verified merchant terms and allocated inventory. Atlas Checkout reserves inventory before Stripe Checkout and records paid GMV/platform revenue from actual orders.\n- **Money OS**: referral lineage, conversion ingestion, commission/revenue reconciliation, merchant GMV and acquisition-spend/CAC evidence.
+- **Managed Marketplace OS**: direct rates can graduate from referral to MERCHANT/EXCLUSIVE_MERCHANT only with contract evidence, hotel net, customer price, verified merchant terms and allocated inventory. Atlas Checkout reserves inventory before Stripe Checkout and records paid GMV/platform revenue from actual orders.
+- **Money OS**: referral lineage, conversion ingestion, commission/revenue reconciliation, merchant GMV and acquisition-spend/CAC evidence.
 - **Stay Readiness**: a deterministic Schengen 90/180 day engine distinguishes hotel nights from presence days, while tax-day screens remain explicitly non-determinative. Official sources remain the authority.
 - **SEO evidence gates**: unsupported commercial pages stay NOINDEX; current sellable evidence controls indexability.
 - **Governed agents**: LLMs help interpret intent and operate bounded workflows but cannot manufacture hotel facts, prices or authority.
@@ -48,7 +49,8 @@ Atlas intentionally fails closed.
 | Dependency | Without it | With it |
 | --- | --- | --- |
 | `DATABASE_URL` | public discovery can render; durable sourcing/business loops remain off | migrations, sourcing, ledgers, direct supply and ops state become durable |
-| `RESEND_API_KEY` + `ATLAS_EMAIL_FROM` | sourcing cases remain in the authorized ops queue | sourcing receipt + matched-rate email delivery activates |\n| `ATLAS_MERCHANT_CHECKOUT_ENABLED` + Stripe secrets | managed rates remain discoverable but Atlas Checkout stays fail-closed | contract-verified merchant supply can create inventory-reserved Stripe Checkout sessions |
+| `RESEND_API_KEY` + `ATLAS_EMAIL_FROM` | sourcing cases remain in the authorized ops queue | sourcing receipt + matched-rate email delivery activates |
+| `ATLAS_MERCHANT_CHECKOUT_ENABLED` + Stripe secrets | managed rates remain discoverable but Atlas Checkout stays fail-closed | contract-verified merchant supply can create inventory-reserved Stripe Checkout sessions |
 | Booking / RateHawk / HBX | provider-backed supply remains unavailable | targeted commercial sourcing can run through the configured adapter |
 | verified direct hotel agreement | direct rate remains unpublished | rate can clear the Direct Hotel OS publication gate |
 | real live inventory | commercial SEO remains evidence-gated | supported pages can become indexable |
