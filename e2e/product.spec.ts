@@ -141,7 +141,20 @@ test("zero-result search fails honestly and offers deterministic relaxation",asy
   await expect.poll(()=>page.locator(".zeroResults .actions button").allTextContents(),{timeout:15000}).toContain("Clear destination/name");
 });
 
-test("real hotel search exposes list and map modes on mobile",async({page})=>{
+test("real hotel search exposes list and map modes on mobile",async({page,request})=>{
+  const worker=await request.get("/maplibre/maplibre-gl-worker.mjs");
+  const shared=await request.get("/maplibre/maplibre-gl-shared.mjs");
+  expect(worker.ok()).toBeTruthy();
+  expect(shared.ok()).toBeTruthy();
+
+  await page.route("https://tiles.openfreemap.org/styles/bright",async route=>{
+    await route.fulfill({
+      status:200,
+      contentType:"application/json",
+      body:JSON.stringify({version:8,sources:{},layers:[{id:"background",type:"background",paint:{"background-color":"#f4f6f8"}}]}),
+    });
+  });
+
   await page.setViewportSize({width:390,height:844});
   await page.goto("/stays?q=Madrid");
   await expect(page.getByRole("button",{name:/Map ·/i})).toBeVisible();
