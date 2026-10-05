@@ -35,6 +35,9 @@ describe("preproduction reality layer",()=>{
     expect(snapshot.total).toBeGreaterThanOrEqual(2000);
     expect(snapshot.mapped).toBeGreaterThanOrEqual(2000);
     expect(snapshot.hotels).toHaveLength(24);
+    expect(snapshot.hotels[0]?.name).toBe(realHotels[0]?.name);
+    const curatedNames=new Set(realHotels.map(h=>h.name));
+    expect(snapshot.hotels.slice(0,12).every(h=>curatedNames.has(h.name))).toBe(true);
   });
 
   it("keeps service references on HTTPS",()=>{
