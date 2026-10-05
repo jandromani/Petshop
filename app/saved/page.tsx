@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import SavedStaysClient from "@/components/SavedStaysClient";
 import SavedHotelsClient from "@/components/SavedHotelsClient";
+import RateAlertsClient from "@/components/RateAlertsClient";
 
 export const metadata:Metadata={title:"Saved stays",robots:{index:false,follow:false}};
 
@@ -12,6 +13,7 @@ export default function SavedStaysPage(){
       <h1>Compare the stays<br/>you would actually live in.</h1>
       <p style={{fontSize:20,maxWidth:760}}>Save real hotels before a price exists, and save verified offers separately. Atlas never turns a property bookmark into a commercial claim.</p>
     </section>
+    <RateAlertsClient/>
     <SavedHotelsClient/>
     <SavedStaysClient/>
   </div></main>;
