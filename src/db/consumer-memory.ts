@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { getDatabase } from "@/src/db/client";
 import type { SavedStay } from "@/src/core/saved-stays";
+import type { SavedHotel } from "@/src/core/saved-hotels";
 
 export const SAVED_PROFILE_COOKIE="atlas_saved_profile";
 
@@ -88,6 +89,43 @@ export async function removeSavedStay(profileId:string|undefined|null,offerId:st
 }
 
 
+
+export async function listSavedHotelsForProfile(profileId:string|undefined|null):Promise<SavedHotel[]>{
+  const sql=getDatabase();if(!sql||!validSavedProfileId(profileId))return[];
+  const rows=await sql<Array<{hotel_id:string;name:string;city:string;country:string;source:string;saved_at:string}>>`
+    select hotel_id,name,city,country,source,saved_at::text
+    from consumer_saved_hotels
+    where profile_id=${profileId}::uuid
+    order by saved_at desc
+    limit 60
+  `;
+  await sql`update consumer_profiles set last_seen_at=now(),updated_at=now() where id=${profileId}::uuid`;
+  return rows.map(row=>({hotelId:row.hotel_id,name:row.name,city:row.city,country:row.country,source:row.source,savedAt:new Date(row.saved_at).toISOString()}));
+}
+
+export async function upsertSavedHotel(candidateProfileId:string|undefined|null,hotel:SavedHotel){
+  const sql=getDatabase();if(!sql)return null;
+  const profileId=await ensureSavedProfile(candidateProfileId);if(!profileId)return null;
+  const rows=await sql<{saved_at:string}[]>`
+    insert into consumer_saved_hotels(profile_id,hotel_id,name,city,country,source,saved_at)
+    values (${profileId}::uuid,${hotel.hotelId},${hotel.name},${hotel.city},${hotel.country},${hotel.source},now())
+    on conflict (profile_id,hotel_id) do update set
+      name=excluded.name,city=excluded.city,country=excluded.country,source=excluded.source,saved_at=now()
+    returning saved_at::text
+  `;
+  return{profileId,savedAt:new Date(rows[0]?.saved_at||Date.now()).toISOString()};
+}
+
+export async function removeSavedHotel(profileId:string|undefined|null,hotelId:string){
+  const sql=getDatabase();if(!sql||!validSavedProfileId(profileId))return false;
+  const rows=await sql<{hotel_id:string}[]>`
+    delete from consumer_saved_hotels where profile_id=${profileId}::uuid and hotel_id=${hotelId}
+    returning hotel_id
+  `;
+  await sql`update consumer_profiles set last_seen_at=now(),updated_at=now() where id=${profileId}::uuid`;
+  return Boolean(rows[0]);
+}
+
 export async function deleteSavedProfile(profileId:string|undefined|null){
   const sql=getDatabase();
   if(!sql||!validSavedProfileId(profileId))return false;
@@ -102,7 +140,7 @@ export async function deleteSavedProfile(profileId:string|undefined|null){
 
 export async function exportSavedProfileData(profileId:string|undefined|null){
   const sql=getDatabase();
-  if(!sql||!validSavedProfileId(profileId))return{profile:null,saved:[] as SavedStay[]};
+  if(!sql||!validSavedProfileId(profileId))return{profile:null,saved:[] as SavedStay[],savedHotels:[] as SavedHotel[]};
 
   const profiles=await sql<Array<{id:string;created_at:string;updated_at:string;last_seen_at:string}>>`
     select id::text,created_at::text,updated_at::text,last_seen_at::text
@@ -111,7 +149,7 @@ export async function exportSavedProfileData(profileId:string|undefined|null){
     limit 1
   `;
   const profile=profiles[0];
-  if(!profile)return{profile:null,saved:[] as SavedStay[]};
+  if(!profile)return{profile:null,saved:[] as SavedStay[],savedHotels:[] as SavedHotel[]};
 
   const rows=await sql<Array<{
     offer_id:string;slug:string;name:string;city:string;country:string;provider:string;
@@ -125,6 +163,8 @@ export async function exportSavedProfileData(profileId:string|undefined|null){
     limit 30
   `;
 
+  const savedHotels=await listSavedHotelsForProfile(profileId);
+
   return{
     profile:{
       id:profile.id,
@@ -132,6 +172,7 @@ export async function exportSavedProfileData(profileId:string|undefined|null){
       updatedAt:new Date(profile.updated_at).toISOString(),
       lastSeenAt:new Date(profile.last_seen_at).toISOString(),
     },
+    savedHotels,
     saved:rows.map(row=>({
       offerId:row.offer_id,slug:row.slug,name:row.name,city:row.city,country:row.country,provider:row.provider,
       savedMonthly:Number(row.saved_monthly),currency:row.currency,
