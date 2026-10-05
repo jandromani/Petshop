@@ -112,7 +112,7 @@ test("shared hotel search restores the full deterministic filter state",async({p
   await page.goto("/stays?q=Madrid&region=Europe&duration=90&occupancy=2&maxMonthly=1800&features=pool%2Cgym&brand=Marriott&brandedOnly=1&sort=name");
   await expect(page.getByRole("heading",{name:/Search real hotels/i})).toBeVisible();
   await expect(page.getByLabel("Where?")).toHaveValue("Madrid");
-  await expect(page.getByLabel("Region")).toHaveValue("Europe");
+  await expect(page.getByLabel("Region",{exact:true})).toHaveValue("Europe");
   await expect(page.getByLabel("Stay")).toHaveValue("90");
   await expect(page.getByLabel("Travelling")).toHaveValue("couple");
   await expect(page.getByLabel("Maximum monthly hotel budget")).toHaveValue("1800");
