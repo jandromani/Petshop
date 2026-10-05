@@ -1,7 +1,8 @@
 import { afterAll,describe,expect,it } from "vitest";
 import { getDatabase } from "@/src/db/client";
-import { deleteSavedProfile,exportSavedProfileData,listSavedStaysForProfile,removeSavedStay,upsertSavedStay } from "@/src/db/consumer-memory";
+import { deleteSavedProfile,exportSavedProfileData,listSavedHotelsForProfile,listSavedStaysForProfile,removeSavedHotel,removeSavedStay,upsertSavedHotel,upsertSavedStay } from "@/src/db/consumer-memory";
 import type { SavedStay } from "@/src/core/saved-stays";
+import type { SavedHotel } from "@/src/core/saved-hotels";
 
 const dbIt=process.env.DATABASE_URL?it:it.skip;
 const created:string[]=[];
@@ -31,6 +32,15 @@ describe("consumer memory persistence",()=>{
     expect(await listSavedStaysForProfile(saved.profileId)).toEqual([]);
   });
 
+  dbIt("round-trips one anonymous saved real hotel without inventing a price",async()=>{
+    const hotel:SavedHotel={hotelId:"overture-ci-hotel",name:"CI Real Hotel",city:"Madrid",country:"Spain",source:"overture",savedAt:"2026-10-05T10:00:00.000Z"};
+    const saved=await upsertSavedHotel(null,hotel);expect(saved?.profileId).toMatch(/^[0-9a-f-]{36}$/);if(!saved)throw new Error("profile not created");
+    created.push(saved.profileId);
+    expect(await listSavedHotelsForProfile(saved.profileId)).toEqual([expect.objectContaining({hotelId:"overture-ci-hotel",name:"CI Real Hotel",source:"overture"})]);
+    const exported=await exportSavedProfileData(saved.profileId);expect(exported.savedHotels).toHaveLength(1);expect(exported.savedHotels[0]).toMatchObject({hotelId:"overture-ci-hotel"});
+    expect(await removeSavedHotel(saved.profileId,"overture-ci-hotel")).toBe(true);expect(await listSavedHotelsForProfile(saved.profileId)).toEqual([]);
+  });
+
   dbIt("deletes an anonymous profile and cascades saved stays",async()=>{
     const stay:SavedStay={
       offerId:"ci-offer-delete",slug:"ci-delete",name:"Delete Me",city:"Madrid",country:"Spain",provider:"direct",
@@ -46,11 +56,9 @@ describe("consumer memory persistence",()=>{
     const profiles=await sql!<{count:number}[]>`
       select count(*)::int as count from consumer_profiles where id=${saved.profileId}::uuid
     `;
-    const stays=await sql!<{count:number}[]>`
-      select count(*)::int as count from consumer_saved_stays where profile_id=${saved.profileId}::uuid
-    `;
-    expect(profiles[0]?.count).toBe(0);
-    expect(stays[0]?.count).toBe(0);
+    const stays=await sql!<{count:number}[]>`select count(*)::int as count from consumer_saved_stays where profile_id=${saved.profileId}::uuid`;
+    const hotels=await sql!<{count:number}[]>`select count(*)::int as count from consumer_saved_hotels where profile_id=${saved.profileId}::uuid`;
+    expect(profiles[0]?.count).toBe(0);expect(stays[0]?.count).toBe(0);expect(hotels[0]?.count).toBe(0);
   });
 });
 
