@@ -37,6 +37,7 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
   const [shareLabel,setShareLabel]=useState("Share this life");
   const [directoryCount,setDirectoryCount]=useState(0);
   const [searchBudgetCap,setSearchBudgetCap]=useState<number|null>(null);
+  const [searchAmenities,setSearchAmenities]=useState<string[]>([]);
 
   const finances=useMemo(()=>summarizeFinances({pension,homeIncome,otherIncome,reserve}),[pension,homeIncome,otherIncome,reserve]);
   const livingBudget=finances.livingBudget;
@@ -108,8 +109,8 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
       <div className="eyebrow"><i className="dot"/> LONG-STAY HOTEL LIVING · 30–365 DAYS</div>
       <h1>Live somewhere better.<br/><em>Stay for a season.</em></h1>
       <p className="heroLead">Compare long-stay hotels by monthly cost, not nightly rate. Build a flexible life around the budget you already have.</p>
-      <SilverSearch query={query} setQuery={setQuery} region={region} setRegion={setRegion} checkIn={checkIn} setCheckIn={setCheckIn} flexibleDays={flexibleDays} setFlexibleDays={setFlexibleDays} duration={duration} setDuration={setDuration} party={party} setParty={setParty} budget={searchBudget} count={directoryCount} onSearch={jumpToExplore}/>
-      <AiHotelSearch current={{region,duration,occupancy:party==="couple"?2:1,maxMonthly:searchBudget}} onApply={(intent:AiSearchIntent)=>{setQuery(intent.query);setRegion(intent.region);setDuration(intent.duration);setParty(intent.occupancy===2?"couple":"solo");setFlexibleDays(intent.flexibleDays);setSearchBudgetCap(intent.maxMonthly&&intent.maxMonthly<livingBudget?intent.maxMonthly:null);growthEvent("ai_search_navigation",{query:intent.query||"all",region:intent.region,duration:intent.duration});setTimeout(()=>document.getElementById("explore")?.scrollIntoView({behavior:"smooth"}),50);}}/>
+      <SilverSearch query={query} setQuery={setQuery} region={region} setRegion={setRegion} checkIn={checkIn} setCheckIn={setCheckIn} flexibleDays={flexibleDays} setFlexibleDays={setFlexibleDays} duration={duration} setDuration={setDuration} party={party} setParty={setParty} budget={searchBudget} setBudget={v=>{setSearchBudgetCap(v>=livingBudget?null:v);growthEvent("filter_change",{filter:"max_monthly",value:v})}} count={directoryCount} onSearch={jumpToExplore}/>
+      <AiHotelSearch current={{region,duration,occupancy:party==="couple"?2:1,maxMonthly:searchBudget}} onApply={(intent:AiSearchIntent)=>{setQuery(intent.query);setRegion(intent.region);setDuration(intent.duration);setParty(intent.occupancy===2?"couple":"solo");setFlexibleDays(intent.flexibleDays);setSearchAmenities(intent.amenities);setSearchBudgetCap(intent.maxMonthly&&intent.maxMonthly<livingBudget?intent.maxMonthly:null);growthEvent("ai_search_navigation",{query:intent.query||"all",region:intent.region,duration:intent.duration});setTimeout(()=>document.getElementById("explore")?.scrollIntoView({behavior:"smooth"}),50);}}/>
       <div className="proof silverProof">
         <div className="proofCard"><b>€ / month</b><span>compare living cost, not a weekend</span></div>
         <div className="proofCard"><b>30–365 days</b><span>one month, one season or a full-year search</span></div>
@@ -177,7 +178,7 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
 
     <LiveOffers/>
 
-    <RealHotelDirectory initialQuery={query} initialRegion={region} duration={duration} checkIn={checkIn} occupancy={party==="couple"?2:1} maxMonthly={searchBudget} onCount={setDirectoryCount} onQueryChange={setQuery} onRegionChange={setRegion}/>
+    <RealHotelDirectory initialQuery={query} initialRegion={region} duration={duration} checkIn={checkIn} occupancy={party==="couple"?2:1} maxMonthly={searchBudget} flexibleDays={flexibleDays} initialAmenities={searchAmenities} onCount={setDirectoryCount} onQueryChange={setQuery} onRegionChange={setRegion}/>
 
     <section id="agent" className="agentBand"><div className="shell">
       <div className="sectionTitle"><h2>Ask Atlas.<br/>Your long-stay concierge.</h2><p>The concierge receives only the budget and travel preferences it needs—not your pension or home-income breakdown.</p></div>
