@@ -6,15 +6,18 @@ import { legalIdentity } from "@/src/system/legal";
 import { adjacencyPartners } from "@/src/adjacency/registry";
 import { agentRuntimeCredentialsAvailable,agentRuntimeProvider } from "@/src/agents/llm";
 import { seoAutopilotEnabled } from "@/src/seo/live";
+import { merchantMetrics } from "@/src/db/merchant";
+import { merchantCheckoutStatus } from "@/src/payments/stripe-rest";
 
 export type ActivationState="ACTIVE"|"READY"|"ACTIVATION_REQUIRED"|"OPTIONAL";
 
 export async function activationManifest(){
   const providers=liveProviderStatuses();
-  const [ops,agentCredentials,db]=await Promise.all([
+  const [ops,agentCredentials,db,merchant]=await Promise.all([
     getOpsSnapshot(),
     agentRuntimeCredentialsAvailable(),
     databaseHealth(),
+    merchantMetrics(30),
   ]);
   const providerConfigured=providers.some(p=>p.configured);
   const supplyActive=ops.liveOffers>0;
@@ -25,6 +28,7 @@ export async function activationManifest(){
   const agentActive=agentCredentials&&process.env.AGENT_RUNTIME_ENABLED!=="false";
   const runtimeProvider=agentActive?agentRuntimeProvider():"none";
   const seoAuto=seoAutopilotEnabled();
+  const merchantConfig=merchantCheckoutStatus();
 
   const items=[
     {
@@ -71,6 +75,17 @@ export async function activationManifest(){
           :providerConfigured
             ?"Provider credentials exist; reachable persistent DB is still required."
             :"Connect the database, then publish a verified direct hotel contract or add provider credentials.",
+    },
+    {
+      key:"merchant-checkout",
+      state:(merchantConfig.enabled&&merchantConfig.stripeConfigured&&merchantConfig.webhookConfigured
+        ?merchant.liveMerchantRates>0?"ACTIVE":"READY"
+        :"ACTIVATION_REQUIRED") as ActivationState,
+      detail:merchantConfig.enabled&&merchantConfig.stripeConfigured&&merchantConfig.webhookConfigured
+        ?merchant.liveMerchantRates>0
+          ?merchant.liveMerchantRates+" managed rates · "+merchant.availableUnits+" currently available allocated units."
+          :"Stripe + webhook are armed; publish a verified MERCHANT/EXCLUSIVE_MERCHANT direct rate with allocated inventory."
+        :"Set ATLAS_MERCHANT_CHECKOUT_ENABLED=true plus STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET after legal/payment activation.",
     },
     {
       key:"conversion-ingest",

@@ -1,4 +1,5 @@
 import { getDatabase } from "@/src/db/client";
+import { merchantCheckoutStatus } from "@/src/payments/stripe-rest";
 
 export type OpsSnapshot = {
   available:boolean;
@@ -18,6 +19,7 @@ export async function getOpsSnapshot():Promise<OpsSnapshot>{
   const sql=getDatabase();
   if(!sql) return{available:false,liveOffers:0,providerLiveOffers:0,directLiveOffers:0,openIncidents:0,referralClicks30d:0,conversions30d:0,commission30d:0,acquisitionRuns:[],agentRuns:[]};
   try{
+    const merchant=merchantCheckoutStatus();const merchantActive=merchant.enabled&&merchant.stripeConfigured&&merchant.webhookConfigured;
     const [counts]=await sql<{provider_live_offers:number;direct_live_offers:number;open_incidents:number;referral_clicks:number;conversions:number;commission:number}[]>`
       select
         (select count(*)::int from offer_snapshots o join lateral (select state from sellability_audits sa where sa.offer_snapshot_id=o.id order by sa.evaluated_at desc limit 1) a on true where a.state='SELLABLE' and o.source_mode='live' and o.fulfillment_type='REDIRECT' and o.deep_link is not null
@@ -33,10 +35,13 @@ export async function getOpsSnapshot():Promise<OpsSnapshot>{
         (select count(*)::int from direct_rate_offers r
           where r.publication_state='LIVE'
             and r.contract_verified=true
-            and r.booking_url is not null
-            and r.approved_booking_host is not null
             and r.valid_from<=current_date
-            and r.valid_to>=current_date) as direct_live_offers,
+            and r.valid_to>=current_date
+            and (
+              (r.channel_model='REFERRAL' and r.booking_url is not null and r.approved_booking_host is not null)
+              or
+              (${merchantActive}::boolean=true and r.channel_model in ('MERCHANT','EXCLUSIVE_MERCHANT') and r.merchant_enabled=true and r.merchant_terms_verified=true and (r.inventory_units-r.reserved_units-r.sold_units)>0)
+            )) as direct_live_offers,
         (select count(*)::int from ops_incidents where status='OPEN') as open_incidents,
         (select count(*)::int from referral_clicks where created_at>=now()-interval '30 days') as referral_clicks,
         (select count(*)::int from conversions where received_at>=now()-interval '30 days') as conversions,

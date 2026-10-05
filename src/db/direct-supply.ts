@@ -2,6 +2,7 @@ import { getDatabase } from "@/src/db/client";
 import { addDays } from "@/src/core/search";
 import { normalizeLiveCatalogRow, type LiveCatalogOffer } from "@/src/core/live-offers";
 import { resolveCanonicalHotel } from "@/src/services/identity";
+import { merchantCheckoutStatus } from "@/src/payments/stripe-rest";
 
 export type HotelLeadInput = {
   canonicalHotelId?: string;
@@ -130,21 +131,30 @@ function approvedHttpsHost(raw: string) {
 export async function verifyDirectRate(input: {
   id: string;
   contractReference: string;
-  bookingUrl: string;
-  trackingQueryParam: string;
+  bookingUrl?: string;
+  trackingQueryParam?: string;
   reviewNotes?: string;
 }) {
   const sql = getDatabase();
   if (!sql) return null;
-  const host = approvedHttpsHost(input.bookingUrl);
-  if(!/^[A-Za-z][A-Za-z0-9_-]{0,39}$/.test(input.trackingQueryParam)) throw new Error("invalid-tracking-query-param");
+  const modes=await sql<Array<{channel_model:string}>>`
+    select channel_model from direct_rate_offers where id=${input.id}::uuid limit 1
+  `;
+  const mode=modes[0]?.channel_model;if(!mode)return null;
+  const merchant=mode==="MERCHANT"||mode==="EXCLUSIVE_MERCHANT";
+  let host:string|null=null;
+  if(!merchant){
+    if(!input.bookingUrl)throw new Error("missing-booking-url");
+    if(!input.trackingQueryParam||!/^[A-Za-z][A-Za-z0-9_-]{0,39}$/.test(input.trackingQueryParam))throw new Error("invalid-tracking-query-param");
+    host=approvedHttpsHost(input.bookingUrl);
+  }
   const rows = await sql<{ id: string }[]>`
     update direct_rate_offers set
-      booking_url = ${input.bookingUrl},
+      booking_url = ${merchant?null:(input.bookingUrl??null)},
       contract_reference = ${input.contractReference},
       contract_verified = true,
       approved_booking_host = ${host},
-      tracking_query_param = ${input.trackingQueryParam},
+      tracking_query_param = ${merchant?null:(input.trackingQueryParam??null)},
       verified_at = now(),
       publication_state = 'READY_FOR_REVIEW',
       review_notes = ${input.reviewNotes ?? null},
@@ -178,6 +188,11 @@ export type DirectPublishRow = {
   contract_verified: boolean;
   approved_booking_host: string | null;
   tracking_query_param: string | null;
+  channel_model: "REFERRAL"|"MERCHANT"|"EXCLUSIVE_MERCHANT";
+  hotel_net_monthly: number | null;
+  merchant_enabled: boolean;
+  merchant_terms_verified: boolean;
+  inventory_units: number;
 };
 
 async function directRateForReview(id: string): Promise<DirectPublishRow | null> {
@@ -205,7 +220,12 @@ async function directRateForReview(id: string): Promise<DirectPublishRow | null>
       r.contract_reference,
       r.contract_verified,
       r.approved_booking_host,
-      r.tracking_query_param
+      r.tracking_query_param,
+      r.channel_model,
+      r.hotel_net_monthly::float,
+      r.merchant_enabled,
+      r.merchant_terms_verified,
+      r.inventory_units
     from direct_rate_offers r
     join hotel_leads l on l.id = r.hotel_lead_id
     where r.id = ${id}::uuid
@@ -218,9 +238,18 @@ export function directPublicationChecks(row: DirectPublishRow, now = new Date())
   const reasons: string[] = [];
   if (!row.contract_verified) reasons.push("contract_not_verified");
   if (!row.contract_reference) reasons.push("missing_contract_reference");
-  if (!row.booking_url) reasons.push("missing_booking_url");
-  if (!row.approved_booking_host) reasons.push("missing_approved_booking_host");
-  if (!row.tracking_query_param) reasons.push("missing_tracking_query_param");
+  const merchant=row.channel_model==="MERCHANT"||row.channel_model==="EXCLUSIVE_MERCHANT";
+  if(merchant){
+    if(!row.merchant_enabled) reasons.push("merchant_not_enabled");
+    if(!row.merchant_terms_verified) reasons.push("merchant_terms_not_verified");
+    if(row.hotel_net_monthly===null||row.hotel_net_monthly<=0) reasons.push("missing_hotel_net_monthly");
+    if(row.hotel_net_monthly!==null&&row.hotel_net_monthly>row.monthly_price) reasons.push("hotel_net_above_customer_price");
+    if(row.inventory_units<1) reasons.push("no_allocated_inventory");
+  }else{
+    if (!row.booking_url) reasons.push("missing_booking_url");
+    if (!row.approved_booking_host) reasons.push("missing_approved_booking_host");
+    if (!row.tracking_query_param) reasons.push("missing_tracking_query_param");
+  }
   if (!row.valid_from || !row.valid_to) reasons.push("missing_validity_window");
   if (row.valid_from && row.valid_to && row.valid_from > row.valid_to) reasons.push("invalid_validity_window");
   if (row.valid_to && new Date(row.valid_to + "T23:59:59Z").getTime() <= now.getTime()) reasons.push("rate_expired");
@@ -321,12 +350,17 @@ type DirectRow = {
   currency: string;
   verified_at: string;
   expires_at: string;
+  channel_model: "REFERRAL"|"MERCHANT"|"EXCLUSIVE_MERCHANT";
+  merchant_enabled: boolean;
+  merchant_terms_verified: boolean;
 };
 
 function normalizeDirectRow(row: DirectRow): LiveCatalogOffer {
   return normalizeLiveCatalogRow({
     offerId: row.offer_id,
     offerKind: "direct",
+    checkoutMode:(row.channel_model==="MERCHANT"||row.channel_model==="EXCLUSIVE_MERCHANT")&&row.merchant_enabled&&row.merchant_terms_verified?"atlas_checkout":"redirect",
+    channelModel:row.channel_model,
     hotelId: row.hotel_id,
     slug: row.slug,
     name: row.name,
@@ -354,6 +388,8 @@ function normalizeDirectRow(row: DirectRow): LiveCatalogOffer {
 export async function listSellableDirectOffers(input: DirectCatalogQuery = {}): Promise<LiveCatalogOffer[]> {
   const sql = getDatabase();
   if (!sql) return [];
+  const merchantConfig=merchantCheckoutStatus();
+  const merchantCheckoutActive=merchantConfig.enabled&&merchantConfig.stripeConfigured&&merchantConfig.webhookConfigured;
 
   const limit = Math.max(1, Math.min(50, input.limit ?? 12));
   const q = input.q?.trim() ? "%" + input.q.trim() + "%" : null;
@@ -393,13 +429,19 @@ export async function listSellableDirectOffers(input: DirectCatalogQuery = {}): 
         (r.monthly_price::float * coalesce(${requestedNights}::int, r.min_nights)::float / 30.0) as display_price,
         r.currency,
         coalesce(r.verified_at, r.updated_at)::text as verified_at,
-        (r.valid_to::date + interval '23 hours 59 minutes 59 seconds')::text as expires_at
+        (r.valid_to::date + interval '23 hours 59 minutes 59 seconds')::text as expires_at,
+        r.channel_model,
+        r.merchant_enabled,
+        r.merchant_terms_verified
       from direct_rate_offers r
       join canonical_hotels h on h.id = r.canonical_hotel_id
       where r.publication_state = 'LIVE'
         and r.contract_verified = true
-        and r.booking_url is not null
-        and r.approved_booking_host is not null
+        and (
+          (r.channel_model='REFERRAL' and r.booking_url is not null and r.approved_booking_host is not null)
+          or
+          (${merchantCheckoutActive}::boolean=true and r.channel_model in ('MERCHANT','EXCLUSIVE_MERCHANT') and r.merchant_enabled=true and r.merchant_terms_verified=true and (r.inventory_units-r.reserved_units-r.sold_units)>0)
+        )
         and r.valid_from is not null
         and r.valid_to is not null
         and r.valid_to >= current_date
@@ -477,6 +519,7 @@ export async function getSellableDirectOfferForReferral(id: string) {
     where r.id = ${id}::uuid
       and r.publication_state = 'LIVE'
       and r.contract_verified = true
+      and r.channel_model='REFERRAL'
       and r.booking_url is not null
       and r.approved_booking_host is not null
       and r.valid_to >= current_date
@@ -530,7 +573,9 @@ export async function listHotelDesk() {
     select r.id::text, r.hotel_lead_id::text, l.hotel_name, r.rate_code,
       r.min_nights, r.max_nights, r.max_guests, r.board, r.monthly_price::float,
       r.currency, r.contract_verified, r.publication_state,
-      r.valid_from::text, r.valid_to::text, r.approved_booking_host, r.updated_at::text
+      r.valid_from::text, r.valid_to::text, r.approved_booking_host,
+      r.channel_model,r.hotel_net_monthly::float,r.merchant_enabled,r.merchant_terms_verified,
+      r.inventory_units,r.reserved_units,r.sold_units,r.updated_at::text
     from direct_rate_offers r
     join hotel_leads l on l.id = r.hotel_lead_id
     order by r.updated_at desc

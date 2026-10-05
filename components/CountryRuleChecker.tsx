@@ -1,0 +1,15 @@
+"use client";
+import { useState } from "react";
+
+type Result={assessment?:{state:string;reasons:string[];source:null|{url:string;title:string|null;verifiedAt:string;expiresAt:string;ruleKey:string;ruleType:string;maxPresenceDays:number|null;windowDays:number|null;minMonthlyIncome:number|null;incomeCurrency:string|null};disclaimer:string}};
+
+export default function CountryRuleChecker(){
+  const[destination,setDestination]=useState("Spain");const[scope,setScope]=useState("NON_EU");const[type,setType]=useState("SHORT_STAY");const[days,setDays]=useState("60");const[income,setIncome]=useState("");const[result,setResult]=useState<Result|null>(null);const[loading,setLoading]=useState(false);
+  async function check(){setLoading(true);const p=new URLSearchParams({destinationCountry:destination,nationalityScope:scope,ruleType:type,stayPresenceDays:days});if(income)p.set("monthlyIncome",income);const res=await fetch("/api/compliance/eligibility?"+p.toString(),{cache:"no-store"}).catch(()=>null);const data=await res?.json().catch(()=>null);setResult(data||null);setLoading(false);}
+  const a=result?.assessment;
+  return <div className="complianceCalculator card"><div className="eyebrow">EVIDENCE-GATED COUNTRY RULES</div><h2>Fresh source or UNKNOWN.</h2><p>Atlas only evaluates destination rules that have a current human-reviewed source in the compliance registry. Missing or stale evidence does not get filled by an LLM.</p>
+    <div className="complianceInputs"><label><span>Destination country</span><input value={destination} onChange={e=>setDestination(e.target.value)} placeholder="Spain"/></label><label><span>Traveller scope</span><select value={scope} onChange={e=>setScope(e.target.value)}><option value="EU">EU</option><option value="NON_EU">Non-EU</option><option value="ANY">Any</option></select></label><label><span>Rule</span><select value={type} onChange={e=>setType(e.target.value)}><option value="SHORT_STAY">Short stay</option><option value="DIGITAL_NOMAD">Digital nomad</option><option value="RESIDENCE_REGISTRATION">Residence registration</option></select></label><label><span>Presence days</span><input inputMode="numeric" value={days} onChange={e=>setDays(e.target.value.replace(/[^0-9]/g,""))}/></label><label><span>Monthly income (optional)</span><input inputMode="numeric" value={income} onChange={e=>setIncome(e.target.value.replace(/[^0-9.]/g,""))}/></label></div>
+    <button className="btn" disabled={loading||!destination||!days} onClick={check}>{loading?"Checking evidence…":"Check stored rule →"}</button>
+    {a&&<div className={"evidenceRuleResult "+(a.state==="PASS_SCREEN"?"green":a.state==="UNKNOWN"||a.state==="UNKNOWN_INPUT"?"amber":"red")}><b>{a.state.replaceAll("_"," ")}</b>{a.reasons.map(x=><p key={x}>{x}</p>)}{a.source?<p><a href={a.source.url} target="_blank" rel="noreferrer">{a.source.title||"Official source"} ↗</a><br/><small>Verified {new Date(a.source.verifiedAt).toLocaleDateString()} · evidence expires {new Date(a.source.expiresAt).toLocaleDateString()}</small></p>:<p><small>No eligible fresh evidence is stored.</small></p>}<small>{a.disclaimer}</small></div>}
+  </div>;
+}

@@ -47,7 +47,7 @@ export default function VerifiedRoute({search}:{search:StaySearch}){
       {route.map((o,i)=><div className="stop" key={o.offerId}>
         <div className="when">OPTION {String(i+1).padStart(2,"0")}</div>
         <div><b>{o.city}, {o.country}</b><small>{o.nights} nights · {o.occupancy} guest{o.occupancy===1?"":"s"}{o.board?" · "+o.board:""}</small></div>
-        <div className="cost"><a href={"/api/referral?offer="+encodeURIComponent(o.offerId)+"&from=%2Fplanner"}>{money(o.monthlyEquivalent,o.currency)}/mo →</a></div>
+        <div className="cost"><a href={o.checkoutMode==="atlas_checkout"?"/checkout/"+encodeURIComponent(o.offerId)+"?checkIn="+encodeURIComponent(o.checkIn)+"&nights="+o.nights+"&occupancy="+o.occupancy:"/api/referral?offer="+encodeURIComponent(o.offerId)+"&from=%2Fplanner"}>{money(o.monthlyEquivalent,o.currency)}/mo {o.checkoutMode==="atlas_checkout"?"· Atlas Checkout":"→"}</a></div>
       </div>)}
     </div>
   </div>;

@@ -20,6 +20,7 @@ export default async function sitemap():Promise<MetadataRoute.Sitemap>{
     {url:base+"/about",changeFrequency:"monthly",priority:.7},
     {url:base+"/for-hotels",changeFrequency:"monthly",priority:.7},
     {url:base+"/stay-readiness",changeFrequency:"monthly",priority:.72},
+    {url:base+"/geographic-arbitrage",changeFrequency:"monthly",priority:.78},
     {url:base+"/methodology",changeFrequency:"monthly",priority:.65},
     ...destinations.map(x=>({url:base+"/destinations/"+x.page.slug,changeFrequency:"daily" as const,priority:.85})),
     ...liveSlugs.map(slug=>({url:base+"/live/"+slug,changeFrequency:"daily" as const,priority:.85})),

@@ -14,7 +14,9 @@ export type StaysInitialSearch={
   sort:"recommended"|"price"|"confidence"|"name";page:number;bbox:string;
 };
 
-const primaryDuration=(d:StayDuration):StayDuration=>d===30||d===60?d:90;\n\nexport default function StaysExplorer({initial,initialData}:{initial:StaysInitialSearch;initialData?:DirectoryPayload}){
+const primaryDuration=(d:StayDuration):StayDuration=>d===30||d===60?d:90;
+
+export default function StaysExplorer({initial,initialData}:{initial:StaysInitialSearch;initialData?:DirectoryPayload}){
   const[query,setQuery]=useState(initial.query);const[region,setRegion]=useState<SearchRegion>(initial.region);
   const[checkIn,setCheckIn]=useState(initial.checkIn);const[flexibleDays,setFlexibleDays]=useState<0|7|30>(initial.flexibleDays);
   const[duration,setDuration]=useState<StayDuration>(primaryDuration(initial.duration));const[party,setParty]=useState<Party>(initial.occupancy===2?"couple":"solo");

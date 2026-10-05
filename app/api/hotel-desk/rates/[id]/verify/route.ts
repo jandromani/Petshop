@@ -5,8 +5,8 @@ import { opsAuthorized } from "@/src/security/ops-auth";
 import { auditOpsEvent } from "@/src/db/governance";
 const Input=z.object({
   contractReference:z.string().min(3).max(200),
-  bookingUrl:z.string().url().max(2000),
-  trackingQueryParam:z.string().regex(/^[A-Za-z][A-Za-z0-9_-]{0,39}$/),
+  bookingUrl:z.string().url().max(2000).optional(),
+  trackingQueryParam:z.string().regex(/^[A-Za-z][A-Za-z0-9_-]{0,39}$/).optional(),
   reviewNotes:z.string().max(2000).optional(),
 });
 

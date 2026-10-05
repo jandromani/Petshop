@@ -111,12 +111,14 @@ export default function Planner({heroVariant="freedom",initialDirectory}:{heroVa
 
       <RealHotelDirectory initialData={initialDirectory} initialQuery={query} initialRegion={region} duration={duration} checkIn={checkIn} occupancy={party==="couple"?2:1} maxMonthly={searchBudget} flexibleDays={flexibleDays} initialAmenities={searchAmenities} onCount={setDirectoryCount} onQueryChange={setQuery} onRegionChange={setRegion}/>
 
-      <section className="economicsBand"><div className="shell economicsGrid">
-        <div><div className="eyebrow">BUSINESS MODEL</div><h2>Search is free.<br/>Atlas is built to earn when a stay books.</h2></div>
-        <div><p>The initial commercial model is transaction-aligned: referral or distribution economics on an eligible completed accommodation booking, subject to the partner agreement. No consumer subscription is required to search or request a rate.</p><a href="/legal">Commercial disclosure →</a></div>
+      <section className="economicsBand"><div className="shell">
+        <div className="economicsGrid"><div><div className="eyebrow">BUSINESS MODEL</div><h2>Affiliate is a bridge.<br/>Managed supply is the destination.</h2></div><div><p>Provider redirects can bootstrap coverage. The higher-control path is direct 30–90 day inventory with a contractual hotel net, an Atlas customer price, allocated units and Atlas Checkout. Search stays free; economics are earned when accommodation converts.</p><a href="/for-hotels">See the hotel model →</a></div></div>
+        <div className="marketModelGrid"><article><span>FALLBACK</span><b>Referral</b><p>External fulfillment. Useful for coverage; exposed to leakage.</p></article><article><span>CORE</span><b>Managed merchant</b><p>Atlas-controlled checkout when contract, inventory and payment gates are active.</p></article><article><span>MOAT</span><b>Exclusive allocation</b><p>Private or exclusive long-stay inventory with observed unit economics—not hypothetical take rate.</p></article></div>
       </div></section>
 
       <StayReadiness duration={duration}/>
+
+      <section className="moatBand"><div className="shell"><div className="sectionTitle"><div className="eyebrow">WHAT COMPOUNDS</div><h2>The interface can be copied.<br/>The operating graph cannot.</h2><p>Atlas is designed to accumulate proprietary operational evidence rather than defend a search box.</p></div><div className="loopGrid"><article><span>01</span><h3>Supply graph</h3><p>Which hotels allocate 30–90 day inventory, at what net rate, in which seasons and with what conversion.</p></article><article><span>02</span><h3>Demand graph</h3><p>Dates, budgets, amenities, sourcing requests and conversion outcomes by destination and stay length.</p></article><article><span>03</span><h3>Compliance engine</h3><p>Deterministic presence-day calculations and source-backed stay-readiness rules—not LLM legal improvisation.</p></article><article><span>04</span><h3>Owned distribution</h3><p>Field notes, evidence-led destination pages and shareable tools designed to reduce dependency on paid travel keywords.</p><a href="/geographic-arbitrage">Read Field Notes →</a></article></div></div></section>
 
       <section id="agent" className="agentBand"><div className="shell">
         <div className="sectionTitle"><h2>Need help narrowing it down?<br/>Ask Atlas.</h2><p>The concierge is an interface, not the moat. It turns intent into search filters while hotel facts and prices remain evidence-gated.</p></div>

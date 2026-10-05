@@ -49,7 +49,19 @@ export default async function SystemPage(){
         <div className="metricDark"><b className={status.infrastructure.agentConfigured?"green":"amber"}>{status.infrastructure.agentConfigured?"ONLINE":"NOT ACTIVE"}</b><span>{status.infrastructure.agentRuntimeProvider} agent runtime</span></div>
         <div className="metricDark"><b>{status.infrastructure.configuredProviders.length}/3</b><span>optional OTA providers configured</span></div>
         <div className="metricDark"><b>{status.ops.liveOffers}</b><span>truth-gated live offers</span></div>
+        <div className="metricDark"><b className={status.infrastructure.merchantCheckout.enabled&&status.infrastructure.merchantCheckout.stripeConfigured&&status.infrastructure.merchantCheckout.webhookConfigured?"green":"amber"}>{status.infrastructure.merchantCheckout.enabled?"ARMED":"OFF"}</b><span>Atlas Checkout config</span></div>
         <div className="metricDark"><b className={sourcingEmailConfigured?"green":"amber"}>{sourcingEmailConfigured?"ACTIVE":"OPS QUEUE"}</b><span>sourcing quote email delivery</span></div>
+      </div>
+
+      <h2 style={{marginTop:38}}>Managed marketplace proof</h2>
+      <p style={{color:"#91a0b8",maxWidth:820}}>These are runtime counts, not pitch-deck targets. Zero stays zero until contracted managed supply and paid orders actually exist.</p>
+      <div className="metrics">
+        <div className="metricDark"><b>{status.infrastructure.merchantCheckout.liveRates}</b><span>live merchant rates</span></div>
+        <div className="metricDark"><b>{status.infrastructure.merchantCheckout.availableUnits}</b><span>available allocated units</span></div>
+        <div className="metricDark"><b>{status.infrastructure.merchantCheckout.paidOrders30d}</b><span>paid Atlas orders · 30d</span></div>
+        <div className="metricDark"><b>€{Math.round(status.infrastructure.merchantCheckout.gmv30d).toLocaleString("en-US")}</b><span>merchant GMV · 30d</span></div>
+        <div className="metricDark"><b>€{Math.round(status.infrastructure.merchantCheckout.platformRevenue30d).toLocaleString("en-US")}</b><span>gross platform revenue · 30d</span></div>
+        <div className="metricDark"><b>{status.infrastructure.merchantCheckout.takeRate30d===null?"—":(status.infrastructure.merchantCheckout.takeRate30d*100).toFixed(1)+"%"}</b><span>observed merchant take rate</span></div>
       </div>
 
       <h2 style={{marginTop:38}}>Synthetic deterministic circuit</h2>

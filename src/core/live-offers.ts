@@ -1,6 +1,8 @@
 export type LiveCatalogRow={
   offerId:string;
   offerKind?:"snapshot"|"direct";
+  checkoutMode?:"redirect"|"atlas_checkout";
+  channelModel?:"REFERRAL"|"MERCHANT"|"EXCLUSIVE_MERCHANT";
   hotelId:string;
   slug:string;
   name:string;

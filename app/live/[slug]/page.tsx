@@ -47,7 +47,7 @@ export default async function LifePage({params}:{params:Promise<{slug:string}>})
     return <main className="seoPage">
       <LiveStructuredData offers={live} canonical={canonical}/>
       <div className="shell">
-        <a href="/" className="eyebrow">← Atlas world explorer</a>
+        <a href="/" className="eyebrow">← Atlas stays</a>
         <section className="seoHero" style={{marginTop:20}}>
           <div className="eyebrow">LIVE · TRUTH-GATED</div>
           <h1>Live in {first.city}<br/>for a season.</h1>
@@ -64,7 +64,7 @@ export default async function LifePage({params}:{params:Promise<{slug:string}>})
   if(!h)notFound();
   const truth=evaluateSellability(h);
   return <main className="seoPage"><div className="shell">
-    <a href="/" className="eyebrow">← Atlas world explorer</a>
+    <a href="/" className="eyebrow">← Atlas stays</a>
     <section className="seoHero" style={{marginTop:20}}>
       <div style={{fontSize:48}}>{h.flag}</div>
       <h1>Live in {h.city}<br/>for a season.</h1>
@@ -72,10 +72,11 @@ export default async function LifePage({params}:{params:Promise<{slug:string}>})
     </section>
     <div className="seoGrid">
       <div className="card">
-        <div className="eyebrow">DEMO ECONOMICS · NOINDEX</div>
-        <h2 style={{fontSize:46,letterSpacing:"-.05em",marginBottom:8}}>€{h.monthly.toLocaleString("en-US")}<small style={{fontSize:14,color:"#68738b"}}>/month seed</small></h2>
-        <p>30 days: €{h.monthly.toLocaleString("en-US")} · 60 days: €{(h.monthly*2).toLocaleString("en-US")} · 90 days: €{(h.monthly*3).toLocaleString("en-US")}</p>
+        <div className="eyebrow">NO VERIFIED COMMERCIAL RATE</div>
+        <h2>No synthetic price is shown.</h2>
+        <p>This seed record can support product testing, but Atlas will not turn it into a consumer price. Search the real hotel directory or create a private sourcing request for an identified property.</p>
         <div className="chips">{h.tags.map(t=><span className="chip" key={t}>{t}</span>)}</div>
+        <a className="btn ghost" href={"/stays?q="+encodeURIComponent(h.city)+"&duration=60"}>Search real hotels in {h.city} →</a>
       </div>
       <div className="card">
         <div className="eyebrow">TRUTH RECORD</div>
