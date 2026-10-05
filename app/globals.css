@@ -295,3 +295,6 @@ input[type=range]{width:100%;accent-color:var(--lime)}
   .silverSearch,.silverSearch>*{min-width:0;max-width:100%}
   .searchCta{min-width:0;white-space:normal;overflow-wrap:anywhere}
 }
+
+.mapHotelPreview{position:absolute;z-index:4;left:14px;bottom:58px;width:min(340px,calc(100% - 28px));display:grid;gap:5px;background:rgba(255,255,255,.97);border:1px solid rgba(10,22,48,.12);border-radius:16px;padding:14px 44px 14px 15px;box-shadow:0 16px 42px rgba(10,22,48,.2);backdrop-filter:blur(10px)}
+.mapHotelPreview>span{font-size:9px;font-weight:950;letter-spacing:.09em;color:var(--blue)}.mapHotelPreview>b{font-size:17px;line-height:1.15;letter-spacing:-.025em}.mapHotelPreview>small{color:#68738b}.mapHotelPreview>strong{font-size:13px}.mapHotelPreview>a{font-size:12px;font-weight:900;color:var(--blue);margin-top:3px}.mapPreviewClose{position:absolute;right:10px;top:10px;width:28px;height:28px;border:0;border-radius:50%;background:#eef2f8;color:var(--ink);font-size:19px;cursor:pointer}
