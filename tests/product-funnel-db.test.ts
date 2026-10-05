@@ -55,9 +55,14 @@ describe.skipIf(!enabled)("real hotel product funnel DB metrics",()=>{
     expect(after.pageSessions-before.pageSessions).toBe(3);
     expect(after.searchSessions-before.searchSessions).toBe(3);
     expect(after.aiSearchSessions-before.aiSearchSessions).toBe(1);
+    expect(after.manualOnlySearchSessions-before.manualOnlySearchSessions).toBe(2);
     expect(after.resultSessions-before.resultSessions).toBe(3);
     expect(after.impressionSessions-before.impressionSessions).toBe(3);
     expect(after.hotelEngagementSessions-before.hotelEngagementSessions).toBe(2);
+    expect(after.cardClickSessions-before.cardClickSessions).toBe(1);
+    expect(after.mapClickSessions-before.mapClickSessions).toBe(1);
+    expect(after.aiEngagementSessions-before.aiEngagementSessions).toBe(1);
+    expect(after.manualEngagementSessions-before.manualEngagementSessions).toBe(1);
     expect(after.savedSessions-before.savedSessions).toBe(1);
     expect(after.sourcingStartSessions-before.sourcingStartSessions).toBe(1);
     expect(after.sourcingSuccessSessions-before.sourcingSuccessSessions).toBe(1);
