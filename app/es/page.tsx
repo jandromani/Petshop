@@ -9,7 +9,7 @@ export async function generateMetadata():Promise<Metadata>{
   const base=canonicalSiteUrl();
   return{
     title:"Atlas Long Stay en español — vive temporadas, no escapadas",
-    description:"Compara estancias de 30 a 180 días por coste mensual y construye un año flexible alrededor de un presupuesto real.",
+    description:"Compara estancias de 30 a 365 días por coste mensual y construye un año flexible alrededor de un presupuesto real.",
     alternates:{canonical:base+"/es",languages:{en:base,es:base+"/es"}},
     robots:{index:process.env.SEO_LIVE_INDEXING==="true",follow:true},
   };
@@ -20,7 +20,7 @@ export default async function SpanishHome(){
   return <main className="seoPage"><div className="shell">
     <a className="eyebrow" href="/">ATLAS LONG STAY · ENGLISH</a>
     <section className="seoHero" style={{marginTop:20}}>
-      <div className="eyebrow">ESTANCIAS HOTELERAS · 30–180 DÍAS</div>
+      <div className="eyebrow">ESTANCIAS HOTELERAS · 30–365 DÍAS</div>
       <h1>Vive en un sitio mejor.<br/>Quédate una temporada.</h1>
       <p style={{fontSize:20,maxWidth:780}}>Atlas convierte pensión, ingresos de vivienda y ahorro mensual en un presupuesto claro para vivir por temporadas. El buscador completo está disponible en la experiencia principal y las ofertas comerciales sólo aparecen cuando están verificadas.</p>
       <div className="heroActions"><a className="btn" href="/#planner">Construir mi año →</a><a className="btn ghost" href="/es/descubrir/menos-de-1500-al-mes">Explorar por presupuesto</a></div>
