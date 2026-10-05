@@ -10,6 +10,7 @@ const HotelMap=dynamic(()=>import("@/components/HotelMap"),{ssr:false,loading:()
 type Offer={offerId:string;provider:string;monthlyEquivalent:number;displayPrice:number;currency:string;board:string|null;cancellation:string|null;verifiedAt:string;expiresAt:string|null;photoUrls:string[];facilities:string[]};
 type Row=MappedHotel&{canonicalId:string;region:Exclude<SearchRegion,"All">;source:string;sourceId:string;referenceUrl:string;website:string|null;address:string|null;confidence:number|null;description:string|null;photoUrls:string[];facilities:string[];liveOffer:Offer|null;preferenceScore?:number;matchedPreferences?:string[]};
 export type DirectoryPayload={total:number;mapped:number;hotels:Row[];snapshotDate:string;note:string;attribution?:string|null;source:string};
+type MapPayload=Omit<DirectoryPayload,"hotels">&{hotels:MappedHotel[]};
 const money=(n:number,c="EUR")=>new Intl.NumberFormat("en-US",{style:"currency",currency:c,maximumFractionDigits:0}).format(n);
 
 export default function RealHotelDirectory({initialQuery="",initialRegion="All",duration=90,checkIn,occupancy=1,maxMonthly,flexibleDays=7,initialAmenities=[],onCount,onQueryChange,onRegionChange,initialData}:{
@@ -17,7 +18,7 @@ export default function RealHotelDirectory({initialQuery="",initialRegion="All",
   onCount?:(count:number)=>void;onQueryChange?:(q:string)=>void;onRegionChange?:(r:SearchRegion)=>void;initialData?:DirectoryPayload;
 }){
   const[q,setQ]=useState(initialQuery);const[region,setRegion]=useState<SearchRegion>(initialRegion);const[page,setPage]=useState(0);
-  const[data,setData]=useState<DirectoryPayload|null>(initialData||null);const[mapData,setMapData]=useState<DirectoryPayload|null>(null);const[loading,setLoading]=useState(!initialData);
+  const[data,setData]=useState<DirectoryPayload|null>(initialData||null);const[mapData,setMapData]=useState<MapPayload|null>(null);const[loading,setLoading]=useState(!initialData);
   const[selectedId,setSelectedId]=useState<string|null>(null);const[bbox,setBbox]=useState<string|null>(null);const[mobileView,setMobileView]=useState<"list"|"map">("list");const[features,setFeatures]=useState<string[]>(initialAmenities);const[mapVisible,setMapVisible]=useState(false);const mapPaneRef=useRef<HTMLElement|null>(null);
   const pageSize=24;const seen=useRef(new Set<string>());
   useEffect(()=>{setQ(initialQuery);setPage(0);setBbox(null)},[initialQuery]);useEffect(()=>{setRegion(initialRegion);setPage(0);setBbox(null)},[initialRegion]);useEffect(()=>{setFeatures(initialAmenities)},[initialAmenities]);
@@ -32,7 +33,7 @@ export default function RealHotelDirectory({initialQuery="",initialRegion="All",
   },[listParams,onCount,q,region,page]);
   const mapEnabled=mapVisible||mobileView==="map";
   useEffect(()=>{const el=mapPaneRef.current;if(!el)return;const io=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)){setMapVisible(true);io.disconnect()}},{rootMargin:"700px"});io.observe(el);return()=>io.disconnect()},[]);
-  useEffect(()=>{if(!mapEnabled)return;const c=new AbortController();fetch("/api/hotels/directory?"+mapParams,{signal:c.signal}).then(r=>r.ok?r.json():Promise.reject()).then((payload:DirectoryPayload)=>setMapData(payload)).catch(()=>{});return()=>c.abort()},[mapParams,mapEnabled]);
+  useEffect(()=>{if(!mapEnabled)return;const c=new AbortController();fetch("/api/hotels/directory?"+mapParams,{signal:c.signal}).then(r=>r.ok?r.json():Promise.reject()).then((payload:MapPayload)=>setMapData(payload)).catch(()=>{});return()=>c.abort()},[mapParams,mapEnabled]);
 
   function changeQuery(value:string){setQ(value);setPage(0);setBbox(null);onQueryChange?.(value)}
   function changeRegion(value:SearchRegion){setRegion(value);setPage(0);setBbox(null);onRegionChange?.(value);growthEvent("filter_change",{filter:"region",value})}
