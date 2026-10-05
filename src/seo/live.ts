@@ -2,11 +2,15 @@ import { listSellableOffers } from "@/src/db/catalog";
 import { DISCOVERY_PAGES,discoveryBySlug } from "@/src/seo/catalog";
 import { seoGate } from "@/src/seo/gate";
 import type { LiveCatalogOffer } from "@/src/core/live-offers";
+import { customPublicDomainConfigured,searchConsoleVerificationConfigured } from "@/src/system/site-url";
 
 export type LiveDiscoveryMode="budget"|"board"|"region"|"unsupported";
 
 export function seoAutopilotEnabled(){
-  return process.env.SEO_LIVE_INDEXING!=="false";
+  const mode=(process.env.SEO_LIVE_INDEXING||"auto").toLowerCase();
+  if(mode==="true")return true;
+  if(mode==="false")return false;
+  return customPublicDomainConfigured()&&searchConsoleVerificationConfigured();
 }
 
 export function liveDiscoveryMode(slug:string):LiveDiscoveryMode{
