@@ -6,6 +6,7 @@ import LiveOfferCard from "@/components/LiveOfferCard";
 import { defaultCheckIn,type StayDuration } from "@/src/core/search";
 import SourceStayForm from "@/components/SourceStayForm";
 import SaveHotelButton from "@/components/SaveHotelButton";
+import RateAlertForm from "@/components/RateAlertForm";
 
 const allowed=new Set([30,60,90,120,180,365]);
 function norm(s:string){return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim()}
@@ -32,6 +33,7 @@ export default async function StayDetail({params,searchParams}:{params:Promise<{
       <div className="hotelEvidence"><span><b>{hotel.source==="overture"?"Overture Maps":hotel.source}</b> identity source</span>{hotel.confidence!==null&&<span><b>{Math.round(hotel.confidence*100)}%</b> place confidence</span>}{hotel.lat!==null&&hotel.lng!==null&&<span><b>{hotel.lat.toFixed(3)}, {hotel.lng.toFixed(3)}</b> coordinates</span>}</div></div>
       <div className="hotelDetailMedia">{photos.length?photos.map((src,i)=><img src={src} alt={i===0?hotel.name:"View of "+hotel.name} key={src} loading={i===0?"eager":"lazy"} referrerPolicy="no-referrer"/>):<div className="hotelDetailFallback"><span>{hotel.city}</span><small>{hotel.country}</small></div>}</div>
     </section>
+    <RateAlertForm hotel={{id:hotel.id,name:hotel.name,city:hotel.city,country:hotel.country}} defaultCheckIn={checkIn} defaultDuration={duration}/>
     {live.length?<section className="discovery hotelDetailOffers"><div className="sectionTitle"><h2>Verified Atlas rates.</h2><p>Fresh commercial evidence for your requested {duration}-day stay. Price, board and cancellation come from the verified offer—not from the property identity.</p></div><div className="hotels">{live.map((o,index)=><LiveOfferCard key={o.offerId} offer={o} detailHref={"/live/"+encodeURIComponent(o.slug)} href={"/api/referral?offer="+encodeURIComponent(o.offerId)+"&from="+encodeURIComponent("/stays/"+id)+"&pos="+(index+1)}/>)}</div></section>:<div className="card ratePendingCard"><div className="eyebrow">RATE PENDING · {duration} DAYS</div><h2>Want Atlas to source this stay?</h2><p>The hotel is real; a long-stay commercial rate for your exact request is not verified yet. Sending a request routes demand into Direct Hotel OS without inventing availability.</p><SourceStayForm hotelId={hotel.id} defaultCheckIn={checkIn} defaultDuration={duration}/></div>}
     <div className="hotelServiceLinks"><a href="/services/insurance">Insurance →</a><a href="/services/telemedicine">Telemedicine →</a><a href="/services/transfer">Airport transfer →</a></div>
   </div></main>;
