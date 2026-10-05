@@ -75,6 +75,10 @@ export async function listSellableOffers(input:LiveCatalogQuery={}):Promise<Live
       from offer_snapshots o
       join canonical_hotels h on h.id=o.hotel_id
       left join hotel_content hc on hc.hotel_id=h.id
+      and hc.display_allowed=true
+      and (hc.expires_at is null or hc.expires_at>now())
+        and hc.display_allowed=true
+        and (hc.expires_at is null or hc.expires_at>now())
       join lateral (
         select state,confidence,evaluated_at from sellability_audits sa
         where sa.offer_snapshot_id=o.id order by sa.evaluated_at desc limit 1
