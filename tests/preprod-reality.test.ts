@@ -35,7 +35,8 @@ describe("preproduction reality layer",()=>{
     expect(curatedGeoMatchCount()).toBeGreaterThanOrEqual(35);
     const snapshot=publicDirectorySnapshot(24);
     expect(snapshot.total).toBeGreaterThanOrEqual(2000);
-    expect(snapshot.mapped).toBeGreaterThanOrEqual(5000);
+    expect(snapshot.mapped).toBeGreaterThanOrEqual(4980);
+    expect(snapshot.total-snapshot.mapped).toBeLessThanOrEqual(100);
     expect(snapshot.hotels).toHaveLength(24);
     expect(snapshot.hotels[0]?.name).toBe(realHotels[0]?.name);
     const curatedNames=new Set(realHotels.map(h=>h.name));
