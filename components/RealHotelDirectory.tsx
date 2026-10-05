@@ -28,19 +28,19 @@ const money=(n:number,c="EUR")=>new Intl.NumberFormat("en-US",{style:"currency",
 
 export default function RealHotelDirectory({
   initialQuery="",initialRegion="All",duration=90,checkIn,occupancy=1,maxMonthly,flexibleDays=7,
-  initialAmenities=[],onCount,onQueryChange,onRegionChange,initialData,
+  initialAmenities=[],initialFeaturesMode="rank",initialVerifiedOnly=false,initialMinMonthly,initialBoard="",initialCancellation="",initialProvider="",initialBrand="",initialBrandedOnly=false,initialSort="recommended",initialPage=0,onCount,onQueryChange,onRegionChange,initialData,
 }:{
   initialQuery?:string;initialRegion?:SearchRegion;duration?:StayDuration;checkIn?:string;occupancy?:1|2;maxMonthly?:number;
-  flexibleDays?:0|7|30;initialAmenities?:string[];onCount?:(count:number)=>void;onQueryChange?:(q:string)=>void;
+  flexibleDays?:0|7|30;initialAmenities?:string[];initialFeaturesMode?:"rank"|"strict";initialVerifiedOnly?:boolean;initialMinMonthly?:number;initialBoard?:string;initialCancellation?:string;initialProvider?:string;initialBrand?:string;initialBrandedOnly?:boolean;initialSort?:"recommended"|"price"|"confidence"|"name";initialPage?:number;onCount?:(count:number)=>void;onQueryChange?:(q:string)=>void;
   onRegionChange?:(r:SearchRegion)=>void;initialData?:DirectoryPayload;
 }){
-  const[q,setQ]=useState(initialQuery);const[region,setRegion]=useState<SearchRegion>(initialRegion);const[page,setPage]=useState(0);
+  const[q,setQ]=useState(initialQuery);const[region,setRegion]=useState<SearchRegion>(initialRegion);const[page,setPage]=useState(Math.max(0,initialPage));
   const[data,setData]=useState<DirectoryPayload|null>(initialData||null);const[mapData,setMapData]=useState<MapPayload|null>(null);const[loading,setLoading]=useState(!initialData);
   const[selectedId,setSelectedId]=useState<string|null>(null);const[bbox,setBbox]=useState<string|null>(null);const[mobileView,setMobileView]=useState<"list"|"map">("list");
-  const[features,setFeatures]=useState<string[]>(initialAmenities);const[featuresMode,setFeaturesMode]=useState<"rank"|"strict">("rank");
-  const[verifiedOnly,setVerifiedOnly]=useState(false);const[minMonthly,setMinMonthly]=useState<number|undefined>(undefined);
-  const[board,setBoard]=useState("");const[cancellation,setCancellation]=useState("");const[provider,setProvider]=useState("");
-  const[brand,setBrand]=useState("");const[brandedOnly,setBrandedOnly]=useState(false);const[sort,setSort]=useState<"recommended"|"price"|"confidence"|"name">("recommended");
+  const[features,setFeatures]=useState<string[]>(initialAmenities);const[featuresMode,setFeaturesMode]=useState<"rank"|"strict">(initialFeaturesMode);
+  const[verifiedOnly,setVerifiedOnly]=useState(initialVerifiedOnly);const[minMonthly,setMinMonthly]=useState<number|undefined>(initialMinMonthly);
+  const[board,setBoard]=useState(initialBoard);const[cancellation,setCancellation]=useState(initialCancellation);const[provider,setProvider]=useState(initialProvider);
+  const[brand,setBrand]=useState(initialBrand);const[brandedOnly,setBrandedOnly]=useState(initialBrandedOnly);const[sort,setSort]=useState<"recommended"|"price"|"confidence"|"name">(initialSort);
   const[mapVisible,setMapVisible]=useState(false);const[shareLabel,setShareLabel]=useState("Share search");
   const mapPaneRef=useRef<HTMLElement|null>(null);const seen=useRef(new Set<string>());const zeroSeen=useRef(new Set<string>());
   const pageSize=24;
