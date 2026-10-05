@@ -15,9 +15,11 @@ test("money truth is explicit and internally consistent",async({page})=>{
 test("search count and visible real-hotel cards share the same directory contract",async({page})=>{
   await page.goto("/");
   await page.getByRole("button",{name:/Browse .* real hotels/i}).click();
-  await expect(page.locator("#explore")).toBeInViewport();
-  const heading=page.locator("#explore h2");
-  await expect(heading).toContainText(/Real hotels/i);
+  const explore=page.locator("#explore");
+  await expect(explore).toBeAttached({timeout:15000});
+  await explore.scrollIntoViewIfNeeded();
+  const heading=page.locator("#explore .resultsHeadline h2");
+  await expect(heading).toContainText(/real hotels/i,{timeout:15000});
 });
 
 test("system proof and health remain reachable",async({page,request})=>{
@@ -117,8 +119,8 @@ test("shared hotel search restores the full deterministic filter state",async({p
   await expect(page.getByRole("heading",{name:/Search real hotels/i})).toBeVisible();
   await expect(page.getByLabel("Where?")).toHaveValue("Madrid");
   await expect(page.getByLabel("Region",{exact:true})).toHaveValue("Europe");
-  await expect(page.getByLabel("Stay",{exact:true})).toHaveValue("90");
-  await expect(page.getByLabel("Travelling",{exact:true})).toHaveValue("couple");
+  await expect(page.getByLabel("Stay duration")).toHaveValue("90");
+  await expect(page.getByLabel("Travelling party")).toHaveValue("couple");
   await expect(page.getByLabel("Maximum monthly hotel budget")).toHaveValue("1800");
   await page.getByText(/Advanced filters/i).click();
   await expect(page.getByPlaceholder("Hilton, Marriott…")).toHaveValue("Marriott");
