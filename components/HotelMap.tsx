@@ -14,13 +14,14 @@ function geojson(hotels:MappedHotel[]){
   }))};
 }
 
-export default function HotelMap({hotels,selectedId,onSelect,onSearchArea}:{hotels:MappedHotel[];selectedId?:string|null;onSelect:(id:string)=>void;onSearchArea:(bbox:string)=>void}){
+export default function HotelMap({hotels,selectedId,onSelect,onSearchArea,detailQuery=""}:{hotels:MappedHotel[];selectedId?:string|null;onSelect:(id:string)=>void;onSearchArea:(bbox:string)=>void;detailQuery?:string}){
   const host=useRef<HTMLDivElement|null>(null);
   const mapRef=useRef<MapLibreMap|null>(null);
   const [pendingBounds,setPendingBounds]=useState<string|null>(null);
   const data=useMemo(()=>geojson(hotels),[hotels]);
   const dataRef=useRef(data);
   dataRef.current=data;
+  const selected=useMemo(()=>hotels.find(h=>h.id===selectedId)||null,[hotels,selectedId]);
 
   useEffect(()=>{
     if(!host.current||mapRef.current)return;
@@ -47,11 +48,19 @@ export default function HotelMap({hotels,selectedId,onSelect,onSearchArea}:{hote
   },[]);
 
   useEffect(()=>{const map=mapRef.current;if(!map||!map.isStyleLoaded())return;const source=map.getSource("atlas-hotels") as GeoJSONSource|undefined;source?.setData(data as any);},[data]);
-  useEffect(()=>{const map=mapRef.current;if(!map||!map.isStyleLoaded())return;map.setFilter("hotel-selected",["==",["get","id"],selectedId||""]);const h=hotels.find(x=>x.id===selectedId);if(h&&Number.isFinite(h.lat)&&Number.isFinite(h.lng))map.easeTo({center:[Number(h.lng),Number(h.lat)],zoom:Math.max(map.getZoom(),11),duration:500});},[selectedId,hotels]);
+  useEffect(()=>{const map=mapRef.current;if(!map||!map.isStyleLoaded())return;map.setFilter("hotel-selected",["==",["get","id"],selectedId||""]);const h=hotels.find(x=>x.id===selectedId);if(h&&Number.isFinite(h.lat)&&Number.isFinite(h.lng))map.easeTo({center:[Number(h.lng),Number(h.lat)],duration:350});},[selectedId,hotels]);
 
   return <div className="hotelMapShell">
     <div ref={host} className="hotelMap" aria-label="Interactive map of real hotels"/>
     <div className="mapTruth"><span><i className="mapKey pending"/> real property</span><span><i className="mapKey verified"/> verified rate</span></div>
     {pendingBounds&&<button className="searchArea" type="button" onClick={()=>{growthEvent("search_this_area");onSearchArea(pendingBounds)}}>Search this area</button>}
+    {selected&&<div className="mapHotelPreview" aria-live="polite">
+      <button className="mapPreviewClose" type="button" aria-label="Close selected hotel" onClick={()=>onSelect("")}>×</button>
+      <span>{selected.commercialState==="VERIFIED_RATE"?"VERIFIED RATE":"REAL HOTEL · RATE PENDING"}</span>
+      <b>{selected.name}</b>
+      <small>{selected.city}, {selected.country}</small>
+      {selected.liveOffer&&<strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:selected.liveOffer.currency,maximumFractionDigits:0}).format(selected.liveOffer.monthlyEquivalent)} / 30 days</strong>}
+      <a href={"/stays/"+encodeURIComponent(selected.id)+(detailQuery?"?"+detailQuery:"")} onClick={()=>growthEvent("map_hotel_open",{hotel_id:selected.id,state:selected.commercialState})}>Open stay →</a>
+    </div>}
   </div>;
 }
