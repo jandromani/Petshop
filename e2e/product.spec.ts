@@ -12,12 +12,12 @@ test("money truth is explicit and internally consistent",async({page})=>{
   expect(cost).toBeLessThanOrEqual(budget);
 });
 
-test("search count and visible cards share the same budget contract",async({page})=>{
+test("search count and visible real-hotel cards share the same directory contract",async({page})=>{
   await page.goto("/");
-  await page.getByRole("button",{name:/Show .* stays/}).click();
+  await page.getByRole("button",{name:/Browse .* real hotels/i}).click();
   await expect(page.locator("#explore")).toBeInViewport();
   const heading=page.locator("#explore h2");
-  await expect(heading).toContainText(/long-stay stays/);
+  await expect(heading).toContainText(/Real hotels/i);
 });
 
 test("system proof and health remain reachable",async({page,request})=>{
@@ -64,7 +64,7 @@ test("primary planner path is keyboard reachable",async({page})=>{
       text:(document.activeElement?.textContent||"").trim(),
       aria:document.activeElement?.getAttribute("aria-label")||"",
     }));
-    if(/show .* stays/i.test(focused.text)||/show .* stays/i.test(focused.aria)){found=true;break;}
+    if(/browse .* real hotels/i.test(focused.text)||/browse .* real hotels/i.test(focused.aria)){found=true;break;}
     await page.keyboard.press("Tab");
   }
   expect(found).toBe(true);

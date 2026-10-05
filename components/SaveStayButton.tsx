@@ -1,6 +1,7 @@
 "use client";
 import { useEffect,useState } from "react";
 import type { LiveCatalogOffer } from "@/src/core/live-offers";
+import { growthEvent } from "@/src/growth/client";
 import { SAVED_STAYS_KEY,mergeSavedStays,parseSavedStays,toggleSavedStay,type SavedStay } from "@/src/core/saved-stays";
 
 function stayFromOffer(offer:LiveCatalogOffer):SavedStay{
@@ -46,6 +47,7 @@ export default function SaveStayButton({offer}:{offer:LiveCatalogOffer}){
       const next=toggleSavedStay(rows,stay);
       localStorage.setItem(SAVED_STAYS_KEY,JSON.stringify(next));
       setSaved(!exists);
+      growthEvent(exists?"hotel_unsaved":"hotel_saved",{hotel_id:offer.hotelId,offer_id:offer.offerId,provider:offer.provider,monthly:offer.monthlyEquivalent});
       window.dispatchEvent(new Event("atlas:saved-stays"));
       if(exists){
         void fetch("/api/saved?offerId="+encodeURIComponent(offer.offerId),{method:"DELETE",cache:"no-store"}).catch(()=>{});

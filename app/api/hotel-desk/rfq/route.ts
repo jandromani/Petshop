@@ -6,7 +6,7 @@ const Input=z.object({
   city:z.string().min(2).max(120),
   country:z.string().min(2).max(120),
   checkIn:z.string(),
-  nights:z.number().int().min(30).max(180),
+  nights:z.number().int().min(30).max(365),
   guests:z.union([z.literal(1),z.literal(2)]),
   board:z.enum(["room","breakfast","half-board","full-board","all-inclusive"]),
   targetMonthlyEur:z.number().positive().max(20000),

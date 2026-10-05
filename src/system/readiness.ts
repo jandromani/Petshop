@@ -1,5 +1,5 @@
 import { databaseHealth } from "@/src/db/client";
-import { liveProviderStatuses } from "@/src/providers/live/registry";
+import { providerReadinessReport } from "@/src/providers/live/conformance";
 import { AGENTS } from "@/src/agents/registry";
 import { getOpsSnapshot } from "@/src/db/ops";
 import { runSoftwareProof } from "@/src/system/proof";
@@ -8,7 +8,7 @@ import { agentRuntimeCredentialsAvailable,agentRuntimeProvider } from "@/src/age
 export type LayerState="LIVE"|"READY"|"WAITING_EXTERNAL"|"DEGRADED";
 
 export async function getSystemReadiness(){
-  const providers=liveProviderStatuses();
+  const providers=providerReadinessReport();
   const configuredProviders=providers.filter(p=>p.configured);
   const [ops,agentCredentials,db]=await Promise.all([
     getOpsSnapshot(),
@@ -93,7 +93,7 @@ export async function getSystemReadiness(){
       agentConfigured,
       agentRuntimeProvider:runtimeProvider,
       configuredProviders:configuredProviders.map(p=>p.provider),
-      providers:providers.map(p=>({provider:p.provider,configured:p.configured,environment:p.environment})),
+      providers:providers.map(p=>({provider:p.provider,configured:p.configured,commercialReady:p.commercialReady,environment:p.environment,grade:p.grade,blockers:p.blockers})),
     },
     ops,
     proof,

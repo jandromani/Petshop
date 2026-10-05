@@ -13,7 +13,7 @@ export type LiveSupplyControlInput={
 
 export async function runLiveSupplyControl(input:LiveSupplyControlInput={}){
   const checkIn=input.checkIn||defaultCheckIn();
-  const durations=input.durations||[30,60,90,120,180];
+  const durations=input.durations||[30,60,90,120,180,365];
   const adults=input.adults||[1,2];
   const statuses=liveProviderStatuses();
   const configured=new Set(statuses.filter(s=>s.configured).map(s=>s.provider));
@@ -26,7 +26,7 @@ export async function runLiveSupplyControl(input:LiveSupplyControlInput={}){
       if(configured.has("booking")&&duration<=90){
         try{runs.push(await runBookingLiveWave({waveKey:"booking_"+key,checkIn,nights:duration,adults:occupancy,maxDestinations:input.maxDestinations??8,persist:true}));}
         catch(error){runs.push({provider:"booking",waveKey:"booking_"+key,error:String(error)});}
-      }else if(duration<=90) skipped.push({provider:"booking",duration,occupancy,reason:configured.has("booking")?"unsupported-duration":"provider-disabled"});
+      }else skipped.push({provider:"booking",duration,occupancy,reason:configured.has("booking")?"provider-duration-limit":"provider-disabled"});
 
       if(configured.has("ratehawk")){
         try{runs.push(await runRateHawkMappedWave({waveKey:"ratehawk_"+key,checkIn,nights:duration,adults:occupancy,maxHotels:input.maxMappedHotels??30,persist:true}));}

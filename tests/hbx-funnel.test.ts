@@ -27,7 +27,7 @@ describe("HBX pricing and funnel",()=>{
     expect(hits[0].commercialFulfillment).toBe("none");
   });
 
-  it("allows checked BOOKABLE evidence to cross truth only when capability is ready",()=>{
+  it("keeps checked BOOKABLE evidence non-commercial until booking transaction exists",()=>{
     process.env.HBX_BOOKING_ENABLED="true";
     process.env.HBX_MTLS_READY="true";
     const hits=parseHbxCheckRate({auditData:{token:"op2"},hotel:{code:42,rooms:[{rates:[{rateKey:"rk2",rateType:"BOOKABLE",sellingRate:"120",net:"100"}]}]}},"EUR","2027-01-01T10:00:00Z");
@@ -45,7 +45,9 @@ describe("HBX pricing and funnel",()=>{
       apiBookingCapable:hit.commercialFulfillment==="api",
       rawHash:stableEvidenceHash(hit.raw),
     },new Date("2027-01-01T10:01:00Z"));
-    expect(truth.state).toBe("SELLABLE");
+    expect(hit.commercialFulfillment).toBe("none");
+    expect(truth.state).toBe("QUARANTINED");
+    expect(truth.reasons).toContain("missing_commercial_fulfillment_path");
     delete process.env.HBX_BOOKING_ENABLED;
     delete process.env.HBX_MTLS_READY;
   });

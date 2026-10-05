@@ -11,7 +11,7 @@ const Query=z.object({
   maxMonthly:z.coerce.number().positive().max(100000).optional(),
   checkIn:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   flexibleDays:z.coerce.number().int().min(0).max(30).optional(),
-  nights:z.coerce.number().int().refine(v=>[30,60,90,120,180].includes(v),"unsupported duration").optional(),
+  nights:z.coerce.number().int().refine(v=>[30,60,90,120,180,365].includes(v),"unsupported duration").optional(),
   occupancy:z.coerce.number().int().min(1).max(2).optional(),
   region:z.enum(["All","Europe","Asia","Africa","Americas"]).optional(),
 });

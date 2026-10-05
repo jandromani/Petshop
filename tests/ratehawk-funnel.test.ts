@@ -19,7 +19,7 @@ describe("RateHawk staged funnel",()=>{
     expect(hits[0].commercialFulfillment).toBe("none");
   });
 
-  it("can pass truth only after prebook and explicit booking capability",()=>{
+  it("does not claim API fulfillment until the booking transaction is implemented",()=>{
     const hits=parseRateHawkResponse({data:{hotels:[{hid:123,rates:[{...payment,book_hash:"p-abc"}]}]}}, "prebook", true, "2027-01-01T10:00:00Z");
     const hit=hits[0];
     const rawHash=stableEvidenceHash(hit.raw);
@@ -36,7 +36,9 @@ describe("RateHawk staged funnel",()=>{
       apiBookingCapable:hit.commercialFulfillment==="api",
       rawHash,
     },new Date("2027-01-01T10:01:00Z"));
-    expect(truth.state).toBe("SELLABLE");
+    expect(hit.commercialFulfillment).toBe("none");
+    expect(truth.state).toBe("QUARANTINED");
+    expect(truth.reasons).toContain("missing_commercial_fulfillment_path");
   });
 
   it("quarantines the same prebook result when fulfillment is disabled",()=>{

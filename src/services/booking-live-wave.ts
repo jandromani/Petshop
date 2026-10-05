@@ -1,4 +1,4 @@
-import { hotels, type Hotel } from "@/src/data/hotels";
+import { liveDestinations,type DestinationRegion } from "@/src/data/destinations";
 import { BookingDemandClient } from "@/src/providers/live/booking";
 import { evaluateCommercialOffer } from "@/src/core/truth";
 import { stableEvidenceHash } from "@/src/services/evidence";
@@ -20,7 +20,7 @@ export type BookingLiveWaveInput={
   checkIn:string;
   nights:number;
   adults:1|2;
-  regions?:Hotel["region"][];
+  regions?:DestinationRegion[];
   maxDestinations?:number;
   radiusKm?:number;
   rowsPerDestination?:number;
@@ -50,17 +50,8 @@ function addDays(date:string,days:number){
 }
 
 export function bookingWaveAnchors(input:Pick<BookingLiveWaveInput,"regions"|"maxDestinations">){
-  const seen=new Set<string>();
-  const selected:Hotel[]=[];
-  for(const hotel of hotels.slice().sort((a,b)=>b.score-a.score)){
-    if(input.regions?.length && !input.regions.includes(hotel.region)) continue;
-    const key=hotel.city.toLowerCase()+"|"+hotel.country.toLowerCase();
-    if(seen.has(key)) continue;
-    seen.add(key);
-    selected.push(hotel);
-    if(selected.length >= (input.maxDestinations ?? 8)) break;
-  }
-  return selected;
+  const selected=liveDestinations.filter(destination=>!input.regions?.length||input.regions.includes(destination.region));
+  return selected.slice(0,input.maxDestinations??8);
 }
 
 export async function runBookingLiveWave(input:BookingLiveWaveInput):Promise<BookingLiveWaveResult>{

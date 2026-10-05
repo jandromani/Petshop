@@ -2,22 +2,22 @@
 
 import { useEffect,useMemo,useState } from "react";
 import type { Hotel } from "@/src/data/hotels";
-import { adjustedMonthly,buildPlan,planTotals,type Party,type PlanMode } from "@/src/core/planner";
+import { buildPlan,planTotals,type Party,type PlanMode } from "@/src/core/planner";
 import { summarizeFinances,routeHeadroom } from "@/src/core/finance";
-import { defaultCheckIn,filterDemoHotels,type SearchRegion,type StayDuration } from "@/src/core/search";
+import { defaultCheckIn,type SearchRegion,type StayDuration } from "@/src/core/search";
 import { growthEvent } from "@/src/growth/client";
 import type { HeroVariant } from "@/src/growth/experiments";
-import WorldMap from "@/components/WorldMap";
 import LiveOffers from "@/components/LiveOffers";
 import VerifiedRoute from "@/components/VerifiedRoute";
 import SilverSearch from "@/components/SilverSearch";
-import SilverHotelCard from "@/components/SilverHotelCard";
 import SilverPromise from "@/components/SilverPromise";
 import AdjacencyRail from "@/components/AdjacencyRail";
+import RealHotelDirectory,{type DirectoryPayload} from "@/components/RealHotelDirectory";
+import AiHotelSearch,{type AiSearchIntent} from "@/components/AiHotelSearch";
 
 const euro=(n:number)=>"€"+Math.round(n).toLocaleString("en-US");
 
-export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];heroVariant?:HeroVariant}){
+export default function Planner({hotels,heroVariant="freedom",initialDirectory}:{hotels:Hotel[];heroVariant?:HeroVariant;initialDirectory?:DirectoryPayload}){
   const [pension,setPension]=useState(1700);
   const [homeIncome,setHomeIncome]=useState(1300);
   const [otherIncome,setOtherIncome]=useState(200);
@@ -29,16 +29,19 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
   const [region,setRegion]=useState<SearchRegion>("All");
   const [checkIn,setCheckIn]=useState(()=>defaultCheckIn());
   const [flexibleDays,setFlexibleDays]=useState<0|7|30>(7);
-  const [sort,setSort]=useState("value");
   const [chat,setChat]=useState<{role:"user"|"ai";text:string}[]>([
     {role:"ai",text:"Tell me what the next season of your life should feel like. I can shortlist stays inside the monthly budget you set."}
   ]);
   const [draft,setDraft]=useState("");
   const [thinking,setThinking]=useState(false);
   const [shareLabel,setShareLabel]=useState("Share this life");
+  const [directoryCount,setDirectoryCount]=useState(0);
+  const [searchBudgetCap,setSearchBudgetCap]=useState<number|null>(null);
+  const [searchAmenities,setSearchAmenities]=useState<string[]>([]);
 
   const finances=useMemo(()=>summarizeFinances({pension,homeIncome,otherIncome,reserve}),[pension,homeIncome,otherIncome,reserve]);
   const livingBudget=finances.livingBudget;
+  const searchBudget=Math.min(livingBudget,searchBudgetCap??livingBudget);
 
   useEffect(()=>{
     if(reserve>finances.monthlyResources) setReserve(finances.monthlyResources);
@@ -49,18 +52,11 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
   const avg=totals.averageMonthly;
   const headroom=useMemo(()=>routeHeadroom(finances,avg),[finances,avg]);
 
-  const matching=useMemo(()=>filterDemoHotels(hotels,{query,region,checkIn,flexibleDays,duration,party,maxMonthly:livingBudget}),[hotels,query,region,checkIn,flexibleDays,duration,party,livingBudget]);
-  const visible=useMemo(()=>[...matching].sort((a,b)=>sort==="price"
-    ? adjustedMonthly(a,party)-adjustedMonthly(b,party)
-    : sort==="score"
-      ? b.score-a.score
-      : (b.score/adjustedMonthly(b,party))-(a.score/adjustedMonthly(a,party))
-  ),[matching,sort,party]);
 
-  useEffect(()=>{growthEvent("planner_loaded",{catalogue_size:hotels.length,hero_variant:heroVariant});},[hotels.length,heroVariant]);
+  useEffect(()=>{growthEvent("planner_loaded",{hero_variant:heroVariant});},[heroVariant]);
 
   function jumpToExplore(){
-    growthEvent("hero_search",{query,region,party,duration,budget:livingBudget,check_in:checkIn,flexible_days:flexibleDays,matches:matching.length,hero_variant:heroVariant});
+    growthEvent("hero_search",{query,region,party,duration,budget:searchBudget,check_in:checkIn,flexible_days:flexibleDays,matches:directoryCount,hero_variant:heroVariant});
     document.getElementById("explore")?.scrollIntoView({behavior:"smooth"});
   }
 
@@ -93,7 +89,7 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
     try{
       const res=await fetch("/api/agent",{
         method:"POST",headers:{"content-type":"application/json"},
-        body:JSON.stringify({prompt,livingBudget,party,duration,mode,checkIn,flexibleDays,query,region}),
+        body:JSON.stringify({prompt,livingBudget:searchBudget,party,duration,mode,checkIn,flexibleDays,query,region}),
       });
       const data=await res.json();
       setChat(v=>[...v,{role:"ai",text:data.answer||data.error||"Agent temporarily unavailable."}]);
@@ -105,18 +101,19 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
   return <>
     <header className="nav"><div className="shell navin">
       <a className="brand" href="#">ATLAS<span>LONG STAY</span></a>
-      <nav className="navlinks"><a href="/es">ES</a><a href="/saved">Saved</a><a href="#explore">Stays</a><a href="#planner">Build my year</a><a href="#agent">Ask Atlas</a><a className="btn" href="#explore">Find a stay →</a></nav>
+      <nav className="navlinks"><a href="/es">ES</a><a href="/saved">Saved</a><a href="/stays">Stays</a><a href="#planner">Build my year</a><a href="#agent">Ask Atlas</a><a className="btn" href="#explore">Find a stay →</a></nav>
     </div></header>
 
     <main id="main-content">
     <section className="hero silverHero"><div className="shell">
-      <div className="eyebrow"><i className="dot"/> LONG-STAY HOTEL LIVING · 30–180 DAYS</div>
+      <div className="eyebrow"><i className="dot"/> LONG-STAY HOTEL LIVING · 30–365 DAYS</div>
       <h1>Live somewhere better.<br/><em>Stay for a season.</em></h1>
       <p className="heroLead">Compare long-stay hotels by monthly cost, not nightly rate. Build a flexible life around the budget you already have.</p>
-      <SilverSearch query={query} setQuery={setQuery} region={region} setRegion={setRegion} checkIn={checkIn} setCheckIn={setCheckIn} flexibleDays={flexibleDays} setFlexibleDays={setFlexibleDays} duration={duration} setDuration={setDuration} party={party} setParty={setParty} budget={livingBudget} count={matching.length} onSearch={jumpToExplore}/>
+      <SilverSearch query={query} setQuery={setQuery} region={region} setRegion={setRegion} checkIn={checkIn} setCheckIn={setCheckIn} flexibleDays={flexibleDays} setFlexibleDays={setFlexibleDays} duration={duration} setDuration={setDuration} party={party} setParty={setParty} budget={searchBudget} setBudget={v=>{setSearchBudgetCap(v>=livingBudget?null:v);growthEvent("filter_change",{filter:"max_monthly",value:v})}} count={directoryCount} onSearch={jumpToExplore}/>
+      <AiHotelSearch current={{region,duration,occupancy:party==="couple"?2:1,maxMonthly:searchBudget}} onApply={(intent:AiSearchIntent)=>{setQuery(intent.query);setRegion(intent.region);setDuration(intent.duration);setParty(intent.occupancy===2?"couple":"solo");setFlexibleDays(intent.flexibleDays);setSearchAmenities(intent.amenities);setSearchBudgetCap(intent.maxMonthly&&intent.maxMonthly<livingBudget?intent.maxMonthly:null);growthEvent("ai_search_navigation",{query:intent.query||"all",region:intent.region,duration:intent.duration});setTimeout(()=>document.getElementById("explore")?.scrollIntoView({behavior:"smooth"}),50);}}/>
       <div className="proof silverProof">
         <div className="proofCard"><b>€ / month</b><span>compare living cost, not a weekend</span></div>
-        <div className="proofCard"><b>30–180 days</b><span>one month, one season or longer</span></div>
+        <div className="proofCard"><b>30–365 days</b><span>one month, one season or a full-year search</span></div>
         <div className="proofCard"><b>365 days</b><span>the generated annual route covers a full year</span></div>
         <div className="proofCard"><b>Truth-gated</b><span>verified offers stay separate from demos</span></div>
       </div>
@@ -130,7 +127,6 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
 
     <section id="planner" className="dark"><div className="shell">
       <div className="sectionTitle"><h2>Build your<br/>living budget.</h2><p>The arithmetic is explicit: resources in, reserve kept, maximum available to live, and actual route cost.</p></div>
-      <WorldMap hotels={hotels} route={plan.map(s=>s.hotel)}/>
       <div className="grid2">
         <div className="card">
           {[
@@ -151,7 +147,7 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
           </div>
           <div className="financeBudget" data-testid="living-budget"><span>MAXIMUM AVAILABLE TO LIVE</span><b>{euro(livingBudget)}<small>/month</small></b></div>
           <div className="control"><div className="label"><span>Travelling as</span><b>{party}</b></div><div className="segment"><button className={party==="solo"?"active":""} onClick={()=>setParty("solo")}>Solo</button><button className={party==="couple"?"active":""} onClick={()=>setParty("couple")}>Couple</button></div></div>
-          <div className="control"><div className="label"><span>Stay cadence</span><b>{duration} days</b></div><div className="segment">{([30,60,90,120,180] as StayDuration[]).map(d=><button key={d} className={duration===d?"active":""} onClick={()=>setDuration(d)}>{d}d</button>)}</div></div>
+          <div className="control"><div className="label"><span>Stay cadence</span><b>{duration} days</b></div><div className="segment">{([30,60,90,120,180,365] as StayDuration[]).map(d=><button key={d} className={duration===d?"active":""} onClick={()=>setDuration(d)}>{d}d</button>)}</div></div>
         </div>
 
         <div className="card">
@@ -177,26 +173,18 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
           <div className="label" style={{marginTop:14}}><span>{totals.days||0} nights · mobility estimate {euro(totals.transportTotal)}</span><b>{plan.length?euro(totals.total)+" total":"No affordable annual route"}</b></div>
         </div>
       </div>
-      <VerifiedRoute search={{query,region,checkIn,flexibleDays,duration,party,maxMonthly:livingBudget}}/>
+      <VerifiedRoute search={{query,region,checkIn,flexibleDays,duration,party,maxMonthly:searchBudget}}/>
     </div></section>
 
     <LiveOffers/>
 
-    <section id="explore" className="discovery"><div className="shell">
-      <div className="sectionTitle"><h2>{visible.length} long-stay stays<br/>inside your budget.</h2><p>Every demo result below respects the same budget, region, traveller and text filters as the search count above.</p></div>
-      <div className="toolbar">
-        <input aria-label="Filter stays" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search city, country, pool, sea, clinic…"/>
-        <select aria-label="Filter stays by region" value={region} onChange={e=>setRegion(e.target.value as SearchRegion)}><option>All</option><option>Europe</option><option>Asia</option><option>Africa</option><option>Americas</option></select>
-        <select aria-label="Sort stays" value={sort} onChange={e=>setSort(e.target.value)}><option value="value">Best value</option><option value="price">Lowest monthly</option><option value="score">Silver score</option></select>
-      </div>
-      <div className="hotels">{visible.map(h=><SilverHotelCard key={h.id} hotel={h} party={party} duration={duration}/>)}</div>
-    </div></section>
+    <RealHotelDirectory initialData={initialDirectory} initialQuery={query} initialRegion={region} duration={duration} checkIn={checkIn} occupancy={party==="couple"?2:1} maxMonthly={searchBudget} flexibleDays={flexibleDays} initialAmenities={searchAmenities} onCount={setDirectoryCount} onQueryChange={setQuery} onRegionChange={setRegion}/>
 
     <section id="agent" className="agentBand"><div className="shell">
       <div className="sectionTitle"><h2>Ask Atlas.<br/>Your long-stay concierge.</h2><p>The concierge receives only the budget and travel preferences it needs—not your pension or home-income breakdown.</p></div>
       <div className="agentGrid">
         <div className="chat"><div className="chatlog">{chat.map((m,i)=><div className={"msg "+m.role} key={i}>{m.text}</div>)}</div><div className="chatrow"><input aria-label="Ask Atlas" value={draft} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>e.key==="Enter"&&askAgent()} placeholder="e.g. warm sea, healthcare, under my budget…"/><button className="btn lime" onClick={askAgent}>{thinking?"…":"Ask"}</button></div></div>
-        <div className="truth"><div className="metric"><b>{hotels.length}</b><span>demo catalogue records</span></div><div className="metric"><b>3</b><span>live provider adapters</span></div><div className="metric"><b>365</b><span>days in generated year</span></div><div className="metric"><b>0</b><span>LLM-written prices allowed</span></div><div className="metric"><b>5</b><span>stay cadences</span></div><div className="metric"><b>1</b><span>budget truth shared across search + route</span></div></div>
+        <div className="truth"><div className="metric"><b>{directoryCount||"…"}</b><span>real hotel identities</span></div><div className="metric"><b>3</b><span>live provider adapters</span></div><div className="metric"><b>365</b><span>days in generated year</span></div><div className="metric"><b>0</b><span>LLM-written prices allowed</span></div><div className="metric"><b>6</b><span>stay cadences incl. 365d</span></div><div className="metric"><b>1</b><span>budget truth shared across search + route</span></div></div>
       </div>
     </div></section>
 
