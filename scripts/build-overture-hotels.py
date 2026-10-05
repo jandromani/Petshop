@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import json, math, pathlib
+import json, math, pathlib, re, unicodedata
 import duckdb
 
 RELEASE="2026-09-23.1"
@@ -103,6 +103,9 @@ for fallback_city,fallback_country,region,(xmin,ymin,xmax,ymax) in BOXES:
         country=COUNTRY_NAMES.get(country_code or "", fallback_country)
         city=(locality or fallback_city).strip()
         sid=str(oid)
+        web=str(website).strip() if website else None
+        if web and not web.lower().startswith("https://"):
+            web=None
         ref="https://www.google.com/maps/search/?api=1&query="+__import__("urllib.parse").parse.quote(f"{name} {city} {country}")
         records[sid]={
           "id":"overture-"+sid,
@@ -114,12 +117,24 @@ for fallback_city,fallback_country,region,(xmin,ymin,xmax,ymax) in BOXES:
           "lat":round(float(lat),6),
           "lng":round(float(lng),6),
           "address":str(address).strip() if address else None,
-          "website":str(website).strip() if website else None,
+          "website":web,
           "referenceUrl":ref,
           "confidence":round(float(confidence),4) if confidence is not None else None,
         }
 
-hotels=sorted(records.values(), key=lambda h:(-(h["confidence"] or 0),h["country"],h["city"],h["name"]))[:TARGET]
+def norm_name(value):
+    value=unicodedata.normalize("NFD",value).encode("ascii","ignore").decode().lower()
+    tokens=[x for x in re.sub(r"[^a-z0-9]+"," ",value).split() if x not in {"hotel","resort","spa","the"}]
+    return " ".join(tokens)
+
+ranked=sorted(records.values(), key=lambda h:(-(h["confidence"] or 0),h["country"],h["city"],h["name"]))
+dedup={}
+for h in ranked:
+    # Overture has stable GERS ids, but near-identical upstream records can still exist.
+    # Collapse only exact normalized names in the same ~100 m coordinate bucket.
+    k=(norm_name(h["name"]),h["country"],round(h["lat"],3),round(h["lng"],3))
+    dedup.setdefault(k,h)
+hotels=list(dedup.values())[:TARGET]
 OUTPUT.parent.mkdir(parents=True,exist_ok=True)
 OUTPUT.write_text(json.dumps(hotels,ensure_ascii=False,separators=(",",":"))+"\n",encoding="utf-8")
 print(f"wrote {len(hotels)} real Overture hotel identities to {OUTPUT}")
