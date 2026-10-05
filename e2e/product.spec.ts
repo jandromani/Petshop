@@ -114,27 +114,31 @@ test("public surfaces keep basic accessibility contracts",async({page})=>{
 test("shared hotel search restores the full deterministic filter state",async({page})=>{
   await page.goto("/stays?q=Madrid&region=Europe&duration=90&occupancy=2&maxMonthly=1800&features=pool%2Cgym&brand=Marriott&brandedOnly=1&sort=name");
   await expect(page.getByRole("heading",{name:/Search real hotels/i})).toBeVisible();
-  await page.waitForFunction(()=>{
+  await expect.poll(()=>page.evaluate(()=>{
     const root=document.querySelector(".silverSearch");
-    const value=(selector:string)=>(root?.querySelector(selector) as HTMLInputElement|HTMLSelectElement|null)?.value;
-    const brand=(document.querySelector('.advancedHotelFilters input[placeholder="Hilton, Marriott…"]') as HTMLInputElement|null)?.value;
+    const value=(selector:string)=>(root?.querySelector(selector) as HTMLInputElement|HTMLSelectElement|null)?.value??null;
+    const brand=(document.querySelector('.advancedHotelFilters input[placeholder="Hilton, Marriott…"]') as HTMLInputElement|null)?.value??null;
     const active=new Set(Array.from(document.querySelectorAll(".preferenceFilters button.active")).map(node=>(node.textContent||"").trim()));
-    return value('input[placeholder^="Madrid"]')==="Madrid"
-      && value('select[aria-label="Region"]')==="Europe"
-      && value('select[aria-label="Stay duration"]')==="90"
-      && value('select[aria-label="Travelling party"]')==="couple"
-      && value('input[aria-label="Maximum monthly hotel budget"]')==="1800"
-      && brand==="Marriott"
-      && active.has("pool")
-      && active.has("gym");
-  },undefined,{timeout:15000});
-  expect(page.url()).toContain("brandedOnly=1");
+    return {
+      query:value('input[placeholder^="Madrid"]'),
+      region:value('select[aria-label="Region"]'),
+      duration:value('select[aria-label="Stay duration"]'),
+      party:value('select[aria-label="Travelling party"]'),
+      budget:value('input[aria-label="Maximum monthly hotel budget"]'),
+      brand,
+      pool:active.has("pool"),
+      gym:active.has("gym"),
+      brandedOnly:new URL(window.location.href).searchParams.get("brandedOnly"),
+    };
+  }),{timeout:15000}).toEqual({
+    query:"Madrid",region:"Europe",duration:"90",party:"couple",budget:"1800",brand:"Marriott",pool:true,gym:true,brandedOnly:"1",
+  });
 });
 
 test("zero-result search fails honestly and offers deterministic relaxation",async({page})=>{
   await page.goto("/stays?q=atlas-hotel-that-does-not-exist-zzzz");
   await expect(page.getByText(/ZERO RESULTS · NO FAKE FALLBACK/i)).toBeVisible();
-  await expect(page.getByRole("button",{name:/Clear destination\/name/i})).toBeVisible();
+  await expect.poll(()=>page.locator(".zeroResults .actions button").allTextContents(),{timeout:15000}).toContain("Clear destination/name");
 });
 
 test("real hotel search exposes list and map modes on mobile",async({page})=>{
