@@ -13,7 +13,7 @@ export default function SilverSearch(props:{
   budget:number;setBudget:(v:number)=>void;count:number;onSearch:()=>void;
 }){
   return <div className="silverSearch">
-    <label><span>Where?</span><input value={props.query} onChange={e=>props.setQuery(e.target.value)} placeholder="Tenerife, sea, Thailand…"/></label>
+    <label><span>Where?</span><input value={props.query} onChange={e=>props.setQuery(e.target.value)} placeholder="Madrid, Tenerife, Thailand, hotel name…"/></label>
     <label><span>Start</span><input type="date" value={props.checkIn} onChange={e=>{props.setCheckIn(e.target.value);growthEvent("filter_change",{filter:"check_in",value:e.target.value})}}/></label>
     <label><span>Flexible</span><select value={props.flexibleDays} onChange={e=>{const v=Number(e.target.value) as 0|7|30;props.setFlexibleDays(v);growthEvent("filter_change",{filter:"flexible_days",value:v})}}><option value={0}>Exact dates</option><option value={7}>± 7 days</option><option value={30}>± 30 days</option></select></label>
     <label><span>Stay</span><select value={props.duration} onChange={e=>{const v=Number(e.target.value) as StayDuration;props.setDuration(v);growthEvent("filter_change",{filter:"duration",value:v})}}>{[30,60,90,120,180,365].map(d=><option key={d} value={d}>{d} days</option>)}</select></label>
