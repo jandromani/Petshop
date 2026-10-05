@@ -35,7 +35,7 @@ export default function Planner({hotels,heroVariant="freedom",initialDirectory}:
   const [draft,setDraft]=useState("");
   const [thinking,setThinking]=useState(false);
   const [shareLabel,setShareLabel]=useState("Share this life");
-  const [directoryCount,setDirectoryCount]=useState(0);
+  const [directoryCount,setDirectoryCount]=useState(()=>initialDirectory?.total??0);
   const [searchBudgetCap,setSearchBudgetCap]=useState<number|null>(null);
   const [searchAmenities,setSearchAmenities]=useState<string[]>([]);
 
