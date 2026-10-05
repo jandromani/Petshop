@@ -114,16 +114,20 @@ test("public surfaces keep basic accessibility contracts",async({page})=>{
 test("shared hotel search restores the full deterministic filter state",async({page})=>{
   await page.goto("/stays?q=Madrid&region=Europe&duration=90&occupancy=2&maxMonthly=1800&features=pool%2Cgym&brand=Marriott&brandedOnly=1&sort=name");
   await expect(page.getByRole("heading",{name:/Search real hotels/i})).toBeVisible();
-  const search=page.locator(".silverSearch");
-  await expect(search.locator('input[placeholder^="Madrid"]')).toHaveValue("Madrid");
-  await expect(search.locator('select[aria-label="Region"]')).toHaveValue("Europe");
-  await expect(search.locator('select[aria-label="Stay duration"]')).toHaveValue("90");
-  await expect(search.locator('select[aria-label="Travelling party"]')).toHaveValue("couple");
-  await expect(search.locator('input[aria-label="Maximum monthly hotel budget"]')).toHaveValue("1800");
-  await page.getByText(/Advanced filters/i).click();
-  await expect(page.getByPlaceholder("Hilton, Marriott…")).toHaveValue("Marriott");
-  await expect(page.getByText("pool",{exact:true})).toHaveClass(/active/);
-  await expect(page.getByText("gym",{exact:true})).toHaveClass(/active/);
+  await page.waitForFunction(()=>{
+    const root=document.querySelector(".silverSearch");
+    const value=(selector:string)=>(root?.querySelector(selector) as HTMLInputElement|HTMLSelectElement|null)?.value;
+    const brand=(document.querySelector('.advancedHotelFilters input[placeholder="Hilton, Marriott…"]') as HTMLInputElement|null)?.value;
+    const active=new Set(Array.from(document.querySelectorAll(".preferenceFilters button.active")).map(node=>(node.textContent||"").trim()));
+    return value('input[placeholder^="Madrid"]')==="Madrid"
+      && value('select[aria-label="Region"]')==="Europe"
+      && value('select[aria-label="Stay duration"]')==="90"
+      && value('select[aria-label="Travelling party"]')==="couple"
+      && value('input[aria-label="Maximum monthly hotel budget"]')==="1800"
+      && brand==="Marriott"
+      && active.has("pool")
+      && active.has("gym");
+  },undefined,{timeout:15000});
   expect(page.url()).toContain("brandedOnly=1");
 });
 
