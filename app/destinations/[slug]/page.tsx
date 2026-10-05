@@ -13,7 +13,7 @@ export async function generateMetadata({params}:{params:Promise<{slug:string}>})
   const {slug}=await params;const page=destinationSeoBySlug(slug);if(!page)return{};
   const evidence=await destinationSeoEvidence(page);
   const canonical=canonicalSiteUrl()+"/destinations/"+page.slug;
-  const title="Long-Stay Hotels in "+page.market+" — Monthly & 30–365 Day Rates";
+  const title="Long-Stay Hotels in "+page.market+" — Monthly & 30–90 Day Rates";
   const description="Explore long-stay hotels in "+page.market+", "+page.country+". Compare real properties and verified monthly hotel rates when current commercial evidence exists.";
   return{
     title,description,

@@ -14,7 +14,7 @@ export function seoIntentPage(kind:SeoIntentKind,slug:string):SeoIntentPage|null
   if(kind==="long-stay"||kind==="monthly-hotels"||kind==="90-day-stays"){
     const d=destinationSeoBySlug(slug);if(!d)return null;
     const common={kind,slug,path:"/"+kind+"/"+slug,query:d.market} as const;
-    if(kind==="long-stay")return{...common,title:"Long-Stay Hotels in "+d.market,headline:"Long-stay hotels in "+d.market+".",description:"Compare real hotels in "+d.market+" for 30–365 day stays. Verified monthly prices appear only while current evidence exists."};
+    if(kind==="long-stay")return{...common,title:"Long-Stay Hotels in "+d.market,headline:"Long-stay hotels in "+d.market+".",description:"Compare real hotels in "+d.market+" for 30–90 day stays. Verified monthly prices appear only while current evidence exists."};
     if(kind==="monthly-hotels")return{...common,title:"Monthly Hotels in "+d.market,headline:"Monthly hotels in "+d.market+".",description:"Explore hotels suited to month-long and seasonal stays in "+d.market+", with monthly-equivalent prices when Atlas can verify them."};
     return{...common,nights:90,title:"90-Day Hotel Stays in "+d.market,headline:"Stay in "+d.market+" for 90 days.",description:"Compare verified 90-day hotel options in "+d.market+" by monthly-equivalent cost and current availability."};
   }

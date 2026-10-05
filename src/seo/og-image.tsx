@@ -8,7 +8,7 @@ export function atlasOg(title:string,subtitle:string,kicker="ATLAS LONG STAY",st
     <div style={{width:"100%",height:"100%",display:"flex",flexDirection:"column",justifyContent:"space-between",padding:"68px",background:"linear-gradient(135deg,#071630 0%,#102a56 55%,#d9ff72 160%)",color:"white",fontFamily:"Arial"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div style={{fontSize:22,fontWeight:800,letterSpacing:"0.12em"}}>{kicker}</div>
-        <div style={{fontSize:18,color:"#c8d2e5"}}>30–365 DAY LIVING</div>
+        <div style={{fontSize:18,color:"#c8d2e5"}}>30–90 DAY LIVING</div>
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:"20px",maxWidth:"1000px"}}>
         <div style={{fontSize:72,fontWeight:800,letterSpacing:"-0.05em",lineHeight:0.94}}>{title}</div>

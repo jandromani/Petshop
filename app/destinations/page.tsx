@@ -5,7 +5,7 @@ import { seoAutopilotEnabled } from "@/src/seo/live";
 
 export const metadata:Metadata={
   title:"Long-Stay Hotel Destinations",
-  description:"Explore Atlas long-stay hotel destinations for 30–365 day stays, from Madrid and Tenerife to seasonal destinations worldwide.",
+  description:"Explore Atlas long-stay hotel destinations for 30–90 day stays, from Madrid and Tenerife to seasonal destinations worldwide.",
   alternates:{canonical:canonicalSiteUrl()+"/destinations"},
   robots:{index:seoAutopilotEnabled(),follow:true},
 };
