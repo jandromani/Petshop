@@ -13,7 +13,11 @@
     "security:secrets": "node scripts/check-secrets.mjs",
     "smoke:production": "node scripts/smoke-production.mjs",
     "test:e2e": "playwright test",
-    "directory:import": "node scripts/import-directory.mjs"
+    "directory:import": "node scripts/import-directory.mjs",
+    "maplibre:assets": "node scripts/copy-maplibre-assets.mjs",
+    "predev": "npm run maplibre:assets",
+    "prebuild": "npm run maplibre:assets",
+    "prevercel-build": "npm run maplibre:assets"
   },
   "dependencies": {
     "@neon/config": "^1.8.3",

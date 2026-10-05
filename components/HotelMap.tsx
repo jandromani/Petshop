@@ -17,7 +17,7 @@ function geojson(hotels:MappedHotel[]){
 export default function HotelMap({hotels,selectedId,onSelect,onSearchArea,detailQuery="",fitKey=""}:{hotels:MappedHotel[];selectedId?:string|null;onSelect:(id:string)=>void;onSearchArea:(bbox:string)=>void;detailQuery?:string;fitKey?:string}){
   const host=useRef<HTMLDivElement|null>(null);
   const mapRef=useRef<MapLibreMap|null>(null);
-  const [pendingBounds,setPendingBounds]=useState<string|null>(null);const[expanded,setExpanded]=useState(false);
+  const [pendingBounds,setPendingBounds]=useState<string|null>(null);const[expanded,setExpanded]=useState(false);const[ready,setReady]=useState(false);
   const data=useMemo(()=>geojson(hotels),[hotels]);
   const dataRef=useRef(data);
   dataRef.current=data;
@@ -46,7 +46,7 @@ export default function HotelMap({hotels,selectedId,onSelect,onSearchArea,detail
     map.on("click","hotel-points",(e:any)=>{const f=map.queryRenderedFeatures(e.point,{layers:["hotel-points"]})[0];const id=String(f?.properties?.id||"");if(id){growthEvent("map_marker_click",{hotel_id:id});onSelect(id);}});
     for(const layer of ["hotel-clusters","hotel-points"]){map.on("mouseenter",layer,()=>{map.getCanvas().style.cursor="pointer"});map.on("mouseleave",layer,()=>{map.getCanvas().style.cursor=""});}
     map.on("moveend",()=>{const b=map.getBounds();setPendingBounds([b.getWest(),b.getSouth(),b.getEast(),b.getNorth()].map(v=>v.toFixed(5)).join(","));});
-    return()=>{map.remove();mapRef.current=null;};
+    return()=>{setReady(false);map.remove();mapRef.current=null;};
   },[]);
 
   useEffect(()=>{const map=mapRef.current;if(!map||!map.isStyleLoaded())return;const source=map.getSource("atlas-hotels") as GeoJSONSource|undefined;source?.setData(data as any);},[data]);
@@ -54,7 +54,7 @@ export default function HotelMap({hotels,selectedId,onSelect,onSearchArea,detail
   useEffect(()=>{const map=mapRef.current;if(!map||!map.isStyleLoaded()||!fitKey)return;const coords=hotels.filter(h=>Number.isFinite(h.lat)&&Number.isFinite(h.lng)).map(h=>[Number(h.lng),Number(h.lat)] as [number,number]);if(!coords.length)return;const b=new maplibregl.LngLatBounds(coords[0],coords[0]);for(const p of coords.slice(1))b.extend(p);map.fitBounds(b,{padding:50,maxZoom:11,duration:450});},[fitKey]);
   useEffect(()=>{const map=mapRef.current;if(!map)return;requestAnimationFrame(()=>map.resize());},[expanded]);
 
-  return <div className={"hotelMapShell "+(expanded?"mapExpanded":"")}>
+  return <div className={"hotelMapShell "+(expanded?"mapExpanded":"")} data-map-ready={ready?"true":"false"}>
     <div ref={host} className="hotelMap" aria-label="Interactive map of real hotels"/>
     <div className="mapTruth"><span><i className="mapKey pending"/> real property</span><span><i className="mapKey verified"/> verified rate</span></div>
     <button className="mapExpand" type="button" onClick={()=>setExpanded(v=>!v)}>{expanded?"Close full map":"Full map"}</button>

@@ -147,4 +147,5 @@ test("real hotel search exposes list and map modes on mobile",async({page})=>{
   await expect(page.getByRole("button",{name:/Map ·/i})).toBeVisible();
   await page.getByRole("button",{name:/Map ·/i}).click();
   await expect(page.locator(".hotelMapPane")).toBeVisible();
+  await expect(page.locator(".hotelMapShell")).toHaveAttribute("data-map-ready","true",{timeout:15000});
 });
