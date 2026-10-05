@@ -13,9 +13,9 @@ function siteUrl(){
 
 export const metadata:Metadata={
   title:{default:"Atlas Long Stay — Live somewhere better",template:"%s · Atlas Long Stay"},
-  description:"Compare 30–180 day hotel stays by monthly cost and build a flexible year around a real living budget.",
+  description:"Compare 30–365 day hotel stays by monthly cost and search real hotels with AI, maps and verified commercial rates.",
   metadataBase:new URL(siteUrl()),
-  openGraph:{title:"Atlas Long Stay — Live somewhere better",description:"Long-stay hotel living by monthly budget, dates and verified availability.",type:"website"},
+  openGraph:{title:"Atlas Long Stay — Live somewhere better",description:"Search real hotels for 30–365 day stays by monthly budget, dates, map and verified availability.",type:"website"},
   verification:{
     google:process.env.GOOGLE_SITE_VERIFICATION||undefined,
     other:process.env.BING_SITE_VERIFICATION?{"msvalidate.01":[process.env.BING_SITE_VERIFICATION]}:undefined,
