@@ -1,18 +1,59 @@
 "use client";
+import dynamic from "next/dynamic";
 import { useEffect,useMemo,useState } from "react";
 import type { SearchRegion,StayDuration } from "@/src/core/search";
-type Row={id:string;name:string;city:string;country:string;region:Exclude<SearchRegion,"All">;source:string;referenceUrl:string};
-type Payload={total:number;hotels:Row[];snapshotDate:string;note:string;attribution?:string|null};
-export default function RealHotelDirectory({initialQuery="",initialRegion="All",duration=90,checkIn,occupancy=1,onCount}:{initialQuery?:string;initialRegion?:SearchRegion;duration?:StayDuration;checkIn?:string;occupancy?:1|2;onCount?:(count:number)=>void}){
-  const[q,setQ]=useState(initialQuery);const[region,setRegion]=useState<SearchRegion>(initialRegion);const[page,setPage]=useState(0);const[data,setData]=useState<Payload|null>(null);const[loading,setLoading]=useState(true);const pageSize=24;
-  useEffect(()=>{setQ(initialQuery);setPage(0)},[initialQuery]);useEffect(()=>{setRegion(initialRegion);setPage(0)},[initialRegion]);
-  const params=useMemo(()=>{const p=new URLSearchParams({limit:String(pageSize),offset:String(page*pageSize),region});if(q.trim())p.set("q",q.trim());return p},[q,region,page]);
-  useEffect(()=>{const c=new AbortController();setLoading(true);const t=setTimeout(()=>fetch("/api/hotels/directory?"+params,{signal:c.signal}).then(r=>r.ok?r.json():Promise.reject()).then((payload:Payload)=>{setData(payload);onCount?.(payload.total)}).catch(()=>{}).finally(()=>setLoading(false)),150);return()=>{clearTimeout(t);c.abort()}},[params,onCount]);
+import { growthEvent } from "@/src/growth/client";
+import type { MappedHotel } from "@/components/HotelMap";
+
+const HotelMap=dynamic(()=>import("@/components/HotelMap"),{ssr:false,loading:()=> <div className="hotelMapLoading">Loading interactive map…</div>});
+
+type Offer={offerId:string;provider:string;monthlyEquivalent:number;displayPrice:number;currency:string;board:string|null;cancellation:string|null;verifiedAt:string;expiresAt:string|null;photoUrls:string[];facilities:string[]};
+type Row=MappedHotel&{canonicalId:string;region:Exclude<SearchRegion,"All">;source:string;sourceId:string;referenceUrl:string;website:string|null;address:string|null;confidence:number|null;description:string|null;photoUrls:string[];facilities:string[];liveOffer:Offer|null};
+type Payload={total:number;mapped:number;hotels:Row[];snapshotDate:string;note:string;attribution?:string|null;source:string};
+const money=(n:number,c="EUR")=>new Intl.NumberFormat("en-US",{style:"currency",currency:c,maximumFractionDigits:0}).format(n);
+
+export default function RealHotelDirectory({initialQuery="",initialRegion="All",duration=90,checkIn,occupancy=1,maxMonthly,onCount,onQueryChange,onRegionChange}:{
+  initialQuery?:string;initialRegion?:SearchRegion;duration?:StayDuration;checkIn?:string;occupancy?:1|2;maxMonthly?:number;
+  onCount?:(count:number)=>void;onQueryChange?:(q:string)=>void;onRegionChange?:(r:SearchRegion)=>void;
+}){
+  const[q,setQ]=useState(initialQuery);const[region,setRegion]=useState<SearchRegion>(initialRegion);const[page,setPage]=useState(0);
+  const[data,setData]=useState<Payload|null>(null);const[mapData,setMapData]=useState<Payload|null>(null);const[loading,setLoading]=useState(true);
+  const[selectedId,setSelectedId]=useState<string|null>(null);const[bbox,setBbox]=useState<string|null>(null);const[mobileView,setMobileView]=useState<"list"|"map">("list");
+  const pageSize=24;
+  useEffect(()=>{setQ(initialQuery);setPage(0);setBbox(null)},[initialQuery]);useEffect(()=>{setRegion(initialRegion);setPage(0);setBbox(null)},[initialRegion]);
+  const baseParams=useMemo(()=>{const p=new URLSearchParams({region,duration:String(duration),occupancy:String(occupancy),flexibleDays:"7"});if(q.trim())p.set("q",q.trim());if(checkIn)p.set("checkIn",checkIn);if(maxMonthly)p.set("maxMonthly",String(Math.round(maxMonthly)));if(bbox)p.set("bbox",bbox);return p},[q,region,duration,occupancy,checkIn,maxMonthly,bbox]);
+  const listParams=useMemo(()=>{const p=new URLSearchParams(baseParams);p.set("limit",String(pageSize));p.set("offset",String(page*pageSize));return p},[baseParams,page]);
+  const mapParams=useMemo(()=>{const p=new URLSearchParams(baseParams);p.set("view","map");return p},[baseParams]);
+
+  useEffect(()=>{
+    const c=new AbortController();setLoading(true);const t=setTimeout(()=>fetch("/api/hotels/directory?"+listParams,{signal:c.signal}).then(r=>r.ok?r.json():Promise.reject()).then((payload:Payload)=>{
+      setData(payload);onCount?.(payload.total);growthEvent("results_loaded",{count:payload.total,mapped:payload.mapped,query:q||"all",region,page});
+    }).catch(()=>{}).finally(()=>setLoading(false)),120);return()=>{clearTimeout(t);c.abort()};
+  },[listParams,onCount,q,region,page]);
+  useEffect(()=>{const c=new AbortController();fetch("/api/hotels/directory?"+mapParams,{signal:c.signal}).then(r=>r.ok?r.json():Promise.reject()).then((payload:Payload)=>setMapData(payload)).catch(()=>{});return()=>c.abort()},[mapParams]);
+
+  function changeQuery(value:string){setQ(value);setPage(0);setBbox(null);onQueryChange?.(value)}
+  function changeRegion(value:SearchRegion){setRegion(value);setPage(0);setBbox(null);onRegionChange?.(value);growthEvent("filter_change",{filter:"region",value})}
+  function chooseFromMap(id:string){setSelectedId(id);setMobileView("list");requestAnimationFrame(()=>document.getElementById("hotel-card-"+id)?.scrollIntoView({behavior:"smooth",block:"center"}))}
+  function searchArea(next:string){setBbox(next);setPage(0)}
+  const hotels=data?.hotels||[],mapped=mapData?.hotels||[];
+
   return <section id="explore" className="discovery realDirectory"><div className="shell">
-    <div className="sectionTitle"><h2>Real hotels.<br/>Commercial truth stays separate.</h2><p>Every card below names an existing hotel. A price appears only after Atlas receives and verifies live commercial evidence for your dates.</p></div>
-    <div className="toolbar"><input aria-label="Search real hotels" value={q} onChange={e=>{setQ(e.target.value);setPage(0)}} placeholder="Hotel, city or country…"/><select aria-label="Filter real hotels by region" value={region} onChange={e=>{setRegion(e.target.value as SearchRegion);setPage(0)}}><option>All</option><option>Europe</option><option>Asia</option><option>Africa</option><option>Americas</option></select><div className="directoryCount">{loading?"Loading…":(data?.total||0)+" real properties"}</div></div>
-    <div className="hotels">{(data?.hotels||[]).map(h=><article className="hotel realHotelCard" key={h.id}><div className={"hotelVisual region-"+h.region.toLowerCase()}><div><span className="visualCity">{h.city}</span><small>{h.country}</small></div><span className="score">REAL PROPERTY</span></div><div className="hotelBody"><div className="hotelTopline"><span>{h.source==="curated_seed"?"CURATED IDENTITY":h.source.toUpperCase()}</span><span>RATE PENDING</span></div><h3>{h.name}</h3><div className="loc">{h.city}, {h.country} · requested horizon {duration} days</div><div className="chips"><span className="chip">No invented price</span><span className="chip">Availability not assumed</span></div><div className="priceRow directoryActions"><div><b>—</b><small>Atlas rate appears only after live verification</small></div><div className="directoryLinks"><a className="linkbtn" href={"/stays/"+encodeURIComponent(h.id)+"?"+new URLSearchParams({duration:String(duration),...(checkIn?{checkIn}:{}),occupancy:String(occupancy)}).toString()}>Open hotel →</a><a className="eyebrow" href={h.referenceUrl} target="_blank" rel="noreferrer">Verify entity ↗</a></div></div></div></article>)}</div>
-    {!loading&&data&&<div className="directoryPager"><button className="btn ghost" disabled={page===0} onClick={()=>setPage(p=>Math.max(0,p-1))}>← Previous</button><span>{data.total?Math.min(page*pageSize+1,data.total):0}–{Math.min((page+1)*pageSize,data.total)} of {data.total}</span><button className="btn ghost" disabled={(page+1)*pageSize>=data.total} onClick={()=>setPage(p=>p+1)}>Next →</button></div>}
-    <p className="directoryDisclosure">Directory identity is not a booking claim. Verified Atlas rates remain truth-gated and are rendered separately.{data?.attribution?" "+data.attribution+".":""}</p>
+    <div className="resultsHeadline"><div><div className="eyebrow">REAL HOTEL SEARCH</div><h2>{loading?"Finding real hotels…":(data?.total||0)+" real hotels"}</h2><p>Identity comes from real-world place data. Dates, duration, guests and budget are applied to verified commercial offers; hotels without a verified rate stay visible as <b>rate pending</b>, never as fake bargains.</p></div><div className="resultStats"><b>{mapData?.mapped||0}</b><span>mapped properties</span></div></div>
+    <div className="toolbar directoryToolbar"><input aria-label="Search real hotels" value={q} onChange={e=>changeQuery(e.target.value)} placeholder="Hotel, city, country or address…"/><select aria-label="Filter real hotels by region" value={region} onChange={e=>changeRegion(e.target.value as SearchRegion)}><option>All</option><option>Europe</option><option>Asia</option><option>Africa</option><option>Americas</option></select>{bbox&&<button className="btn ghost" onClick={()=>setBbox(null)}>Clear map area</button>}<div className="directoryCount">{loading?"Loading…":(data?.total||0)+" matches"}</div></div>
+    <div className="mobileResultToggle"><button className={mobileView==="list"?"active":""} onClick={()=>setMobileView("list")}>List</button><button className={mobileView==="map"?"active":""} onClick={()=>setMobileView("map")}>Map · {mapData?.mapped||0}</button></div>
+    <div className={"hotelExplorer view-"+mobileView}>
+      <div className="hotelListPane">
+        <div className="hotels realHotelGrid">{hotels.map((h,index)=>{const offer=h.liveOffer;const photo=offer?.photoUrls?.[0]||h.photoUrls?.[0];const facilities=(offer?.facilities?.length?offer.facilities:h.facilities).slice(0,4);return <article id={"hotel-card-"+h.id} className={"hotel realHotelCard "+(selectedId===h.id?"selected":"")} key={h.id} onMouseEnter={()=>setSelectedId(h.id)}>
+          <div className={"hotelVisual realHotelMedia region-"+h.region.toLowerCase()}>{photo?<img src={photo} alt={h.name} loading="lazy" referrerPolicy="no-referrer"/>:<div className="placeFallback"><span>{h.city}</span><small>{h.country}</small></div>}<span className={"score "+(offer?"verifiedBadge":"")}>{offer?"VERIFIED RATE":"REAL HOTEL"}</span></div>
+          <div className="hotelBody"><div className="hotelTopline"><span>{h.source==="overture"?"OVERTURE IDENTITY":h.source==="curated_seed"?"CURATED IDENTITY":h.source.toUpperCase()}</span><span>{offer?"LIVE":"RATE PENDING"}</span></div><h3>{h.name}</h3><div className="loc">{h.address||h.city+", "+h.country}</div>
+          <div className="chips">{facilities.length?facilities.map(x=><span className="chip" key={x}>{x}</span>):<><span className="chip">{duration}-day intent</span><span className="chip">{occupancy} guest{occupancy===1?"":"s"}</span></>}</div>
+          <div className="priceRow directoryActions"><div>{offer?<><b>{money(offer.monthlyEquivalent,offer.currency)}</b><small>/30-day equivalent · verified {new Date(offer.verifiedAt).toLocaleDateString()}</small></>:<><b>Rate pending</b><small>Ask Atlas Supply to source your dates</small></>}</div><div className="directoryLinks"><a className="linkbtn" onClick={()=>growthEvent("hotel_card_click",{hotel_id:h.id,position:page*pageSize+index+1,state:offer?"verified":"pending"})} href={"/stays/"+encodeURIComponent(h.id)+"?"+new URLSearchParams({duration:String(duration),...(checkIn?{checkIn}:{}),occupancy:String(occupancy)}).toString()}>{offer?"View verified stay →":"Find my rate →"}</a>{h.website&&<a className="eyebrow" href={h.website} target="_blank" rel="noreferrer">Official site ↗</a>}</div></div></div>
+        </article>})}</div>
+        {!loading&&data&&<div className="directoryPager"><button className="btn ghost" disabled={page===0} onClick={()=>setPage(p=>Math.max(0,p-1))}>← Previous</button><span>{data.total?Math.min(page*pageSize+1,data.total):0}–{Math.min((page+1)*pageSize,data.total)} of {data.total}</span><button className="btn ghost" disabled={(page+1)*pageSize>=data.total} onClick={()=>setPage(p=>p+1)}>Next →</button></div>}
+      </div>
+      <aside className="hotelMapPane"><HotelMap hotels={mapped} selectedId={selectedId} onSelect={chooseFromMap} onSearchArea={searchArea}/></aside>
+    </div>
+    <p className="directoryDisclosure">Property identity is not a booking claim. A price is shown only after Atlas has a fresh truth-gated commercial offer.{data?.attribution?" Data: "+data.attribution+".":""}</p>
   </div></section>;
 }
