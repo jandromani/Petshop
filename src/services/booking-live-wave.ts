@@ -197,7 +197,10 @@ export async function runBookingLiveWave(input:BookingLiveWaveInput):Promise<Boo
             rawHash:evidenceHash,
             verifiedAt,
           });
-          if(detail){
+          if(detail && process.env.BOOKING_CONTENT_STORAGE_ALLOWED==="true"){
+            const displayAllowed=process.env.BOOKING_CONTENT_DISPLAY_ALLOWED==="true"&&Boolean(process.env.BOOKING_CONTENT_LICENSE_REF);
+            const ttlDays=Math.max(1,Math.min(90,Number(process.env.BOOKING_CONTENT_TTL_DAYS||7)||7));
+            const expiresAt=new Date(Date.now()+ttlDays*86_400_000).toISOString();
             await upsertHotelContent({
               hotelId:canonicalId,
               provider:"booking",
@@ -205,6 +208,10 @@ export async function runBookingLiveWave(input:BookingLiveWaveInput):Promise<Boo
               photoUrls:detail.photoUrls,
               facilities:detail.facilities,
               sourceHash:evidenceHash,
+              displayAllowed,
+              licenseRef:process.env.BOOKING_CONTENT_LICENSE_REF,
+              sourceUrl:detail.webUrl,
+              expiresAt,
             });
           }
 
