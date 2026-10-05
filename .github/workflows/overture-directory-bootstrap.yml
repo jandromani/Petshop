@@ -1,0 +1,45 @@
+name: Overture Hotel Snapshot
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - preprod/reality-v1
+    paths:
+      - scripts/build-overture-hotels.py
+      - .github/workflows/overture-directory-bootstrap.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: overture-hotel-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: preprod/reality-v1
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install DuckDB
+        run: python -m pip install --disable-pip-version-check "duckdb>=1.4,<2"
+      - name: Build 2k-5k hotel snapshot
+        run: python scripts/build-overture-hotels.py
+      - name: Commit generated snapshot
+        run: |
+          if git diff --quiet -- src/data/overture-hotels.generated.json; then
+            echo "Snapshot unchanged"
+            exit 0
+          fi
+          git config user.name "atlas-directory-bot"
+          git config user.email "atlas-directory-bot@users.noreply.github.com"
+          git add src/data/overture-hotels.generated.json
+          git commit -m "data: refresh Overture real hotel snapshot"
+          git push origin HEAD:preprod/reality-v1
