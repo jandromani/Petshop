@@ -14,7 +14,7 @@ export function atlasOg(title:string,subtitle:string,kicker="ATLAS LONG STAY",st
         <div style={{fontSize:72,fontWeight:800,letterSpacing:"-0.05em",lineHeight:0.94}}>{title}</div>
         <div style={{fontSize:28,color:"#c9d4e8",lineHeight:1.3}}>{subtitle}</div>
       </div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"end"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end"}}>
         <div style={{fontSize:22,color:"#d9ff72",fontWeight:700}}>{stat||"Prices shown only when verified."}</div>
         <div style={{fontSize:20,color:"#aebbd0"}}>atlas · long-stay hotels by month</div>
       </div>

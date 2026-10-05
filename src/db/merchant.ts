@@ -5,12 +5,12 @@ export type MerchantQuote={offerId:string;hotelName:string;city:string;country:s
 type MerchantRateRow={offer_id:string;hotel_name:string;city:string;country:string;slug:string;min_nights:number;max_nights:number|null;max_guests:number;monthly_price:number;hotel_net_monthly:number|null;currency:string;valid_from:string;valid_to:string;channel_model:string;merchant_enabled:boolean;merchant_terms_verified:boolean;contract_verified:boolean;publication_state:string;inventory_units:number;reserved_units:number;sold_units:number};
 const round2=(n:number)=>Math.round(n*100)/100;
 
-function quoteFromRate(rate:MerchantRateRow,checkIn:string,nights:30|60|90,occupancy:1|2):MerchantQuote|null{
+function quoteFromRate(rate:MerchantRateRow,checkIn:string,nights:30|60|90,occupancy:1|2,availableUnitsOverride?:number):MerchantQuote|null{
   if(!["MERCHANT","EXCLUSIVE_MERCHANT"].includes(rate.channel_model)||!rate.merchant_enabled||!rate.merchant_terms_verified||!rate.contract_verified||rate.publication_state!=="LIVE")return null;
   if(rate.hotel_net_monthly===null||rate.hotel_net_monthly<=0||rate.hotel_net_monthly>rate.monthly_price)return null;
   if(nights<rate.min_nights||(rate.max_nights!==null&&nights>rate.max_nights)||occupancy>rate.max_guests)return null;
   const checkOut=addDays(checkIn,nights);if(checkIn<rate.valid_from||checkOut>addDays(rate.valid_to,1))return null;
-  const availableUnits=Math.max(0,rate.inventory_units-rate.reserved_units-rate.sold_units);if(availableUnits<1)return null;
+  const availableUnits=Math.max(0,availableUnitsOverride??rate.inventory_units);if(availableUnits<1)return null;
   const customerTotal=round2(rate.monthly_price*nights/30),hotelCost=round2(rate.hotel_net_monthly*nights/30),platformRevenue=round2(customerTotal-hotelCost);
   return{offerId:rate.offer_id,hotelName:rate.hotel_name,city:rate.city,country:rate.country,slug:rate.slug,checkIn,checkOut,nights,occupancy,currency:rate.currency,customerTotal,hotelCost,platformRevenue,takeRate:customerTotal>0?platformRevenue/customerTotal:0,monthlyPrice:Number(rate.monthly_price),availableUnits,channelModel:rate.channel_model as "MERCHANT"|"EXCLUSIVE_MERCHANT"};
 }
@@ -21,7 +21,16 @@ export async function getMerchantCheckoutQuote(input:{offerId:string;checkIn:str
     select r.id::text as offer_id,h.name as hotel_name,h.city,h.country,h.slug,r.min_nights,r.max_nights,r.max_guests,r.monthly_price::float,r.hotel_net_monthly::float,r.currency,r.valid_from::text,r.valid_to::text,r.channel_model,r.merchant_enabled,r.merchant_terms_verified,r.contract_verified,r.publication_state,r.inventory_units,r.reserved_units,r.sold_units
     from direct_rate_offers r join canonical_hotels h on h.id=r.canonical_hotel_id where r.id=${input.offerId}::uuid limit 1
   `;
-  return rows[0]?quoteFromRate(rows[0],input.checkIn,input.nights,input.occupancy):null;
+  const rate=rows[0];if(!rate)return null;
+  const checkOut=addDays(input.checkIn,input.nights);
+  const usage=await sql<Array<{used:number}>>`
+    select count(*)::int as used from merchant_inventory_reservations
+    where direct_rate_offer_id=${input.offerId}::uuid
+      and state in ('RESERVED','PAID','CONFIRMED')
+      and check_in < ${checkOut}::date and check_out > ${input.checkIn}::date
+  `;
+  const available=Math.max(0,rate.inventory_units-Number(usage[0]?.used||0));
+  return quoteFromRate(rate,input.checkIn,input.nights,input.occupancy,available);
 }
 
 export async function createMerchantOrder(input:{offerId:string;customerEmail:string;checkIn:string;nights:30|60|90;occupancy:1|2;sourcingRequestId?:string}){
@@ -31,13 +40,27 @@ export async function createMerchantOrder(input:{offerId:string;customerEmail:st
       select r.id::text as offer_id,h.name as hotel_name,h.city,h.country,h.slug,r.min_nights,r.max_nights,r.max_guests,r.monthly_price::float,r.hotel_net_monthly::float,r.currency,r.valid_from::text,r.valid_to::text,r.channel_model,r.merchant_enabled,r.merchant_terms_verified,r.contract_verified,r.publication_state,r.inventory_units,r.reserved_units,r.sold_units
       from direct_rate_offers r join canonical_hotels h on h.id=r.canonical_hotel_id where r.id=${input.offerId}::uuid for update of r
     `;
-    const quote=rows[0]?quoteFromRate(rows[0],input.checkIn,input.nights,input.occupancy):null;if(!quote)return null;
+    const rate=rows[0];if(!rate)return null;
+    const checkOut=addDays(input.checkIn,input.nights);
+    const usage=await tx<Array<{used:number}>>`
+      select count(*)::int as used from merchant_inventory_reservations
+      where direct_rate_offer_id=${input.offerId}::uuid
+        and state in ('RESERVED','PAID','CONFIRMED')
+        and check_in < ${checkOut}::date and check_out > ${input.checkIn}::date
+    `;
+    const available=Math.max(0,rate.inventory_units-Number(usage[0]?.used||0));
+    const quote=quoteFromRate(rate,input.checkIn,input.nights,input.occupancy,available);if(!quote)return null;
     const orders=await tx<Array<{id:string;status:string}>>`
       insert into merchant_orders(direct_rate_offer_id,sourcing_request_id,customer_email,check_in,nights,occupancy,currency,customer_total,hotel_cost,platform_revenue,status)
       values(${input.offerId}::uuid,${input.sourcingRequestId??null}::uuid,${input.customerEmail},${input.checkIn},${input.nights},${input.occupancy},${quote.currency},${quote.customerTotal},${quote.hotelCost},${quote.platformRevenue},'CREATED') returning id::text,status
     `;
+    if(!orders[0])return null;
+    await tx`
+      insert into merchant_inventory_reservations(order_id,direct_rate_offer_id,check_in,check_out,state)
+      values(${orders[0].id}::uuid,${input.offerId}::uuid,${input.checkIn}::date,${checkOut}::date,'RESERVED')
+    `;
     await tx`update direct_rate_offers set reserved_units=reserved_units+1,updated_at=now() where id=${input.offerId}::uuid`;
-    return orders[0]?{...orders[0],quote}:null;
+    return{...orders[0],quote};
   });
 }
 
@@ -53,6 +76,7 @@ export async function releaseMerchantOrder(orderId:string,status:"PAYMENT_FAILED
     const rows=await tx<Array<{id:string;direct_rate_offer_id:string;status:string}>>`select id::text,direct_rate_offer_id::text,status from merchant_orders where id=${orderId}::uuid for update`;
     const order=rows[0];if(!order||!["CREATED","CHECKOUT_CREATED"].includes(order.status))return false;
     await tx`update merchant_orders set status=${status},cancelled_at=now(),updated_at=now() where id=${orderId}::uuid`;
+    await tx`update merchant_inventory_reservations set state='RELEASED',updated_at=now() where order_id=${orderId}::uuid and state='RESERVED'`;
     await tx`update direct_rate_offers set reserved_units=greatest(0,reserved_units-1),updated_at=now() where id=${order.direct_rate_offer_id}::uuid`;
     return true;
   });
@@ -64,6 +88,7 @@ export async function markMerchantOrderPaid(orderId:string,paymentIntentId?:stri
     const rows=await tx<Array<{id:string;direct_rate_offer_id:string;status:string}>>`select id::text,direct_rate_offer_id::text,status from merchant_orders where id=${orderId}::uuid for update`;
     const order=rows[0];if(!order)return false;if(["PAID","CONFIRMED"].includes(order.status))return true;if(!["CREATED","CHECKOUT_CREATED"].includes(order.status))return false;
     await tx`update merchant_orders set status='PAID',payment_intent_id=${paymentIntentId??null},paid_at=now(),updated_at=now() where id=${orderId}::uuid`;
+    await tx`update merchant_inventory_reservations set state='PAID',updated_at=now() where order_id=${orderId}::uuid and state='RESERVED'`;
     await tx`update direct_rate_offers set reserved_units=greatest(0,reserved_units-1),sold_units=sold_units+1,updated_at=now() where id=${order.direct_rate_offer_id}::uuid`;
     return true;
   });
@@ -73,14 +98,29 @@ export async function releaseMerchantOrderBySession(sessionId:string,status:"EXP
   const sql=getDatabase();if(!sql)return false;const rows=await sql<Array<{id:string}>>`select id::text from merchant_orders where checkout_session_id=${sessionId} limit 1`;return rows[0]?releaseMerchantOrder(rows[0].id,status):false;
 }
 
-export async function merchantPaymentEventExists(eventId:string){
+export async function claimMerchantPaymentEvent(eventId:string,eventType:string){
   const sql=getDatabase();if(!sql)return false;
-  const rows=await sql<Array<{event_id:string}>>`select event_id from merchant_payment_events where event_id=${eventId} limit 1`;
+  const rows=await sql<Array<{event_id:string}>>`
+    insert into merchant_payment_events(event_id,event_type,processing_state,attempts)
+    values(${eventId},${eventType},'PROCESSING',1)
+    on conflict(event_id) do update set
+      processing_state='PROCESSING',attempts=merchant_payment_events.attempts+1,last_error=null
+    where merchant_payment_events.processing_state='FAILED'
+    returning event_id
+  `;
   return Boolean(rows[0]);
 }
 
-export async function recordMerchantPaymentEvent(eventId:string,eventType:string){
-  const sql=getDatabase();if(!sql)return false;const rows=await sql<Array<{event_id:string}>>`insert into merchant_payment_events(event_id,event_type) values(${eventId},${eventType}) on conflict(event_id) do nothing returning event_id`;return Boolean(rows[0]);
+export async function finishMerchantPaymentEvent(eventId:string,ok:boolean,error?:string){
+  const sql=getDatabase();if(!sql)return false;
+  const rows=await sql<Array<{event_id:string}>>`
+    update merchant_payment_events set
+      processing_state=${ok?'PROCESSED':'FAILED'},
+      processed_at=case when ${ok} then now() else processed_at end,
+      last_error=${ok?null:(error||'event-not-applied').slice(0,500)}
+    where event_id=${eventId} returning event_id
+  `;
+  return Boolean(rows[0]);
 }
 
 export async function merchantOrderBySession(sessionId:string){

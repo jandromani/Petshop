@@ -442,7 +442,7 @@ export async function listSellableDirectOffers(input: DirectCatalogQuery = {}): 
         and (
           (r.channel_model='REFERRAL' and r.booking_url is not null and r.approved_booking_host is not null)
           or
-          (${merchantCheckoutActive}::boolean=true and r.channel_model in ('MERCHANT','EXCLUSIVE_MERCHANT') and r.merchant_enabled=true and r.merchant_terms_verified=true and (r.inventory_units-r.reserved_units-r.sold_units)>0)
+          (${merchantCheckoutActive}::boolean=true and r.channel_model in ('MERCHANT','EXCLUSIVE_MERCHANT') and r.merchant_enabled=true and r.merchant_terms_verified=true and r.inventory_units > (select count(*) from merchant_inventory_reservations mir where mir.direct_rate_offer_id=r.id and mir.state in ('RESERVED','PAID','CONFIRMED') and mir.check_in < (greatest(coalesce(${requestedCheckIn}::date,current_date),r.valid_from)+coalesce(${requestedNights}::int,r.min_nights))::date and mir.check_out > greatest(coalesce(${requestedCheckIn}::date,current_date),r.valid_from)))
         )
         and r.valid_from is not null
         and r.valid_to is not null

@@ -10,7 +10,7 @@ function geojson(hotels:MappedHotel[]){
   return{type:"FeatureCollection" as const,features:hotels.filter(h=>Number.isFinite(h.lat)&&Number.isFinite(h.lng)).map(h=>({
     type:"Feature" as const,
     geometry:{type:"Point" as const,coordinates:[Number(h.lng),Number(h.lat)]},
-    properties:{id:h.id,name:h.name,city:h.city,country:h.country,verified:h.commercialState==="VERIFIED_RATE"?1:0,monthly:h.liveOffer?.monthlyEquivalent||0,currency:h.liveOffer?.currency||"EUR"},
+    properties:{id:h.id,name:h.name,city:h.city,country:h.country,verified:h.commercialState==="VERIFIED_RATE"?1:0,monthly:h.liveOffer?.monthlyEquivalent||0,currency:h.liveOffer?.currency||"EUR",priceLabel:h.liveOffer?new Intl.NumberFormat("en-US",{style:"currency",currency:h.liveOffer.currency,maximumFractionDigits:0}).format(h.liveOffer.monthlyEquivalent):""},
   }))};
 }
 
@@ -34,7 +34,9 @@ export default function HotelMap({hotels,selectedId,onSelect,onSearchArea,detail
       map.addLayer({id:"hotel-clusters",type:"circle",source:"atlas-hotels",filter:["has","point_count"],paint:{"circle-color":"#0a1630","circle-radius":["step",["get","point_count"],18,25,24,100,31],"circle-stroke-width":3,"circle-stroke-color":"#ffffff"}});
       map.addLayer({id:"hotel-cluster-count",type:"symbol",source:"atlas-hotels",filter:["has","point_count"],layout:{"text-field":["get","point_count_abbreviated"],"text-size":12},paint:{"text-color":"#ffffff"}});
       map.addLayer({id:"hotel-points",type:"circle",source:"atlas-hotels",filter:["!",["has","point_count"]],paint:{"circle-color":["case",["==",["get","verified"],1],"#2358e8","#ffffff"],"circle-radius":["case",["==",["get","verified"],1],9,7],"circle-stroke-width":3,"circle-stroke-color":"#0a1630"}});
+      map.addLayer({id:"hotel-price-labels",type:"symbol",source:"atlas-hotels",minzoom:5,filter:["all",["!",["has","point_count"]],["==",["get","verified"],1]],layout:{"text-field":["get","priceLabel"],"text-size":11,"text-font":["Noto Sans Regular"],"text-offset":[0,1.65],"text-anchor":"top","text-allow-overlap":false},paint:{"text-color":"#0a1630","text-halo-color":"#ffffff","text-halo-width":2}});
       map.addLayer({id:"hotel-selected",type:"circle",source:"atlas-hotels",filter:["==",["get","id"],""],paint:{"circle-color":"#c8ff6a","circle-radius":13,"circle-stroke-width":4,"circle-stroke-color":"#0a1630"}});
+      setReady(true);
       const coords=dataRef.current.features.map(f=>f.geometry.coordinates as [number,number]);
       if(coords.length){const b=new maplibregl.LngLatBounds(coords[0],coords[0]);for(const p of coords.slice(1))b.extend(p);map.fitBounds(b,{padding:50,maxZoom:11,duration:0});}
     });
