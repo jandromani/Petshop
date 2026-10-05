@@ -321,3 +321,11 @@ input[type=range]{width:100%;accent-color:var(--lime)}
 .staysSearchPage{background:#f7f9fc}.staysSearchHero{padding:34px 0 24px;background:radial-gradient(circle at 82% 0%,rgba(200,255,106,.55),transparent 32%),linear-gradient(180deg,#eef4ff 0%,#f7f9fc 100%);border-bottom:1px solid var(--line)}
 .staysSearchIntro{display:flex;justify-content:space-between;gap:32px;align-items:end;margin:24px 0}.staysSearchIntro h1{font-size:clamp(48px,7vw,92px);line-height:.9;letter-spacing:-.065em;margin:12px 0}.staysSearchIntro p{max-width:760px;color:#5f6e87;line-height:1.55;font-size:16px}.staysSearchMetric{min-width:180px;text-align:right;background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:var(--shadow)}.staysSearchMetric b{display:block;font-size:38px;letter-spacing:-.06em}.staysSearchMetric span{font-size:10px;color:#748097}
 @media(max-width:760px){.staysSearchIntro{display:block}.staysSearchMetric{display:none}.staysSearchHero{padding-top:22px}}
+
+/* Release hardening: licensed content, alerts and rendering cost */
+.realHotelCard{content-visibility:auto;contain-intrinsic-size:420px}
+.contentProvenance{position:absolute;left:12px;bottom:12px;z-index:2;background:rgba(10,22,48,.88);color:#fff;border-radius:999px;padding:6px 8px;font-size:8px;font-weight:900;letter-spacing:.06em}
+.rateAlertForm{margin:22px 0;border:1px solid var(--line);border-radius:20px;background:#fff;padding:22px;box-shadow:var(--shadow)}
+.rateAlertForm h3{font-size:24px;letter-spacing:-.04em;margin:8px 0}.rateAlertForm>p{color:#66758d;max-width:760px}
+.destinationFacts{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}.destinationFacts span{border:1px solid var(--line);border-radius:14px;background:#fff;padding:10px 12px;font-size:10px;color:#68758b}.destinationFacts b{font-size:18px;color:var(--ink);margin-right:4px}.destinationBrands{font-size:11px!important;color:#66758d!important}
+@media(max-width:720px){.rateAlertForm{padding:17px}.contentProvenance{font-size:7px}}
