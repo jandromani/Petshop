@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import ConsentLayer from "@/components/ConsentLayer";
+import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 
 function siteUrl(){
