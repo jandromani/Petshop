@@ -1,16 +1,23 @@
 import { getOpsSnapshot } from "@/src/db/ops";
-import { growthFunnel,acquisitionBreakdown } from "@/src/db/growth";
+import { growthFunnel,acquisitionBreakdown,paidAttributionBreakdown } from "@/src/db/growth";
+import { acquisitionSpendSummary } from "@/src/db/acquisition-spend";
+import { merchantCohortMetrics,merchantMetrics,sourcingConversionMetrics } from "@/src/db/merchant";
 import { revenueCurrencyExposure,revenueEurSummary } from "@/src/db/revenue";
 import { FX_POLICY_VERSION,REPORTING_CURRENCY } from "@/src/money/fx";
 
 export async function getEconomicsSnapshot(days=30){
   const bounded=Math.max(1,Math.min(365,days));
-  const [ops,funnel,acquisition,currencyExposure,eurSummary]=await Promise.all([
+  const [ops,funnel,acquisition,currencyExposure,eurSummary,paidAttribution,spend,merchant,cohorts,sourcingConversion]=await Promise.all([
     getOpsSnapshot(),
     growthFunnel(bounded),
     acquisitionBreakdown(bounded),
     revenueCurrencyExposure(bounded),
     revenueEurSummary(bounded),
+    paidAttributionBreakdown(bounded),
+    acquisitionSpendSummary(bounded),
+    merchantMetrics(bounded),
+    merchantCohortMetrics(6),
+    sourcingConversionMetrics(bounded),
   ]);
 
   const clicks=funnel?.referrals.clicks||0;
@@ -19,6 +26,9 @@ export async function getEconomicsSnapshot(days=30){
   const conversionRate=clicks>0?conversions/clicks:null;
   const commissionPerClick=clicks>0?commission/clicks:null;
   const commissionPerConversion=conversions>0?commission/conversions:null;
+  const paidConversions=paidAttribution.filter(x=>x.network!=="unattributed").reduce((s,x)=>s+Number(x.conversions||0),0);
+  const paidCacEur=spend.spendEur>0&&paidConversions>0?spend.spendEur/paidConversions:null;
+  const organicOrUnattributedConversions=Math.max(0,conversions-paidConversions);
 
   return{
     generatedAt:new Date().toISOString(),
@@ -42,15 +52,23 @@ export async function getEconomicsSnapshot(days=30){
       commissionPerConversionEur:commissionPerConversion,
       funnel,
       acquisition,
+      paidAttribution,
+      paidSpendEur:spend.spendEur,
+      paidConversions,
+      paidCacEur,
+      organicOrUnattributedConversions,
+      merchant,
+      cohorts,
+      sourcingConversion,
       currencyExposure,
     },
     unavailableUntilEvidence:{
-      cac:"No paid spend ledger is connected; CAC is intentionally null.",
-      contributionMargin:"Hosting, AI, provider, support and tax costs are not yet reconciled into one cost ledger.",
-      repeatRate:"Consumer identity/lifecycle persistence is not yet available.",
-      directVsOtaMargin:"Requires real direct and OTA conversions.",
+      cac:paidCacEur===null?"CAC remains null until both paid spend and attributable conversions exist.":"Observed paid CAC is available above.",
+      contributionMargin:"Merchant hotel cost and gross platform revenue are now observable; full contribution margin still requires payment, support, tax and infrastructure costs.",
+      repeatRate:cohorts.repeatRate===null?"Repeat rate remains null until at least one paid managed customer exists.":"Observed repeat-customer rate is available above.",
+      directVsOtaMargin:merchant.paidOrders>0&&conversions>0?"Merchant and referral economics can now be compared from observed transactions.":"Requires both merchant orders and referral conversions.",
     },
-    proofState:conversions>0&&commission>0?"COMMERCIAL_EVIDENCE_OBSERVED":"UNPROVEN",
+    proofState:(conversions>0&&commission>0)||merchant.paidOrders>0?"COMMERCIAL_EVIDENCE_OBSERVED":"UNPROVEN",
     cashProofState:eurSummary.settledCommissionEur>0?"SETTLED_REVENUE_OBSERVED":"UNPROVEN",
   };
 }

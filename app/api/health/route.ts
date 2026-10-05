@@ -13,6 +13,7 @@ export async function GET(){
     databaseLatencyMs:status.infrastructure.databaseLatencyMs,
     agentConfigured:status.infrastructure.agentConfigured,
     providers:status.infrastructure.providers,
+    merchantCheckout:status.infrastructure.merchantCheckout,
     layers:status.layers,
     deployment:{
       environment:process.env.VERCEL_ENV||"local",

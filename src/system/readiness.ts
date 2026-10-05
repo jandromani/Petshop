@@ -4,16 +4,19 @@ import { AGENTS } from "@/src/agents/registry";
 import { getOpsSnapshot } from "@/src/db/ops";
 import { runSoftwareProof } from "@/src/system/proof";
 import { agentRuntimeCredentialsAvailable,agentRuntimeProvider } from "@/src/agents/llm";
+import { merchantMetrics } from "@/src/db/merchant";
+import { merchantCheckoutStatus } from "@/src/payments/stripe-rest";
 
 export type LayerState="LIVE"|"READY"|"WAITING_EXTERNAL"|"DEGRADED";
 
 export async function getSystemReadiness(){
   const providers=providerReadinessReport();
   const configuredProviders=providers.filter(p=>p.configured);
-  const [ops,agentCredentials,db]=await Promise.all([
+  const [ops,agentCredentials,db,merchant]=await Promise.all([
     getOpsSnapshot(),
     agentRuntimeCredentialsAvailable(),
     databaseHealth(),
+    merchantMetrics(30),
   ]);
   const proof=runSoftwareProof();
   const productionObserved=process.env.VERCEL_ENV==="production";
@@ -48,7 +51,7 @@ export async function getSystemReadiness(){
           :"Truth Gate and supply software exist, but persistent DB is required before provider or direct inventory can become live.",
   };
 
-  const moneyState:LayerState=ops.conversions30d>0
+  const moneyState:LayerState=ops.conversions30d>0||merchant.paidOrders>0
     ?"LIVE"
     :db.reachable
       ?"READY"
@@ -58,8 +61,10 @@ export async function getSystemReadiness(){
   const money={
     state:moneyState,
     score:moneyState==="LIVE"?100:moneyState==="READY"?88:moneyState==="DEGRADED"?45:68,
-    detail:ops.conversions30d>0
-      ?String(ops.conversions30d)+" conversions observed in 30d"
+    detail:merchant.paidOrders>0
+      ?String(merchant.paidOrders)+" paid Atlas Checkout orders · GMV €"+Math.round(merchant.gmv)
+      :ops.conversions30d>0
+        ?String(ops.conversions30d)+" referral conversions observed in 30d"
       :db.reachable
         ?"Click attribution, conversion ingestion and reconciliation are durable; no external conversion proof is claimed."
         :db.configured
@@ -94,6 +99,7 @@ export async function getSystemReadiness(){
       agentRuntimeProvider:runtimeProvider,
       configuredProviders:configuredProviders.map(p=>p.provider),
       providers:providers.map(p=>({provider:p.provider,configured:p.configured,commercialReady:p.commercialReady,environment:p.environment,grade:p.grade,blockers:p.blockers})),
+      merchantCheckout:{...merchantCheckoutStatus(),liveRates:merchant.liveMerchantRates,availableUnits:merchant.availableUnits,paidOrders30d:merchant.paidOrders,gmv30d:merchant.gmv,platformRevenue30d:merchant.platformRevenue,takeRate30d:merchant.takeRate},
     },
     ops,
     proof,

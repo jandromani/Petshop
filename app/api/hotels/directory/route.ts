@@ -55,7 +55,7 @@ function matches(h:{name:string;city:string;country:string;address?:string|null;
 function offerSummary(o:any){
   return o?{
     offerId:o.offerId,provider:o.provider,monthlyEquivalent:o.monthlyEquivalent,displayPrice:o.displayPrice,
-    currency:o.currency,board:o.board,cancellation:o.cancellation,verifiedAt:o.verifiedAt,expiresAt:o.expiresAt,
+    currency:o.currency,board:o.board,cancellation:o.cancellation,verifiedAt:o.verifiedAt,expiresAt:o.expiresAt,checkoutMode:o.checkoutMode,channelModel:o.channelModel,
     photoUrls:o.photoUrls||[],facilities:o.facilities||[]
   }:null;
 }

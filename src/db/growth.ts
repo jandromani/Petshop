@@ -284,3 +284,28 @@ export async function webVitalsSnapshot(days=30):Promise<WebVitalMetric[]>{
   const targets={LCP:2500,INP:200,CLS:0.1} as const;
   return rows.map(row=>({metric:row.metric,p75:Number(row.p75),sample:Number(row.sample),target:targets[row.metric],good:Number(row.p75)<=targets[row.metric]}));
 }
+
+
+export async function paidAttributionBreakdown(days=30){
+  const sql=getDatabase();if(!sql)return[];
+  const bounded=Math.max(1,Math.min(365,days));
+  return sql<Array<{network:string;click_id:string;referrals:number;conversions:number;booking_value:number;commission:number}>>`
+    select
+      case when r.gclid is not null then 'google-gclid'
+           when r.gbraid is not null then 'google-gbraid'
+           when r.wbraid is not null then 'google-wbraid'
+           when r.msclkid is not null then 'microsoft-msclkid'
+           else 'unattributed' end as network,
+      coalesce(r.gclid,r.gbraid,r.wbraid,r.msclkid,'') as click_id,
+      count(distinct r.click_id)::int as referrals,
+      count(distinct c.provider_conversion_id) filter (where c.status not in ('CANCELLED','REVERSED'))::int as conversions,
+      coalesce(sum(case when c.status not in ('CANCELLED','REVERSED') then c.booking_value else 0 end),0)::float as booking_value,
+      coalesce(sum(case when c.status not in ('CANCELLED','REVERSED') then c.commission else 0 end),0)::float as commission
+    from referral_clicks r
+    left join conversions c on c.click_id=r.click_id
+    where r.created_at>=now()-make_interval(days => ${bounded})
+    group by network,click_id
+    order by commission desc,conversions desc,referrals desc
+    limit 200
+  `;
+}

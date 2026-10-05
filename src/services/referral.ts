@@ -10,6 +10,10 @@ export type ReferralClick = {
   provider: string;
   source?: string;
   campaign?: string;
+  gclid?: string;
+  gbraid?: string;
+  wbraid?: string;
+  msclkid?: string;
   pagePath?: string;
   position?: number;
   createdAt: string;

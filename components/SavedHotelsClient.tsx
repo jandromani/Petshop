@@ -21,7 +21,7 @@ export default function SavedHotelsClient(){
     void fetch("/api/saved/hotels?hotelId="+encodeURIComponent(id),{method:"DELETE",cache:"no-store"}).catch(()=>{});
   }
   if(!rows.length)return null;
-  return <section className="savedHotelsSection"><div className="sectionTitle"><h2>Saved real hotels.</h2><p>These are property identities, not saved prices. Atlas will re-check commercial evidence when you open them.</p></div><div className="savedGrid">
-    {rows.map(h=><article className="card savedStayCard" key={h.hotelId}><div className="hotelTopline"><span>{h.source}</span><span>PROPERTY SAVED</span></div><h2>{h.name}</h2><p>{h.city}, {h.country}</p><small>Saved {new Date(h.savedAt).toLocaleDateString()}</small><div className="actions"><a className="btn lime" href={"/stays/"+encodeURIComponent(h.hotelId)} onClick={()=>growthEvent("saved_hotel_open",{hotel_id:h.hotelId})}>Open + source rate →</a><button className="btn ghost" onClick={()=>remove(h.hotelId)}>Remove</button></div></article>)}
+  return <section className="savedHotelsSection"><div className="sectionTitle"><h2>Saved hotels.</h2><p>Keep interesting places here even before a long-stay price is available.</p></div><div className="savedGrid">
+    {rows.map(h=><article className="card savedStayCard" key={h.hotelId}><div className="hotelTopline"><span>{h.city}</span><span>SAVED</span></div><h2>{h.name}</h2><p>{h.city}, {h.country}</p><small>Saved {new Date(h.savedAt).toLocaleDateString()}</small><div className="actions"><a className="btn lime" href={"/stays/"+encodeURIComponent(h.hotelId)} onClick={()=>growthEvent("saved_hotel_open",{hotel_id:h.hotelId})}>Open hotel →</a><button className="btn ghost" onClick={()=>remove(h.hotelId)}>Remove</button></div></article>)}
   </div></section>;
 }

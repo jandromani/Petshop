@@ -24,13 +24,15 @@ export default async function HotelDesk(){
       <div className="metricDark"><b>{desk.rates.length}</b><span>direct rate records</span></div>
       <div className="metricDark"><b>{desk.rates.filter((r:any)=>r.contract_verified).length}</b><span>contract verified</span></div>
       <div className="metricDark"><b>{desk.rates.filter((r:any)=>r.publication_state==="READY_FOR_REVIEW").length}</b><span>ready for truth review</span></div>
+      <div className="metricDark"><b>{desk.rates.filter((r:any)=>r.merchant_enabled&&r.merchant_terms_verified).length}</b><span>merchant-configured rates</span></div>
+      <div className="metricDark"><b>{desk.rates.reduce((s:number,r:any)=>s+Math.max(0,Number(r.inventory_units||0)-Number(r.reserved_units||0)-Number(r.sold_units||0)),0)}</b><span>available allocated units</span></div>
     </div>
 
     <h2 style={{marginTop:36}}>Commercial supply activation</h2>
     <div className="table">
       <div className="tr"><b>Provider</b><b>Grade</b><b>Environment</b><b>Blockers</b></div>
       {providers.map(p=><div className="tr" key={p.provider}><b>{p.provider}</b><span className={p.commercialReady?"green":"amber"}>{p.grade}</span><span>{p.environment}</span><span>{p.commercialReady?"Customer-targeted probes armed":p.blockers.join(" · ")||"credentials missing"}</span></div>)}
-      <div className="tr"><b>Direct Hotel OS</b><span className="green">ARMED</span><span>contract evidence</span><span>30–365d · customer sourcing always routes here as fallback</span></div>
+      <div className="tr"><b>Direct Hotel OS</b><span className="green">ARMED</span><span>contract evidence</span><span>30–90d · customer sourcing always routes here as fallback</span></div>
     </div>
 
     <h2 style={{marginTop:36}}>Customer sourcing queue</h2>
@@ -40,7 +42,7 @@ export default async function HotelDesk(){
         <span>{r.city}, {r.country}</span>
         <span>{r.nights}d · {r.occupancy} guest{r.occupancy===1?"":"s"} · {r.check_in}</span>
         <span className={r.status==="MATCHED"?"green":"amber"}>{r.status}{r.target_monthly_eur?" · €"+Math.round(r.target_monthly_eur)+"/mo target":""}</span>
-      </div>):<div className="tr"><b>No customer sourcing requests yet</b><span>Rate-pending hotel pages can create them</span><span>30–365d</span><span className="amber">WAITING</span></div>}
+      </div>):<div className="tr"><b>No customer sourcing requests yet</b><span>Rate-pending hotel pages can create them</span><span>30–90d</span><span className="amber">WAITING</span></div>}
     </div>
 
     <h2 style={{marginTop:36}}>Leads</h2>
@@ -50,7 +52,7 @@ export default async function HotelDesk(){
 
     <h2 style={{marginTop:36}}>LONG rates</h2>
     <div className="table">
-      {desk.rates.length?desk.rates.map((r:any)=><div className="tr" key={r.id}><b>{r.hotel_name} · {r.rate_code}</b><span>{r.min_nights}–{r.max_nights||"∞"} nights</span><span>{r.currency} {Math.round(r.monthly_price)}/mo</span><span className={r.publication_state==="READY_FOR_REVIEW"?"green":"amber"}>{r.publication_state}</span></div>):<div className="tr"><b>No direct rates yet</b><span>LONG30/60/90/180</span><span>—</span><span className="amber">DRAFT</span></div>}
+      {desk.rates.length?desk.rates.map((r:any)=><div className="tr" key={r.id}><b>{r.hotel_name} · {r.rate_code}</b><span>{r.min_nights}–{r.max_nights||"∞"} nights</span><span>{r.currency} {Math.round(r.monthly_price)}/mo · {r.channel_model||"REFERRAL"}</span><span className={r.publication_state==="LIVE"?"green":"amber"}>{r.publication_state}{r.merchant_enabled?" · "+Math.max(0,Number(r.inventory_units||0)-Number(r.reserved_units||0)-Number(r.sold_units||0))+" units":""}</span></div>):<div className="tr"><b>No direct rates yet</b><span>LONG30/60/90</span><span>—</span><span className="amber">DRAFT</span></div>}
     </div>
   </div></main>;
 }

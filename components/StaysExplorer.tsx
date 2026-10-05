@@ -14,10 +14,12 @@ export type StaysInitialSearch={
   sort:"recommended"|"price"|"confidence"|"name";page:number;bbox:string;
 };
 
+const primaryDuration=(d:StayDuration):StayDuration=>d===30||d===60?d:90;
+
 export default function StaysExplorer({initial,initialData}:{initial:StaysInitialSearch;initialData?:DirectoryPayload}){
   const[query,setQuery]=useState(initial.query);const[region,setRegion]=useState<SearchRegion>(initial.region);
   const[checkIn,setCheckIn]=useState(initial.checkIn);const[flexibleDays,setFlexibleDays]=useState<0|7|30>(initial.flexibleDays);
-  const[duration,setDuration]=useState<StayDuration>(initial.duration);const[party,setParty]=useState<Party>(initial.occupancy===2?"couple":"solo");
+  const[duration,setDuration]=useState<StayDuration>(primaryDuration(initial.duration));const[party,setParty]=useState<Party>(initial.occupancy===2?"couple":"solo");
   const[budget,setBudget]=useState(initial.budget);const[amenities,setAmenities]=useState<string[]>(initial.features);const[count,setCount]=useState(initialData?.total||0);
 
   useEffect(()=>{const onPop=()=>window.location.reload();window.addEventListener("popstate",onPop);return()=>window.removeEventListener("popstate",onPop)},[]);
@@ -27,16 +29,16 @@ export default function StaysExplorer({initial,initialData}:{initial:StaysInitia
     document.getElementById("explore")?.scrollIntoView({behavior:"smooth"});
   }
   function applyAi(intent:AiSearchIntent){
-    setQuery(intent.query);setRegion(intent.region);setDuration(intent.duration);setParty(intent.occupancy===2?"couple":"solo");
+    const d=primaryDuration(intent.duration);setQuery(intent.query);setRegion(intent.region);setDuration(d);setParty(intent.occupancy===2?"couple":"solo");
     setFlexibleDays(intent.flexibleDays);if(intent.maxMonthly)setBudget(intent.maxMonthly);setAmenities(intent.amenities);
-    growthEvent("ai_search_navigation",{surface:"stays",query:intent.query||"all",region:intent.region,duration:intent.duration});
+    growthEvent("ai_search_navigation",{surface:"stays",query:intent.query||"all",region:intent.region,duration:d});
     setTimeout(()=>document.getElementById("explore")?.scrollIntoView({behavior:"smooth"}),50);
   }
 
   return <main className="seoPage staysSearchPage">
     <section className="staysSearchHero"><div className="shell">
       <a className="eyebrow" href="/">← ATLAS LONG STAY</a>
-      <div className="staysSearchIntro"><div><div className="eyebrow">30–365 DAY HOTEL SEARCH</div><h1>Search real hotels.<br/>Ask Atlas anything.</h1><p>Map real properties first. Commercial prices appear only when Atlas has verified the requested rate, dates and fulfillment path.</p></div><div className="staysSearchMetric"><b>{count.toLocaleString("en-US")}</b><span>matching real properties</span></div></div>
+      <div className="staysSearchIntro"><div><div className="eyebrow">30–90 DAY HOTEL LIVING</div><h1>Find one place<br/>for a month or a season.</h1><p>Search the hotel universe. If a verified long-stay rate exists, Atlas shows it. If it does not, create a private-rate sourcing case.</p></div><div className="staysSearchMetric"><b>30 / 60 / 90</b><span>days per stay</span></div></div>
       <SilverSearch query={query} setQuery={setQuery} region={region} setRegion={setRegion} checkIn={checkIn} setCheckIn={setCheckIn} flexibleDays={flexibleDays} setFlexibleDays={setFlexibleDays} duration={duration} setDuration={setDuration} party={party} setParty={setParty} budget={budget} setBudget={setBudget} count={count} onSearch={submit}/>
       <AiHotelSearch current={{region,duration,occupancy:party==="couple"?2:1,maxMonthly:budget}} onApply={applyAi}/>
     </div></section>
