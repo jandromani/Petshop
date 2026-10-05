@@ -6,7 +6,7 @@ import { liveProviderStatuses } from "@/src/providers/live/registry";
 import { databaseHealth } from "@/src/db/client";
 import { getOpsSnapshot } from "@/src/db/ops";
 import { listOpenIncidents } from "@/src/db/governance";
-import { growthFunnel,productFunnel,heroExperimentReadout,searchFriction } from "@/src/db/growth";
+import { growthFunnel,productFunnel,heroExperimentReadout,searchFriction,webVitalsSnapshot } from "@/src/db/growth";
 import { listAgentTasks } from "@/src/db/agent-tasks";
 import { agentRuntimeCredentialsAvailable,agentRuntimeProvider } from "@/src/agents/llm";
 import { getHeroOverride } from "@/src/growth/autopilot";
@@ -14,6 +14,8 @@ import { getSloSnapshot } from "@/src/system/slo";
 import { getEconomicsSnapshot } from "@/src/system/economics";
 import { agentRoleMetrics,providerErrorBudgets,runtimeDurationMetrics } from "@/src/db/observability";
 import { deriveWeeklyOperatingScorecard } from "@/src/system/scorecard";
+import { seoReadiness } from "@/src/seo/readiness";
+import { contentEnrichmentSnapshot } from "@/src/system/content-readiness";
 
 export const metadata={title:"Control Tower",robots:{index:false,follow:false}};
 
@@ -22,7 +24,7 @@ export default async function ControlTower(){
   if(!verifyOpsSession(jar.get(OPS_COOKIE)?.value)) notFound();
 
   const providers=liveProviderStatuses();
-  const [ops,incidents,funnel,product,heroExperiment,friction,agentTasks,heroOverride,dbHealth,agentCredentials,slo,economics,agentMetrics,providerBudgets,durationMetrics]=await Promise.all([
+  const [ops,incidents,funnel,product,heroExperiment,friction,agentTasks,heroOverride,dbHealth,agentCredentials,slo,economics,agentMetrics,providerBudgets,durationMetrics,webVitals,seo,content]=await Promise.all([
     getOpsSnapshot(),
     listOpenIncidents(20),
     growthFunnel(30),
@@ -38,6 +40,9 @@ export default async function ControlTower(){
     agentRoleMetrics(30),
     providerErrorBudgets(30),
     runtimeDurationMetrics(30),
+    webVitalsSnapshot(30),
+    seoReadiness(),
+    contentEnrichmentSnapshot(),
   ]);
   const db=dbHealth.reachable;
   const agentConfigured=agentCredentials&&process.env.AGENT_RUNTIME_ENABLED!=="false";
@@ -110,6 +115,32 @@ export default async function ControlTower(){
           <b className={economics.proofState==="COMMERCIAL_EVIDENCE_OBSERVED"?"green":"amber"}>{economics.proofState}</b>
           <span>commercial evidence</span>
         </div>
+      </div>
+
+      <h2 style={{marginTop:36}}>Hotel enrichment / licensed content</h2>
+      <div className="metrics">
+        <div className="metricDark"><b>{content.staticCoverage.hotels}</b><span>Overture property identities</span></div>
+        <div className="metricDark"><b>{content.staticCoverage.branded}</b><span>known brand</span></div>
+        <div className="metricDark"><b>{content.staticCoverage.officialSites}</b><span>official website</span></div>
+        <div className="metricDark"><b>{content.staticCoverage.categorized}</b><span>taxonomy/category</span></div>
+        <div className="metricDark"><b>{content.databaseContent.withPhotos}</b><span>licensed/displayable photo sets</span></div>
+        <div className="metricDark"><b>{content.databaseContent.withFacilities}</b><span>displayable facilities sets</span></div>
+        <div className="metricDark"><b className={content.bookingContent.displayAllowed?"green":"amber"}>{content.bookingContent.displayAllowed?"BOOKING CONTENT ON":"BOOKING CONTENT OFF"}</b><span>storage {content.bookingContent.storageAllowed?"allowed":"blocked"} · license {content.bookingContent.licenseRefConfigured?"configured":"missing"}</span></div>
+      </div>
+
+      <h2 style={{marginTop:36}}>SEO / Search Console readiness</h2>
+      <div className="metrics">
+        <div className="metricDark"><b className={seo.customDomainConfigured?"green":"amber"}>{seo.customDomainConfigured?"CUSTOM DOMAIN":"TEMP DOMAIN"}</b><span>{seo.canonical}</span></div>
+        <div className="metricDark"><b className={seo.googleVerificationConfigured?"green":"amber"}>{seo.googleVerificationConfigured?"VERIFICATION READY":"TOKEN MISSING"}</b><span>Google Search Console meta verification</span></div>
+        <div className="metricDark"><b className={seo.indexingEnabled?"green":"amber"}>{seo.indexingEnabled?"INDEXING OPEN":"FAIL CLOSED"}</b><span>SEO_LIVE_INDEXING gate</span></div>
+        <div className="metricDark"><b>{seo.destinationPagesReady}</b><span>destination pages with evidence gate</span></div>
+        <div className="metricDark"><b>{seo.liveDiscoveryPagesIndexable}</b><span>commercial discovery pages indexable now</span></div>
+      </div>
+      <div className="table"><div className="tr"><b>Sitemap</b><span>{seo.sitemapUrl||"not public"}</span><b>Blockers</b><span>{seo.blockers.length?seo.blockers.join(" · "):"none"}</span></div></div>
+
+      <h2 style={{marginTop:36}}>Core Web Vitals · consented field data · 30d</h2>
+      <div className="metrics">
+        {(["LCP","INP","CLS"] as const).map(name=>{const row=webVitals.find(v=>v.metric===name);return <div className="metricDark" key={name}><b className={row?.good?"green":row?"amber":""}>{row?(name==="CLS"?row.p75.toFixed(3):Math.round(row.p75)+" ms"):"NO SAMPLE"}</b><span>{name} p75 · target {name==="CLS"?"≤ 0.10":name==="LCP"?"≤ 2500 ms":"≤ 200 ms"} · {row?.sample||0} samples</span></div>})}
       </div>
 
       <h2 style={{marginTop:36}}>AI runtime by role · 30d</h2>
@@ -191,6 +222,20 @@ export default async function ControlTower(){
           <span>{product?.resultsToEngagement===null||product?.resultsToEngagement===undefined?"—":(product.resultsToEngagement*100).toFixed(1)+"%"}</span>
           <span>{product?.engagementToSourcing===null||product?.engagementToSourcing===undefined?"—":(product.engagementToSourcing*100).toFixed(1)+"%"}</span>
           <span>{product?.referralToConversion===null||product?.referralToConversion===undefined?"—":(product.referralToConversion*100).toFixed(1)+"%"}</span>
+        </div>
+        <div className="tr"><b>Card CTR</b><b>Map CTR</b><b>Save rate</b><b>Sourcing completion</b></div>
+        <div className="tr">
+          <span>{product?.cardCtr===null||product?.cardCtr===undefined?"—":(product.cardCtr*100).toFixed(1)+"%"}</span>
+          <span>{product?.mapCtr===null||product?.mapCtr===undefined?"—":(product.mapCtr*100).toFixed(1)+"%"}</span>
+          <span>{product?.saveRate===null||product?.saveRate===undefined?"—":(product.saveRate*100).toFixed(1)+"%"}</span>
+          <span>{product?.sourcingCompletionRate===null||product?.sourcingCompletionRate===undefined?"—":(product.sourcingCompletionRate*100).toFixed(1)+"%"}</span>
+        </div>
+        <div className="tr"><b>AI → hotel action</b><b>Manual → hotel action</b><b>Verified click share</b><b>Sourcing start rate</b></div>
+        <div className="tr">
+          <span>{product?.aiToEngagement===null||product?.aiToEngagement===undefined?"—":(product.aiToEngagement*100).toFixed(1)+"%"} · {product?.aiSearchSessions||0} AI sessions</span>
+          <span>{product?.manualToEngagement===null||product?.manualToEngagement===undefined?"—":(product.manualToEngagement*100).toFixed(1)+"%"} · {product?.manualOnlySearchSessions||0} manual-only</span>
+          <span>{product?.verifiedCardClickShare===null||product?.verifiedCardClickShare===undefined?"—":(product.verifiedCardClickShare*100).toFixed(1)+"%"}</span>
+          <span>{product?.sourcingStartRate===null||product?.sourcingStartRate===undefined?"—":(product.sourcingStartRate*100).toFixed(1)+"%"}</span>
         </div>
       </div>
 

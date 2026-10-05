@@ -1,0 +1,20 @@
+export type RateAlert={
+  id:string;
+  hotelId:string;
+  hotelName:string;
+  city:string;
+  country:string;
+  checkIn:string;
+  nights:30|60|90|120|180|365;
+  occupancy:1|2;
+  targetMonthly:number|null;
+  currency:string;
+  status:"ACTIVE"|"TRIGGERED"|"PAUSED";
+  triggeredOfferId:string|null;
+  triggeredMonthly:number|null;
+  triggeredAt:string|null;
+  lastCheckedAt:string|null;
+  lastResult:string|null;
+  createdAt:string;
+  updatedAt:string;
+};

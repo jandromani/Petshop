@@ -9,6 +9,7 @@ export default function SourceStayForm({hotelId,defaultCheckIn,defaultDuration}:
   const[occupancy,setOccupancy]=useState<1|2>(1);
   const[budget,setBudget]=useState("");
   const[state,setState]=useState<"idle"|"sending"|"done"|"error">("idle");
+  const[route,setRoute]=useState<"booking"|"direct"|null>(null);
   async function submit(){
     setState("sending");growthEvent("source_rate_start",{hotel_id:hotelId,nights,occupancy,target_monthly:budget?Number(budget):0});
     const res=await fetch("/api/sourcing",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
@@ -16,7 +17,7 @@ export default function SourceStayForm({hotelId,defaultCheckIn,defaultDuration}:
       targetMonthlyEur:budget?Number(budget):undefined,
       sourcePath:location.pathname+location.search,
     })}).catch(()=>null);
-    const ok=Boolean(res?.ok);setState(ok?"done":"error");growthEvent(ok?"source_rate_success":"source_rate_error",{hotel_id:hotelId,nights,occupancy});
+    const data=res?.ok?await res.json().catch(()=>null):null;const ok=Boolean(res?.ok);setRoute(data?.providerAttempt==="booking-targeted-after-response"?"booking":ok?"direct":null);setState(ok?"done":"error");growthEvent(ok?"source_rate_success":"source_rate_error",{hotel_id:hotelId,nights,occupancy,route:data?.providerAttempt||"none"});
   }
   return <div className="sourceStay">
     <div className="eyebrow">ASK ATLAS SUPPLY</div>
@@ -29,6 +30,7 @@ export default function SourceStayForm({hotelId,defaultCheckIn,defaultDuration}:
       <label><span>Target €/month</span><input inputMode="numeric" value={budget} onChange={e=>setBudget(e.target.value.replace(/[^0-9.]/g,""))} placeholder="optional"/></label>
     </div>
     <button className="btn lime" disabled={state==="sending"||state==="done"} onClick={submit}>{state==="sending"?"Creating request…":state==="done"?"Request in Atlas Supply ✓":"Source this stay →"}</button>
+    {state==="done"&&<p className="sourceSuccess">{route==="booking"?"A production-ready provider probe has been queued; Direct Hotel OS remains the fallback.":"Request routed to Direct Hotel OS. No provider rate was claimed."}</p>}
     {state==="error"&&<p className="sourceError">Could not create the sourcing request. Try again.</p>}
   </div>;
 }

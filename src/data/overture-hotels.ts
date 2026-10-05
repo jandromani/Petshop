@@ -12,6 +12,9 @@ export type OvertureHotel={
   lng:number;
   address:string|null;
   website:string|null;
+  brand?:string|null;
+  category?:string|null;
+  taxonomy?:string[];
   referenceUrl:string;
   confidence:number|null;
 };

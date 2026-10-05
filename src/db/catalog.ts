@@ -37,7 +37,7 @@ function normalizeDbRow(row:DbOfferRow):LiveCatalogOffer{
 }
 
 export type LiveCatalogQuery={
-  limit?:number;q?:string;slug?:string;maxMonthly?:number;checkIn?:string;flexibleDays?:number;nights?:number;occupancy?:number;region?:string;
+  limit?:number;q?:string;slug?:string;minMonthly?:number;maxMonthly?:number;checkIn?:string;flexibleDays?:number;nights?:number;occupancy?:number;region?:string;board?:string;cancellation?:string;provider?:string;
 };
 
 export async function listSellableOffers(input:LiveCatalogQuery={}):Promise<LiveCatalogOffer[]>{
@@ -46,12 +46,16 @@ export async function listSellableOffers(input:LiveCatalogQuery={}):Promise<Live
   const limit=Math.max(1,Math.min(50,input.limit??12));
   const q=input.q?.trim()?"%"+input.q.trim()+"%":null;
   const slug=input.slug?.trim()||null;
+  const minMonthly=input.minMonthly&&input.minMonthly>0?input.minMonthly:null;
   const maxMonthly=input.maxMonthly&&input.maxMonthly>0?input.maxMonthly:null;
   const checkIn=input.checkIn||null;
   const flexibleDays=Math.max(0,Math.min(30,input.flexibleDays??0));
   const nights=input.nights&&input.nights>0?input.nights:null;
   const occupancy=input.occupancy&&input.occupancy>0?input.occupancy:null;
   const region=input.region&&input.region!=="All"?input.region:null;
+  const board=input.board?.trim()?"%"+input.board.trim()+"%":null;
+  const cancellation=input.cancellation?.trim()?"%"+input.cancellation.trim()+"%":null;
+  const provider=input.provider?.trim()||null;
 
   const rows=await sql<DbOfferRow[]>`
     with eligible as (
@@ -71,6 +75,8 @@ export async function listSellableOffers(input:LiveCatalogQuery={}):Promise<Live
       from offer_snapshots o
       join canonical_hotels h on h.id=o.hotel_id
       left join hotel_content hc on hc.hotel_id=h.id
+        and hc.display_allowed=true
+        and (hc.expires_at is null or hc.expires_at>now())
       join lateral (
         select state,confidence,evaluated_at from sellability_audits sa
         where sa.offer_snapshot_id=o.id order by sa.evaluated_at desc limit 1
@@ -96,9 +102,16 @@ export async function listSellableOffers(input:LiveCatalogQuery={}):Promise<Live
         and (${nights}::int is null or (o.check_out-o.check_in)::int=${nights})
         and (${occupancy}::int is null or o.occupancy=${occupancy})
         and (
+          ${minMonthly}::float is null or
+          (coalesce(o.display_price,o.total_price)::float/greatest(1,(o.check_out-o.check_in)::int)*30)>=${minMonthly}
+        )
+        and (
           ${maxMonthly}::float is null or
           (coalesce(o.display_price,o.total_price)::float/greatest(1,(o.check_out-o.check_in)::int)*30)<=${maxMonthly}
         )
+        and (${board}::text is null or coalesce(o.board,'') ilike ${board})
+        and (${cancellation}::text is null or coalesce(o.cancellation,'') ilike ${cancellation})
+        and (${provider}::text is null or o.provider=${provider})
     )
     select offer_id,hotel_id,slug,name,city,country,region,lat,lng,provider,check_in,check_out,nights,occupancy,
       board,room_type,cancellation,taxes_included,silver_score,photo_urls,facilities,description,
@@ -129,6 +142,8 @@ export async function getSellableOfferForReferral(offerId:string){
     from offer_snapshots o
     join canonical_hotels h on h.id=o.hotel_id
     left join hotel_content hc on hc.hotel_id=h.id
+      and hc.display_allowed=true
+      and (hc.expires_at is null or hc.expires_at>now())
     join lateral (
       select state,confidence,evaluated_at from sellability_audits sa
       where sa.offer_snapshot_id=o.id order by sa.evaluated_at desc limit 1

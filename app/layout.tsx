@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import ConsentLayer from "@/components/ConsentLayer";
 import GrowthPageView from "@/components/GrowthPageView";
+import WebVitals from "@/components/WebVitals";
+import { seoAutopilotEnabled } from "@/src/seo/live";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 
@@ -17,6 +19,7 @@ export const metadata:Metadata={
   description:"Compare 30–365 day hotel stays by monthly cost and search real hotels with AI, maps and verified commercial rates.",
   metadataBase:new URL(siteUrl()),
   openGraph:{title:"Atlas Long Stay — Live somewhere better",description:"Search real hotels for 30–365 day stays by monthly budget, dates, map and verified availability.",type:"website"},
+  robots:{index:seoAutopilotEnabled(),follow:true},
   verification:{
     google:process.env.GOOGLE_SITE_VERIFICATION||undefined,
     other:process.env.BING_SITE_VERIFICATION?{"msvalidate.01":[process.env.BING_SITE_VERIFICATION]}:undefined,
@@ -24,5 +27,5 @@ export const metadata:Metadata={
 };
 
 export default function RootLayout({children}:Readonly<{children:React.ReactNode}>){
-  return <html lang="en"><body>{children}<GrowthPageView/><ConsentLayer/></body></html>;
+  return <html lang="en"><body>{children}<GrowthPageView/><WebVitals/><ConsentLayer/></body></html>;
 }

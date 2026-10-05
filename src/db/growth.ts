@@ -26,23 +26,13 @@ export async function growthFunnel(days=30){
 
 
 export type ProductFunnel={
-  days:number;
-  pageSessions:number;
-  searchSessions:number;
-  aiSearchSessions:number;
-  resultSessions:number;
-  impressionSessions:number;
-  hotelEngagementSessions:number;
-  savedSessions:number;
-  sourcingStartSessions:number;
-  sourcingSuccessSessions:number;
-  referralSessions:number;
-  conversionSessions:number;
-  searchToResults:number|null;
-  resultsToEngagement:number|null;
-  engagementToSourcing:number|null;
-  engagementToReferral:number|null;
-  referralToConversion:number|null;
+  days:number;pageSessions:number;searchSessions:number;aiSearchSessions:number;manualOnlySearchSessions:number;
+  resultSessions:number;impressionSessions:number;hotelEngagementSessions:number;cardClickSessions:number;mapClickSessions:number;officialSiteSessions:number;
+  verifiedCardClickSessions:number;pendingCardClickSessions:number;savedSessions:number;sourcingStartSessions:number;sourcingSuccessSessions:number;
+  referralSessions:number;conversionSessions:number;aiEngagementSessions:number;manualEngagementSessions:number;
+  searchToResults:number|null;resultsToEngagement:number|null;cardCtr:number|null;mapCtr:number|null;saveRate:number|null;
+  sourcingStartRate:number|null;sourcingCompletionRate:number|null;verifiedCardClickShare:number|null;aiToEngagement:number|null;manualToEngagement:number|null;
+  engagementToSourcing:number|null;engagementToReferral:number|null;referralToConversion:number|null;
 };
 
 const ratio=(num:number,den:number)=>den>0?num/den:null;
@@ -50,80 +40,73 @@ const ratio=(num:number,den:number)=>den>0?num/den:null;
 export async function productFunnel(days=30):Promise<ProductFunnel|null>{
   const sql=getDatabase();if(!sql)return null;
   const bounded=Math.max(1,Math.min(365,days));
-  const rows=await sql<Array<{
-    page_sessions:number;search_sessions:number;ai_search_sessions:number;result_sessions:number;
-    impression_sessions:number;engagement_sessions:number;saved_sessions:number;
-    sourcing_start_sessions:number;sourcing_success_sessions:number;
-    referral_sessions:number;conversion_sessions:number;
-  }>>`
-    with event_sessions as (
-      select session_id,event_name
+  const rows=await sql<Array<Record<string,number>>>`
+    with session_flags as (
+      select session_id,
+        bool_or(event_name='page_view') as page_view,
+        bool_or(event_name='hero_search') as manual_search,
+        bool_or(event_name='ai_search_submit') as ai_search,
+        bool_or(event_name='results_loaded') as results,
+        bool_or(event_name='hotel_impression') as impression,
+        bool_or(event_name in ('hotel_card_click','map_marker_click','hotel_official_site_click')) as engagement,
+        bool_or(event_name='hotel_card_click') as card_click,
+        bool_or(event_name='map_marker_click') as map_click,
+        bool_or(event_name='hotel_official_site_click') as official_site,
+        bool_or(event_name='hotel_card_click' and properties->>'state'='verified') as verified_card_click,
+        bool_or(event_name='hotel_card_click' and properties->>'state'='pending') as pending_card_click,
+        bool_or(event_name='hotel_saved') as saved,
+        bool_or(event_name='source_rate_start') as sourcing_start,
+        bool_or(event_name='source_rate_success') as sourcing_success
       from growth_events
       where created_at>=now()-make_interval(days => ${bounded})
         and session_id is not null
-        and event_name in (
-          'page_view','hero_search','ai_search_submit','ai_filters_applied','results_loaded',
-          'hotel_impression','hotel_card_click','map_marker_click','hotel_official_site_click',
-          'hotel_saved','source_rate_start','source_rate_success'
-        )
-      group by session_id,event_name
+        and event_name in ('page_view','hero_search','ai_search_submit','ai_filters_applied','results_loaded','hotel_impression','hotel_card_click','map_marker_click','hotel_official_site_click','hotel_saved','source_rate_start','source_rate_success')
+      group by session_id
     ),
     rollup as (
       select
-        count(distinct session_id) filter (where event_name='page_view')::int as page_sessions,
-        count(distinct session_id) filter (where event_name in ('hero_search','ai_search_submit'))::int as search_sessions,
-        count(distinct session_id) filter (where event_name='ai_search_submit')::int as ai_search_sessions,
-        count(distinct session_id) filter (where event_name='results_loaded')::int as result_sessions,
-        count(distinct session_id) filter (where event_name='hotel_impression')::int as impression_sessions,
-        count(distinct session_id) filter (where event_name in ('hotel_card_click','map_marker_click','hotel_official_site_click'))::int as engagement_sessions,
-        count(distinct session_id) filter (where event_name='hotel_saved')::int as saved_sessions,
-        count(distinct session_id) filter (where event_name='source_rate_start')::int as sourcing_start_sessions,
-        count(distinct session_id) filter (where event_name='source_rate_success')::int as sourcing_success_sessions
-      from event_sessions
+        count(*) filter (where page_view)::int as page_sessions,
+        count(*) filter (where manual_search or ai_search)::int as search_sessions,
+        count(*) filter (where ai_search)::int as ai_search_sessions,
+        count(*) filter (where manual_search and not ai_search)::int as manual_only_search_sessions,
+        count(*) filter (where results)::int as result_sessions,
+        count(*) filter (where impression)::int as impression_sessions,
+        count(*) filter (where engagement)::int as engagement_sessions,
+        count(*) filter (where card_click)::int as card_click_sessions,
+        count(*) filter (where map_click)::int as map_click_sessions,
+        count(*) filter (where official_site)::int as official_site_sessions,
+        count(*) filter (where verified_card_click)::int as verified_card_click_sessions,
+        count(*) filter (where pending_card_click)::int as pending_card_click_sessions,
+        count(*) filter (where saved)::int as saved_sessions,
+        count(*) filter (where sourcing_start)::int as sourcing_start_sessions,
+        count(*) filter (where sourcing_success)::int as sourcing_success_sessions,
+        count(*) filter (where ai_search and engagement)::int as ai_engagement_sessions,
+        count(*) filter (where manual_search and not ai_search and engagement)::int as manual_engagement_sessions
+      from session_flags
     ),
     referrals as (
-      select count(distinct session_id)::int as referral_sessions
-      from referral_clicks
-      where created_at>=now()-make_interval(days => ${bounded})
-        and session_id is not null
+      select count(distinct session_id)::int as referral_sessions from referral_clicks
+      where created_at>=now()-make_interval(days => ${bounded}) and session_id is not null
     ),
     commercial as (
       select count(distinct r.session_id)::int as conversion_sessions
-      from conversions c
-      join referral_clicks r on r.click_id=c.click_id
-      where c.received_at>=now()-make_interval(days => ${bounded})
-        and c.status not in ('CANCELLED','REVERSED')
-        and r.session_id is not null
+      from conversions c join referral_clicks r on r.click_id=c.click_id
+      where c.received_at>=now()-make_interval(days => ${bounded}) and c.status not in ('CANCELLED','REVERSED') and r.session_id is not null
     )
-    select r.*,f.referral_sessions,c.conversion_sessions
-    from rollup r cross join referrals f cross join commercial c
+    select r.*,f.referral_sessions,c.conversion_sessions from rollup r cross join referrals f cross join commercial c
   `;
-  const row=rows[0]||{
-    page_sessions:0,search_sessions:0,ai_search_sessions:0,result_sessions:0,impression_sessions:0,
-    engagement_sessions:0,saved_sessions:0,sourcing_start_sessions:0,sourcing_success_sessions:0,
-    referral_sessions:0,conversion_sessions:0,
-  };
-  const pageSessions=Number(row.page_sessions||0);
-  const searchSessions=Number(row.search_sessions||0);
-  const aiSearchSessions=Number(row.ai_search_sessions||0);
-  const resultSessions=Number(row.result_sessions||0);
-  const impressionSessions=Number(row.impression_sessions||0);
-  const hotelEngagementSessions=Number(row.engagement_sessions||0);
-  const savedSessions=Number(row.saved_sessions||0);
-  const sourcingStartSessions=Number(row.sourcing_start_sessions||0);
-  const sourcingSuccessSessions=Number(row.sourcing_success_sessions||0);
-  const referralSessions=Number(row.referral_sessions||0);
-  const conversionSessions=Number(row.conversion_sessions||0);
-  return{
-    days:bounded,pageSessions,searchSessions,aiSearchSessions,resultSessions,impressionSessions,
-    hotelEngagementSessions,savedSessions,sourcingStartSessions,sourcingSuccessSessions,
-    referralSessions,conversionSessions,
-    searchToResults:ratio(resultSessions,searchSessions),
-    resultsToEngagement:ratio(hotelEngagementSessions,resultSessions),
-    engagementToSourcing:ratio(sourcingSuccessSessions,hotelEngagementSessions),
-    engagementToReferral:ratio(referralSessions,hotelEngagementSessions),
-    referralToConversion:ratio(conversionSessions,referralSessions),
-  };
+  const row=rows[0]||{};
+  const n=(key:string)=>Number(row[key]||0);
+  const pageSessions=n("page_sessions"),searchSessions=n("search_sessions"),aiSearchSessions=n("ai_search_sessions"),manualOnlySearchSessions=n("manual_only_search_sessions");
+  const resultSessions=n("result_sessions"),impressionSessions=n("impression_sessions"),hotelEngagementSessions=n("engagement_sessions");
+  const cardClickSessions=n("card_click_sessions"),mapClickSessions=n("map_click_sessions"),officialSiteSessions=n("official_site_sessions");
+  const verifiedCardClickSessions=n("verified_card_click_sessions"),pendingCardClickSessions=n("pending_card_click_sessions"),savedSessions=n("saved_sessions");
+  const sourcingStartSessions=n("sourcing_start_sessions"),sourcingSuccessSessions=n("sourcing_success_sessions"),aiEngagementSessions=n("ai_engagement_sessions"),manualEngagementSessions=n("manual_engagement_sessions");
+  const referralSessions=n("referral_sessions"),conversionSessions=n("conversion_sessions");
+  return{days:bounded,pageSessions,searchSessions,aiSearchSessions,manualOnlySearchSessions,resultSessions,impressionSessions,hotelEngagementSessions,cardClickSessions,mapClickSessions,officialSiteSessions,verifiedCardClickSessions,pendingCardClickSessions,savedSessions,sourcingStartSessions,sourcingSuccessSessions,referralSessions,conversionSessions,aiEngagementSessions,manualEngagementSessions,
+    searchToResults:ratio(resultSessions,searchSessions),resultsToEngagement:ratio(hotelEngagementSessions,resultSessions),cardCtr:ratio(cardClickSessions,impressionSessions),mapCtr:ratio(mapClickSessions,impressionSessions),saveRate:ratio(savedSessions,impressionSessions),
+    sourcingStartRate:ratio(sourcingStartSessions,hotelEngagementSessions),sourcingCompletionRate:ratio(sourcingSuccessSessions,sourcingStartSessions),verifiedCardClickShare:ratio(verifiedCardClickSessions,cardClickSessions),
+    aiToEngagement:ratio(aiEngagementSessions,aiSearchSessions),manualToEngagement:ratio(manualEngagementSessions,manualOnlySearchSessions),engagementToSourcing:ratio(sourcingSuccessSessions,hotelEngagementSessions),engagementToReferral:ratio(referralSessions,hotelEngagementSessions),referralToConversion:ratio(conversionSessions,referralSessions)};
 }
 
 export async function acquisitionBreakdown(days=30){
@@ -280,4 +263,24 @@ export async function searchFriction(days=30):Promise<SearchFriction|null>{
     referralRate:trackableSessions?referralSessions/trackableSessions:null,
     abandonmentRate:trackableSessions?abandonedSessions/trackableSessions:null,
   };
+}
+
+
+export type WebVitalMetric={metric:"LCP"|"INP"|"CLS";p75:number;sample:number;target:number;good:boolean};
+export async function webVitalsSnapshot(days=30):Promise<WebVitalMetric[]>{
+  const sql=getDatabase();if(!sql)return[];
+  const bounded=Math.max(1,Math.min(365,days));
+  const rows=await sql<Array<{metric:"LCP"|"INP"|"CLS";p75:number;sample:number}>>`
+    select properties->>'metric' as metric,
+      percentile_disc(0.75) within group (order by (properties->>'value')::float)::float as p75,
+      count(*)::int as sample
+    from growth_events
+    where event_name='web_vital'
+      and created_at>=now()-make_interval(days => ${bounded})
+      and properties->>'metric' in ('LCP','INP','CLS')
+      and properties->>'value' ~ '^[0-9]+(\\.[0-9]+)?$'
+    group by properties->>'metric'
+  `;
+  const targets={LCP:2500,INP:200,CLS:0.1} as const;
+  return rows.map(row=>({metric:row.metric,p75:Number(row.p75),sample:Number(row.sample),target:targets[row.metric],good:Number(row.p75)<=targets[row.metric]}));
 }

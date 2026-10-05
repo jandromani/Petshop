@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { OPS_COOKIE,verifyOpsSession } from "@/src/security/ops-session";
 import { listHotelDesk } from "@/src/db/direct-supply";
 import { listSourcingRequests } from "@/src/db/sourcing";
+import { providerReadinessReport } from "@/src/providers/live/conformance";
 
 export const metadata={title:"Hotel Desk",robots:{index:false,follow:false}};
 
@@ -10,6 +11,7 @@ export default async function HotelDesk(){
   const jar=await cookies();
   if(!verifyOpsSession(jar.get(OPS_COOKIE)?.value)) notFound();
   const [desk,sourcing]=await Promise.all([listHotelDesk(),listSourcingRequests(100)]);
+  const providers=providerReadinessReport();
 
   return <main className="controlPage"><div className="shell">
     <a className="eyebrow" style={{color:"#0a1630"}} href="/control">← Control Tower</a>
@@ -22,6 +24,13 @@ export default async function HotelDesk(){
       <div className="metricDark"><b>{desk.rates.length}</b><span>direct rate records</span></div>
       <div className="metricDark"><b>{desk.rates.filter((r:any)=>r.contract_verified).length}</b><span>contract verified</span></div>
       <div className="metricDark"><b>{desk.rates.filter((r:any)=>r.publication_state==="READY_FOR_REVIEW").length}</b><span>ready for truth review</span></div>
+    </div>
+
+    <h2 style={{marginTop:36}}>Commercial supply activation</h2>
+    <div className="table">
+      <div className="tr"><b>Provider</b><b>Grade</b><b>Environment</b><b>Blockers</b></div>
+      {providers.map(p=><div className="tr" key={p.provider}><b>{p.provider}</b><span className={p.commercialReady?"green":"amber"}>{p.grade}</span><span>{p.environment}</span><span>{p.commercialReady?"Customer-targeted probes armed":p.blockers.join(" · ")||"credentials missing"}</span></div>)}
+      <div className="tr"><b>Direct Hotel OS</b><span className="green">ARMED</span><span>contract evidence</span><span>30–365d · customer sourcing always routes here as fallback</span></div>
     </div>
 
     <h2 style={{marginTop:36}}>Customer sourcing queue</h2>

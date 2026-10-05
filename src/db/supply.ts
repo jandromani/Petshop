@@ -279,10 +279,17 @@ export async function upsertHotelContent(input:{
   photoUrls?:string[];
   facilities?:string[];
   sourceHash?:string;
+  displayAllowed?:boolean;
+  licenseRef?:string;
+  sourceUrl?:string;
+  expiresAt?:string;
 }){
   const sql=getDatabase();if(!sql)return false;
   await sql`
-    insert into hotel_content (hotel_id,provider,description,photo_urls,facilities,source_hash,updated_at)
+    insert into hotel_content (
+      hotel_id,provider,description,photo_urls,facilities,source_hash,
+      display_allowed,license_ref,source_url,fetched_at,expires_at,updated_at
+    )
     values (
       ${input.hotelId}::uuid,
       ${input.provider},
@@ -290,6 +297,11 @@ export async function upsertHotelContent(input:{
       ${sql.json((input.photoUrls||[]) as never)},
       ${sql.json((input.facilities||[]) as never)},
       ${input.sourceHash ?? null},
+      ${Boolean(input.displayAllowed)},
+      ${input.licenseRef ?? null},
+      ${input.sourceUrl ?? null},
+      now(),
+      ${input.expiresAt ?? null}::timestamptz,
       now()
     )
     on conflict (hotel_id) do update set
@@ -298,6 +310,11 @@ export async function upsertHotelContent(input:{
       photo_urls=case when jsonb_array_length(excluded.photo_urls)>0 then excluded.photo_urls else hotel_content.photo_urls end,
       facilities=case when jsonb_array_length(excluded.facilities)>0 then excluded.facilities else hotel_content.facilities end,
       source_hash=coalesce(excluded.source_hash,hotel_content.source_hash),
+      display_allowed=excluded.display_allowed,
+      license_ref=coalesce(excluded.license_ref,hotel_content.license_ref),
+      source_url=coalesce(excluded.source_url,hotel_content.source_url),
+      fetched_at=now(),
+      expires_at=excluded.expires_at,
       updated_at=now()
   `;
   return true;

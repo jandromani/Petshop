@@ -79,6 +79,9 @@ for fallback_city,fallback_country,region,(xmin,ymin,xmax,ymax) in BOXES:
         confidence,
         operating_status,
         websites[1] AS website,
+        brand.names.primary AS brand,
+        taxonomy.primary AS category,
+        taxonomy.hierarchy AS taxonomy,
         addresses[1].freeform AS address,
         addresses[1].locality AS locality,
         addresses[1].country AS country_code,
@@ -101,7 +104,7 @@ for fallback_city,fallback_country,region,(xmin,ymin,xmax,ymax) in BOXES:
         print(f"box failed {fallback_city}: {exc}")
         continue
 
-    for oid,name,confidence,status,website,address,locality,country_code,lng,lat in rows:
+    for oid,name,confidence,status,website,brand,category,taxonomy,address,locality,country_code,lng,lat in rows:
         if not name or not math.isfinite(float(lat)) or not math.isfinite(float(lng)):
             continue
         country=COUNTRY_NAMES.get(country_code or "")
@@ -125,6 +128,9 @@ for fallback_city,fallback_country,region,(xmin,ymin,xmax,ymax) in BOXES:
           "lng":round(float(lng),6),
           "address":str(address).strip() if address else None,
           "website":web,
+          "brand":str(brand).strip() if brand else None,
+          "category":str(category).strip() if category else "hotel",
+          "taxonomy":[str(x) for x in (taxonomy or [])],
           "referenceUrl":ref,
           "confidence":round(float(confidence),4) if confidence is not None else None,
         }

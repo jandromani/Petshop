@@ -1,11 +1,45 @@
 import { z } from "zod";
+import { after } from "next/server";
 import { resolveDirectoryHotel } from "@/src/services/directory";
 import { createSourcingRequest,listSourcingRequests,updateSourcingRequestStatus } from "@/src/db/sourcing";
 import { ensureHotelLead } from "@/src/db/direct-supply";
 import { enforceRateLimit,requestFingerprint } from "@/src/security/rate-limit";
 import { opsAuthorized } from "@/src/security/ops-auth";
+import { BookingDemandClient } from "@/src/providers/live/booking";
+import { runBookingLiveWave } from "@/src/services/booking-live-wave";
+import { listSellableOffers } from "@/src/db/catalog";
 
 export const runtime="nodejs";
+
+function normName(value:string){
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+}
+function closeName(a:string,b:string){
+  const x=normName(a),y=normName(b);return x===y||x.includes(y)||y.includes(x);
+}
+
+async function tryCommercialSourcing(input:{
+  requestId:string;hotel:{id:string;name:string;city:string;country:string;region:"Europe"|"Asia"|"Africa"|"Americas";lat:number|null;lng:number|null};
+  checkIn:string;nights:30|60|90|120|180|365;occupancy:1|2;
+}){
+  if(input.nights>90||input.hotel.lat===null||input.hotel.lng===null)return;
+  const booking=new BookingDemandClient();const status=booking.status();
+  if(!status.commercialReady)return;
+  try{
+    await runBookingLiveWave({
+      waveKey:"customer_"+input.requestId,
+      checkIn:input.checkIn,nights:input.nights,adults:input.occupancy,persist:true,
+      maxDestinations:1,radiusKm:2,rowsPerDestination:40,
+      anchors:[{city:input.hotel.city,country:input.hotel.country,region:input.hotel.region,lat:input.hotel.lat,lng:input.hotel.lng}],
+    });
+    const offers=await listSellableOffers({q:input.hotel.name,checkIn:input.checkIn,nights:input.nights,occupancy:input.occupancy,limit:12});
+    const matched=offers.some(o=>o.country.toLowerCase()===input.hotel.country.toLowerCase()&&closeName(o.name,input.hotel.name));
+    if(matched)await updateSourcingRequestStatus(input.requestId,"MATCHED");
+  }catch(error){
+    console.warn(JSON.stringify({level:"warning",event:"customer_targeted_sourcing_failed",requestId:input.requestId,error:String(error).slice(0,300)}));
+  }
+}
+
 const Input=z.object({
   hotelId:z.string().min(4).max(180),
   checkIn:z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -35,7 +69,9 @@ export async function POST(req:Request){
   if(!row)return Response.json({error:"database-unavailable"},{status:503});
   const canonicalHotelId=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(hotel.canonicalId)?hotel.canonicalId:undefined;
   const leadId=await ensureHotelLead({canonicalHotelId,hotelName:hotel.name,city:hotel.city,country:hotel.country,region:hotel.region,lat:hotel.lat??undefined,lng:hotel.lng??undefined,website:hotel.website??undefined,source:"customer-sourcing",notes:{directoryHotelId:hotel.id,sourcingRequestId:row.id,checkIn:parsed.data.checkIn,nights:parsed.data.nights,occupancy:parsed.data.occupancy,targetMonthlyEur:parsed.data.targetMonthlyEur??null}}).catch(()=>null);
-  return Response.json({ok:true,id:row.id,status:row.status,leadId,message:"Atlas Supply request created and routed to Direct Hotel OS."},{status:202,headers:{"Cache-Control":"no-store"}});
+  after(()=>tryCommercialSourcing({requestId:row.id,hotel:{id:hotel.id,name:hotel.name,city:hotel.city,country:hotel.country,region:hotel.region,lat:hotel.lat,lng:hotel.lng},checkIn:parsed.data.checkIn,nights:parsed.data.nights,occupancy:parsed.data.occupancy}));
+  const bookingStatus=new BookingDemandClient().status();
+  return Response.json({ok:true,id:row.id,status:row.status,leadId,providerAttempt:bookingStatus.commercialReady&&parsed.data.nights<=90&&hotel.lat!==null&&hotel.lng!==null?"booking-targeted-after-response":"direct-hotel-os",message:"Atlas Supply request created. Commercially ready providers may be probed after the response; Direct Hotel OS remains the fallback."},{status:202,headers:{"Cache-Control":"no-store"}});
 }
 
 export async function GET(req:Request){

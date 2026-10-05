@@ -5,7 +5,7 @@ import { opsAuthorized } from "@/src/security/ops-auth";
 const Input=z.object({
   hotelLeadId:z.string().uuid(),
   rateCode:z.string().min(2).max(80),
-  minNights:z.number().int().min(30).max(180),
+  minNights:z.number().int().min(30).max(365),
   maxNights:z.number().int().min(30).max(365).optional(),
   maxGuests:z.number().int().min(1).max(2).default(2),
   board:z.string().max(80).optional(),

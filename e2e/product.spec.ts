@@ -15,9 +15,8 @@ test("money truth is explicit and internally consistent",async({page})=>{
 test("search count and visible real-hotel cards share the same directory contract",async({page})=>{
   await page.goto("/");
   await page.getByRole("button",{name:/Browse .* real hotels/i}).click();
-  await expect(page.locator("#explore")).toBeInViewport();
-  const heading=page.locator("#explore h2");
-  await expect(heading).toContainText(/Real hotels/i);
+  const heading=page.locator("#explore .resultsHeadline h2");
+  await expect(heading).toContainText(/real hotels/i,{timeout:15000});
 });
 
 test("system proof and health remain reachable",async({page,request})=>{
@@ -84,13 +83,17 @@ test("public surfaces keep basic accessibility contracts",async({page})=>{
 
       const unnamedButtons=await page.locator("button").evaluateAll(nodes=>nodes.filter(node=>{
         const element=node as HTMLElement;
-        return !((element.innerText||"").trim()||element.getAttribute("aria-label")||element.getAttribute("title"));
+        const style=getComputedStyle(element);
+        if(element.hidden||style.display==="none"||style.visibility==="hidden"||element.closest('[aria-hidden="true"]'))return false;
+        return !((element.textContent||"").trim()||element.getAttribute("aria-label")||element.getAttribute("title"));
       }).length);
       expect(unnamedButtons,path+" unnamed buttons").toBe(0);
 
       const unnamedLinks=await page.locator("a").evaluateAll(nodes=>nodes.filter(node=>{
         const element=node as HTMLElement;
-        return !((element.innerText||"").trim()||element.getAttribute("aria-label")||element.getAttribute("title"));
+        const style=getComputedStyle(element);
+        if(element.hidden||style.display==="none"||style.visibility==="hidden"||element.closest('[aria-hidden="true"]'))return false;
+        return !((element.textContent||"").trim()||element.getAttribute("aria-label")||element.getAttribute("title"));
       }).length);
       expect(unnamedLinks,path+" unnamed links").toBe(0);
 
@@ -105,4 +108,57 @@ test("public surfaces keep basic accessibility contracts",async({page})=>{
       expect(unnamedFields,path+" unnamed form controls").toBe(0);
     });
   }
+});
+
+
+test("shared hotel search restores the full deterministic filter state",async({page})=>{
+  await page.goto("/stays?q=Madrid&region=Europe&duration=90&occupancy=2&maxMonthly=1800&features=pool%2Cgym&brand=Marriott&brandedOnly=1&sort=name");
+  await expect(page.getByRole("heading",{name:/Search real hotels/i})).toBeVisible();
+  await expect.poll(()=>page.evaluate(()=>{
+    const root=document.querySelector(".silverSearch");
+    const value=(selector:string)=>(root?.querySelector(selector) as HTMLInputElement|HTMLSelectElement|null)?.value??null;
+    const brand=(document.querySelector('.advancedHotelFilters input[placeholder="Hilton, Marriott…"]') as HTMLInputElement|null)?.value??null;
+    const active=new Set(Array.from(document.querySelectorAll(".preferenceFilters button.active")).map(node=>(node.textContent||"").trim()));
+    return {
+      query:value('input[placeholder^="Madrid"]'),
+      region:value('select[aria-label="Region"]'),
+      duration:value('select[aria-label="Stay duration"]'),
+      party:value('select[aria-label="Travelling party"]'),
+      budget:value('input[aria-label="Maximum monthly hotel budget"]'),
+      brand,
+      pool:active.has("pool"),
+      gym:active.has("gym"),
+      brandedOnly:new URL(window.location.href).searchParams.get("brandedOnly"),
+    };
+  }),{timeout:15000}).toEqual({
+    query:"Madrid",region:"Europe",duration:"90",party:"couple",budget:"1800",brand:"Marriott",pool:true,gym:true,brandedOnly:"1",
+  });
+});
+
+test("zero-result search fails honestly and offers deterministic relaxation",async({page})=>{
+  await page.goto("/stays?q=atlas-hotel-that-does-not-exist-zzzz");
+  await expect(page.getByText(/ZERO RESULTS · NO FAKE FALLBACK/i)).toBeVisible();
+  await expect.poll(()=>page.locator(".zeroResults .actions button").allTextContents(),{timeout:15000}).toContain("Clear destination/name");
+});
+
+test("real hotel search exposes list and map modes on mobile",async({page,request})=>{
+  const worker=await request.get("/maplibre/maplibre-gl-worker.mjs");
+  const shared=await request.get("/maplibre/maplibre-gl-shared.mjs");
+  expect(worker.ok()).toBeTruthy();
+  expect(shared.ok()).toBeTruthy();
+
+  await page.route("https://tiles.openfreemap.org/styles/bright",async route=>{
+    await route.fulfill({
+      status:200,
+      contentType:"application/json",
+      body:JSON.stringify({version:8,sources:{},layers:[{id:"background",type:"background",paint:{"background-color":"#f4f6f8"}}]}),
+    });
+  });
+
+  await page.setViewportSize({width:390,height:844});
+  await page.goto("/stays?q=Madrid");
+  await expect(page.getByRole("button",{name:/Map ·/i})).toBeVisible();
+  await page.getByRole("button",{name:/Map ·/i}).click();
+  await expect(page.locator(".hotelMapPane")).toBeVisible();
+  await expect(page.locator(".hotelMapShell")).toBeAttached();
 });

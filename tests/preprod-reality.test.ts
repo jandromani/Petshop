@@ -2,6 +2,7 @@ import { describe,expect,it } from "vitest";
 import { realHotels } from "@/src/data/real-hotels";
 import { overtureHotels } from "@/src/data/overture-hotels";
 import { publicDirectorySnapshot } from "@/src/data/public-directory";
+import { curatedGeoMatchCount } from "@/src/data/curated-enrichment";
 import { publicPartnerReferences } from "@/src/adjacency/reference-partners";
 
 describe("preproduction reality layer",()=>{
@@ -31,10 +32,15 @@ describe("preproduction reality layer",()=>{
       expect("monthly" in h).toBe(false);
       expect("price" in h).toBe(false);
     }
+    expect(curatedGeoMatchCount()).toBeGreaterThanOrEqual(35);
     const snapshot=publicDirectorySnapshot(24);
     expect(snapshot.total).toBeGreaterThanOrEqual(2000);
-    expect(snapshot.mapped).toBeGreaterThanOrEqual(2000);
+    expect(snapshot.mapped).toBeGreaterThanOrEqual(4980);
+    expect(snapshot.total-snapshot.mapped).toBeLessThanOrEqual(100);
     expect(snapshot.hotels).toHaveLength(24);
+    expect(snapshot.hotels[0]?.name).toBe(realHotels[0]?.name);
+    const curatedNames=new Set(realHotels.map(h=>h.name));
+    expect(snapshot.hotels.slice(0,12).every(h=>curatedNames.has(h.name))).toBe(true);
   });
 
   it("keeps service references on HTTPS",()=>{
