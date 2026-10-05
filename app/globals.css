@@ -377,3 +377,31 @@ box-shadow:0 30px 80px rgba(10,22,48,.24);display:flex;align-items:flex-end;padd
 @media(max-width:1050px){.consumerHeroGrid{grid-template-columns:1fr}.heroPhotoCard{min-height:420px}.yearShowcaseGrid{grid-template-columns:1fr}.travelTiles{grid-template-columns:1fr 1fr}.consumerTrustGrid{grid-template-columns:1fr 1fr}.plannerThreeNumbers{grid-template-columns:1fr}.consumerDirectoryToolbar{top:70px}}
 @media(max-width:720px){.navlinks>a:not(.btn):not(.navPreview){display:none}.navPreview{display:none}.consumerHero{padding-top:32px}.heroPhotoCard{min-height:330px}.heroPhotoCard b{font-size:30px}.consumerSearchPrimary{grid-template-columns:1fr}.consumerSearchPrimary label{border-right:0;border-bottom:1px solid var(--line)}.consumerSearchPrimary .searchCta{min-height:50px}.searchMoreGrid{grid-template-columns:1fr 1fr}.consumerProof{grid-template-columns:1fr 1fr}.yearStop{grid-template-columns:85px 1fr}.yearStop small{grid-column:2}.travelTiles{grid-template-columns:1fr}.consumerTrustGrid{grid-template-columns:1fr}.trustTechnical{display:block}.trustTechnical .actions{margin-top:20px}.availabilitySummary{display:none!important}.consumerDirectoryToolbar{position:relative;top:auto}.plannerThreeNumbers{grid-template-columns:1fr}.yearNumbers{gap:15px;flex-wrap:wrap}}
 @media(max-width:480px){.searchMoreGrid,.consumerProof{grid-template-columns:1fr}.heroPhotoCard{min-height:280px}.travelTiles a{min-height:220px}.yearShowcase{padding:60px 0}}
+
+
+/* VC-proof 30–90 day wedge */
+.wedgeBand{padding:78px 0;background:#f4f7fb}
+.wedgeGrid{display:grid;grid-template-columns:.8fr 1.2fr;gap:36px;align-items:start}
+.wedgeGrid h2,.economicsGrid h2,.readinessGrid h2{font-size:clamp(42px,6vw,72px);line-height:.95;letter-spacing:-.055em;margin:16px 0}
+.wedgeGrid>div>p,.economicsGrid p,.readinessGrid>div>p{font-size:17px;line-height:1.6;color:#68758b;max-width:620px}
+.wedgeCards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.wedgeCards a{min-height:210px;border:1px solid var(--line);border-radius:24px;background:white;padding:22px;display:flex;flex-direction:column;justify-content:flex-end;box-shadow:var(--shadow)}
+.wedgeCards span,.budgetWedge span,.seasonDuration>span{font-size:9px;font-weight:950;letter-spacing:.1em;color:#6a7890}
+.wedgeCards b{font-size:24px;letter-spacing:-.04em;margin:7px 0}.wedgeCards small{color:#7d899c}
+.commercialLoop{padding:82px 0;background:white}.loopGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.loopGrid article{border:1px solid var(--line);border-radius:22px;padding:24px;background:#fff;min-height:210px}
+.loopGrid article>span{font-size:10px;font-weight:950;color:var(--blue)}.loopGrid h3{font-size:27px;margin:22px 0 8px;letter-spacing:-.04em}.loopGrid p{color:#6d7990;line-height:1.55}
+.budgetWedge{display:grid;grid-template-columns:1.2fr .7fr .8fr;gap:18px;align-items:end;background:#101e3b!important;color:white!important}
+.budgetWedge>div:first-child>b{display:block;font-size:52px;letter-spacing:-.06em;margin:8px 0}.budgetWedge>div:first-child>b small{font-size:13px;color:#9eabc0}
+.budgetWedge>div:first-child p{color:#9fabc0;line-height:1.5}.budgetWedge label{display:grid;gap:8px}.budgetWedge label span{font-size:10px;color:#9ca9bd;text-transform:uppercase;letter-spacing:.08em}
+.budgetWedge input{border:1px solid rgba(255,255,255,.14);background:#0a1630;color:white;border-radius:14px;padding:14px;font-size:20px;font-weight:900;width:100%}
+.seasonDuration{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.seasonDuration>span{width:100%;color:#9ca9bd}.seasonDuration button{border:1px solid rgba(255,255,255,.14);background:#0a1630;color:#c8d0de;border-radius:12px;padding:12px 14px;font-weight:850;cursor:pointer}.seasonDuration button.active{background:var(--lime);color:#071429;border-color:var(--lime)}
+.economicsBand{padding:78px 0;background:#eef3fb}.economicsGrid{display:grid;grid-template-columns:1fr 1fr;gap:42px;align-items:end}.economicsGrid a{font-weight:900;color:var(--blue)}
+.readinessBand{padding:82px 0;background:#091731;color:white}.readinessGrid{display:grid;grid-template-columns:.8fr 1.2fr;gap:38px;align-items:start}.readinessGrid>div>p{color:#aab6ca}.readinessGrid a{color:var(--lime);font-weight:900}
+.readinessCard{background:#102449;border:1px solid rgba(255,255,255,.1);border-radius:26px;padding:24px}.readinessControls{display:grid;grid-template-columns:1fr 1fr;gap:10px}.readinessControls label{display:grid;gap:7px}.readinessControls span{font-size:9px;font-weight:900;letter-spacing:.08em;color:#93a0b6;text-transform:uppercase}.readinessControls select{background:#091731;color:white;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px}
+.readinessFinding{margin:18px 0;border-radius:16px;padding:18px;border:1px solid rgba(255,255,255,.1)}.readinessFinding.green{background:rgba(85,190,120,.13)}.readinessFinding.amber{background:rgba(244,173,66,.13)}.readinessFinding b{font-size:19px}.readinessFinding p{color:#b6c0d0;line-height:1.5;margin-bottom:0}
+.readinessChecks{display:flex;gap:8px;flex-wrap:wrap}.readinessChecks span{font-size:10px;border:1px solid rgba(255,255,255,.11);border-radius:999px;padding:8px 10px;color:#c4ccda}
+.readinessNote{font-size:11px;color:#91a0b8;line-height:1.5}.readinessLinks{display:flex;gap:16px;flex-wrap:wrap}.readinessLinks a{font-size:11px}
+.sourceConsent{display:flex!important;gap:8px;align-items:flex-start;margin:12px 0 16px;font-size:11px;color:#64728a}.sourceConsent input{margin-top:2px}.sourceEmail{grid-column:span 2}.sourceSuccess{margin-top:14px;padding:14px;border-radius:14px;background:#edf8ee;border:1px solid #cfe7d1;color:#244b2c}.sourceSuccess p{margin:5px 0}.sourceSuccess small{color:#597061}
+@media(max-width:1000px){.wedgeGrid,.economicsGrid,.readinessGrid{grid-template-columns:1fr}.wedgeCards,.loopGrid{grid-template-columns:1fr 1fr}.budgetWedge{grid-template-columns:1fr}.sourceEmail{grid-column:auto}}
+@media(max-width:620px){.wedgeCards,.loopGrid,.readinessControls{grid-template-columns:1fr}.wedgeBand,.commercialLoop,.economicsBand,.readinessBand{padding:58px 0}}

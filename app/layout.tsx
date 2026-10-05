@@ -19,17 +19,17 @@ function siteUrl(){
 
 export const metadata:Metadata={
   title:{default:"Long-Stay Hotels & Monthly Hotel Rates | Atlas",template:"%s | Atlas"},
-  description:"Find real hotels for 30–365 day stays, compare monthly hotel rates and request a verified long-stay price when one is not available yet.",
+  description:"Find real hotels for 30–90 day stays, compare verified monthly-equivalent rates and request a private long-stay rate when public supply is absent.",
   metadataBase:new URL(siteUrl()),
   alternates:{canonical:canonicalSiteUrl()},
   openGraph:{
     title:"Long-Stay Hotels & Monthly Hotel Rates | Atlas",
-    description:"Find real hotels for 30–365 day stays and compare verified monthly hotel rates.",
+    description:"Find real hotels for 30–90 day stays and compare verified monthly hotel rates.",
     type:"website",
     url:canonicalSiteUrl(),
     siteName:"Atlas Long Stay",
   },
-  twitter:{card:"summary_large_image",title:"Long-Stay Hotels & Monthly Hotel Rates | Atlas",description:"30–365 day hotel stays, compared by month."},
+  twitter:{card:"summary_large_image",title:"Long-Stay Hotels & Monthly Hotel Rates | Atlas",description:"30–90 day hotel stays: verified monthly rates or private sourcing."},
   robots:{index:seoAutopilotEnabled(),follow:true},
   verification:{
     google:process.env.GOOGLE_SITE_VERIFICATION||undefined,

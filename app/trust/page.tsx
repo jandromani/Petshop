@@ -10,7 +10,7 @@ export default function TrustPage(){
       <article><span>01</span><h2>Real hotel</h2><p>We check that the property exists and map it to a real place before it appears in search.</p></article>
       <article><span>02</span><h2>Verified rate</h2><p>A price only appears as available when Atlas has current commercial evidence for the stay.</p></article>
       <article><span>03</span><h2>Expired? Removed.</h2><p>Old prices stop being presented as current. If we cannot verify a price, we say so.</p></article>
-      <article><span>04</span><h2>Your budget stays private</h2><p>The concierge receives the travel preferences it needs, not your full finance breakdown.</p></article>
+      <article><span>04</span><h2>Contact stays scoped</h2><p>A sourcing email is collected only when you ask Atlas to source a stay, and the retention workflow scrubs old request contact data.</p></article>
     </section>
     <section className="trustTechnical"><div><div className="eyebrow">WANT THE DETAILS?</div><h2>Technical proof is still public.</h2><p>Engineers, partners and auditors can inspect system readiness, provider state and verification controls separately from the consumer experience.</p></div><div className="actions"><a className="btn" href="/system">See technical proof →</a><a className="btn ghost" href="/legal">Legal & commercial disclosure</a></div></section>
   </div></main>;

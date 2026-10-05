@@ -7,6 +7,7 @@ const cls=(state:string)=>state==="LIVE"||state==="READY"?"green":state==="WAITI
 
 export default async function SystemPage(){
   const [status,activation]=await Promise.all([getSystemReadiness(),activationManifest()]);
+  const sourcingEmailConfigured=Boolean(process.env.RESEND_API_KEY?.trim()&&process.env.ATLAS_EMAIL_FROM?.trim());
   const layers=[
     ["01","EXPERIENCE / GROWTH",status.layers.experience],
     ["02","SUPPLY / TRUTH",status.layers.supply],
@@ -48,6 +49,7 @@ export default async function SystemPage(){
         <div className="metricDark"><b className={status.infrastructure.agentConfigured?"green":"amber"}>{status.infrastructure.agentConfigured?"ONLINE":"NOT ACTIVE"}</b><span>{status.infrastructure.agentRuntimeProvider} agent runtime</span></div>
         <div className="metricDark"><b>{status.infrastructure.configuredProviders.length}/3</b><span>optional OTA providers configured</span></div>
         <div className="metricDark"><b>{status.ops.liveOffers}</b><span>truth-gated live offers</span></div>
+        <div className="metricDark"><b className={sourcingEmailConfigured?"green":"amber"}>{sourcingEmailConfigured?"ACTIVE":"OPS QUEUE"}</b><span>sourcing quote email delivery</span></div>
       </div>
 
       <h2 style={{marginTop:38}}>Synthetic deterministic circuit</h2>

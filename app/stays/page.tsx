@@ -5,13 +5,13 @@ import { defaultCheckIn,type SearchRegion,type StayDuration } from "@/src/core/s
 
 export const metadata:Metadata={
   title:"Real hotel search",
-  description:"Search mapped real hotels for 30–365 day stays with deterministic filters and Atlas AI. Prices appear only after commercial verification.",
+  description:"Search real hotels for 30–90 day stays. Prices appear only after commercial verification; unpriced hotels can enter private sourcing.",
   robots:{index:false,follow:true},
 };
 
 const one=(value:string|string[]|undefined)=>Array.isArray(value)?value[0]:value;
 const allowedRegions=new Set(["All","Europe","Asia","Africa","Americas"]);
-const allowedDurations=new Set([30,60,90,120,180,365]);
+const allowedDurations=new Set([30,60,90]);
 const allowedFlex=new Set([0,7,30]);
 const allowedProviders=new Set(["","direct","booking","ratehawk","hbx"]);
 const allowedSort=new Set(["recommended","price","confidence","name"]);

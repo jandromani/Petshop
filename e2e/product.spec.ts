@@ -1,20 +1,19 @@
 import { test,expect } from "@playwright/test";
 
-test("money truth is explicit and internally consistent",async({page})=>{
+test("homepage is a focused 30-90 day commercial wedge without synthetic route pricing",async({page})=>{
   await page.goto("/");
   await expect(page.getByRole("heading",{name:/Live somewhere better/i})).toBeVisible();
-  await expect(page.getByTestId("monthly-resources")).toContainText("€3,200");
-  await expect(page.getByTestId("living-budget")).toContainText("€2,050");
-  await expect(page.getByText("365 days",{exact:false}).first()).toBeVisible();
-  const budget=Number((await page.getByTestId("living-budget").innerText()).replace(/[^0-9]/g,""));
-  const costText=await page.getByTestId("route-cost").innerText();
-  const cost=Number(costText.replace(/[^0-9]/g,""));
-  expect(cost).toBeLessThanOrEqual(budget);
+  await expect(page.getByTestId("monthly-budget")).toContainText("€1,800");
+  await expect(page.getByText(/HOTEL LIVING · 30–90 DAYS/i)).toBeVisible();
+  await expect(page.getByText(/Monthly pension/i)).toHaveCount(0);
+  await expect(page.getByText(/World tour/i)).toHaveCount(0);
+  await expect(page.getByText(/Discovery is not supply/i)).toBeVisible();
+  await expect(page.getByText(/Search is free/i)).toBeVisible();
 });
 
 test("search count and visible real-hotel cards share the same directory contract",async({page})=>{
   await page.goto("/");
-  await page.getByRole("button",{name:/Search stays/i}).click();
+  await page.getByRole("button",{name:/Find long stays/i}).click();
   const heading=page.locator("#explore .resultsHeadline h2");
   await expect(heading).toContainText(/Available now|Choose a hotel/i,{timeout:15000});
 });
@@ -63,7 +62,7 @@ test("primary planner path is keyboard reachable",async({page})=>{
       text:(document.activeElement?.textContent||"").trim(),
       aria:document.activeElement?.getAttribute("aria-label")||"",
     }));
-    if(/search stays/i.test(focused.text)||/search stays/i.test(focused.aria)){found=true;break;}
+    if(/find long stays/i.test(focused.text)||/find long stays/i.test(focused.aria)){found=true;break;}
     await page.keyboard.press("Tab");
   }
   expect(found).toBe(true);

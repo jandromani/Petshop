@@ -40,7 +40,7 @@ export default function VerifiedRoute({search}:{search:StaySearch}){
   const avg=Math.round(route.reduce((s,o)=>s+o.monthlyEquivalent,0)/route.length);
   return <div className="card routeAvailability">
     <div className="moneyline">
-      <div><div className="label"><span>AVAILABLE FOR THIS PLAN</span></div><div className="money">{money(avg,route[0].currency)}<small>/month average</small></div></div>
+      <div><div className="label"><span>VERIFIED SUPPLY FOR THIS SEARCH</span></div><div className="money">{money(avg,route[0].currency)}<small>/month average</small></div></div>
       <div className="surplus"><span>matching stays</span><b>{offers.length}</b></div>
     </div>
     <div className="route">

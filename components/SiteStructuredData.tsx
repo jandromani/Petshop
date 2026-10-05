@@ -17,7 +17,7 @@ export default function SiteStructuredData(){
         "@id":base+"/#website",
         url:base,
         name:"Atlas Long Stay",
-        description:"Long-stay hotels and monthly hotel rates for 30–365 day stays.",
+        description:"30–90 day hotel stays with verified monthly rates and private sourcing when public supply is absent.",
         publisher:{"@id":base+"/#organization"},
         inLanguage:["en","es"],
       },
