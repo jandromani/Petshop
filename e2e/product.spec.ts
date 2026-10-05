@@ -106,3 +106,33 @@ test("public surfaces keep basic accessibility contracts",async({page})=>{
     });
   }
 });
+
+
+test("shared hotel search restores the full deterministic filter state",async({page})=>{
+  await page.goto("/stays?q=Madrid&region=Europe&duration=90&occupancy=2&maxMonthly=1800&features=pool%2Cgym&brand=Marriott&brandedOnly=1&sort=name");
+  await expect(page.getByRole("heading",{name:/Search real hotels/i})).toBeVisible();
+  await expect(page.getByLabel("Where?")).toHaveValue("Madrid");
+  await expect(page.getByLabel("Region")).toHaveValue("Europe");
+  await expect(page.getByLabel("Stay")).toHaveValue("90");
+  await expect(page.getByLabel("Travelling")).toHaveValue("couple");
+  await expect(page.getByLabel("Maximum monthly hotel budget")).toHaveValue("1800");
+  await page.getByText(/Advanced filters/i).click();
+  await expect(page.getByPlaceholder("Hilton, Marriott…")).toHaveValue("Marriott");
+  await expect(page.getByText("pool",{exact:true})).toHaveClass(/active/);
+  await expect(page.getByText("gym",{exact:true})).toHaveClass(/active/);
+  expect(page.url()).toContain("brandedOnly=1");
+});
+
+test("zero-result search fails honestly and offers deterministic relaxation",async({page})=>{
+  await page.goto("/stays?q=atlas-hotel-that-does-not-exist-zzzz");
+  await expect(page.getByText(/ZERO RESULTS · NO FAKE FALLBACK/i)).toBeVisible();
+  await expect(page.getByRole("button",{name:/Clear destination\/name/i})).toBeVisible();
+});
+
+test("real hotel search exposes list and map modes on mobile",async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.goto("/stays?q=Madrid");
+  await expect(page.getByRole("button",{name:/Map ·/i})).toBeVisible();
+  await page.getByRole("button",{name:/Map ·/i}).click();
+  await expect(page.locator(".hotelMapPane")).toBeVisible();
+});
