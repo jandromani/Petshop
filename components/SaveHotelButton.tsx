@@ -32,5 +32,5 @@ export default function SaveHotelButton({hotel}:{hotel:{id:string;name:string;ci
     else void fetch("/api/saved/hotels",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(row),cache:"no-store"}).catch(()=>{});
   }
 
-  return <button type="button" className={"saveStay "+(saved?"saved":"")} aria-pressed={saved} onClick={toggle}>{saved?"♥ Saved":"♡ Save"}</button>;
+  return <button type="button" className={"saveStay "+(saved?"saved":"")} aria-label={(saved?"Remove ":"Save ")+hotel.name} aria-pressed={saved} onClick={toggle}>{saved?"♥ Saved":"♡ Save"}</button>;
 }
