@@ -18,7 +18,7 @@ export default function RealHotelDirectory({initialQuery="",initialRegion="All",
 }){
   const[q,setQ]=useState(initialQuery);const[region,setRegion]=useState<SearchRegion>(initialRegion);const[page,setPage]=useState(0);
   const[data,setData]=useState<DirectoryPayload|null>(initialData||null);const[mapData,setMapData]=useState<DirectoryPayload|null>(null);const[loading,setLoading]=useState(!initialData);
-  const[selectedId,setSelectedId]=useState<string|null>(null);const[bbox,setBbox]=useState<string|null>(null);const[mobileView,setMobileView]=useState<"list"|"map">("list");const[features,setFeatures]=useState<string[]>(initialAmenities);
+  const[selectedId,setSelectedId]=useState<string|null>(null);const[bbox,setBbox]=useState<string|null>(null);const[mobileView,setMobileView]=useState<"list"|"map">("list");const[features,setFeatures]=useState<string[]>(initialAmenities);const[mapVisible,setMapVisible]=useState(false);const mapPaneRef=useRef<HTMLElement|null>(null);
   const pageSize=24;const seen=useRef(new Set<string>());
   useEffect(()=>{setQ(initialQuery);setPage(0);setBbox(null)},[initialQuery]);useEffect(()=>{setRegion(initialRegion);setPage(0);setBbox(null)},[initialRegion]);useEffect(()=>{setFeatures(initialAmenities)},[initialAmenities]);
   const baseParams=useMemo(()=>{const p=new URLSearchParams({region,duration:String(duration),occupancy:String(occupancy),flexibleDays:String(flexibleDays)});if(q.trim())p.set("q",q.trim());if(checkIn)p.set("checkIn",checkIn);if(maxMonthly)p.set("maxMonthly",String(Math.round(maxMonthly)));if(bbox)p.set("bbox",bbox);if(features.length)p.set("features",features.join(","));return p},[q,region,duration,occupancy,checkIn,maxMonthly,flexibleDays,bbox,features]);
@@ -30,7 +30,9 @@ export default function RealHotelDirectory({initialQuery="",initialRegion="All",
       setData(payload);onCount?.(payload.total);growthEvent("results_loaded",{count:payload.total,mapped:payload.mapped,query:q||"all",region,page});
     }).catch(()=>{}).finally(()=>setLoading(false)),120);return()=>{clearTimeout(t);c.abort()};
   },[listParams,onCount,q,region,page]);
-  useEffect(()=>{const c=new AbortController();fetch("/api/hotels/directory?"+mapParams,{signal:c.signal}).then(r=>r.ok?r.json():Promise.reject()).then((payload:DirectoryPayload)=>setMapData(payload)).catch(()=>{});return()=>c.abort()},[mapParams]);
+  const mapEnabled=mapVisible||mobileView==="map";
+  useEffect(()=>{const el=mapPaneRef.current;if(!el)return;const io=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)){setMapVisible(true);io.disconnect()}},{rootMargin:"700px"});io.observe(el);return()=>io.disconnect()},[]);
+  useEffect(()=>{if(!mapEnabled)return;const c=new AbortController();fetch("/api/hotels/directory?"+mapParams,{signal:c.signal}).then(r=>r.ok?r.json():Promise.reject()).then((payload:DirectoryPayload)=>setMapData(payload)).catch(()=>{});return()=>c.abort()},[mapParams,mapEnabled]);
 
   function changeQuery(value:string){setQ(value);setPage(0);setBbox(null);onQueryChange?.(value)}
   function changeRegion(value:SearchRegion){setRegion(value);setPage(0);setBbox(null);onRegionChange?.(value);growthEvent("filter_change",{filter:"region",value})}
@@ -41,10 +43,10 @@ export default function RealHotelDirectory({initialQuery="",initialRegion="All",
   useEffect(()=>{const io=new IntersectionObserver(entries=>{for(const e of entries){if(!e.isIntersecting)continue;const el=e.target as HTMLElement;const id=el.dataset.hotelId;if(!id||seen.current.has(id))continue;seen.current.add(id);growthEvent("hotel_impression",{hotel_id:id,position:Number(el.dataset.position)||0,state:el.dataset.state||"pending"});io.unobserve(el);}}, {threshold:.35});for(const el of document.querySelectorAll<HTMLElement>("[data-hotel-id]"))io.observe(el);return()=>io.disconnect();},[hotels,page]);
 
   return <section id="explore" className="discovery realDirectory"><div className="shell">
-    <div className="resultsHeadline"><div><div className="eyebrow">REAL HOTEL SEARCH</div><h2>{loading?"Finding real hotels…":(data?.total||0)+" real hotels"}</h2><p>Identity comes from real-world place data. Dates, duration, guests and budget are applied to verified commercial offers; hotels without a verified rate stay visible as <b>rate pending</b>, never as fake bargains.</p></div><div className="resultStats"><b>{mapData?.mapped||0}</b><span>mapped properties</span></div></div>
+    <div className="resultsHeadline"><div><div className="eyebrow">REAL HOTEL SEARCH</div><h2>{loading?"Finding real hotels…":(data?.total||0)+" real hotels"}</h2><p>Identity comes from real-world place data. Dates, duration, guests and budget are applied to verified commercial offers; hotels without a verified rate stay visible as <b>rate pending</b>, never as fake bargains.</p></div><div className="resultStats"><b>{data?.mapped||mapData?.mapped||0}</b><span>mapped properties</span></div></div>
     <div className="toolbar directoryToolbar"><input aria-label="Search real hotels" value={q} onChange={e=>changeQuery(e.target.value)} placeholder="Hotel, city, country or address…"/><select aria-label="Filter real hotels by region" value={region} onChange={e=>changeRegion(e.target.value as SearchRegion)}><option>All</option><option>Europe</option><option>Asia</option><option>Africa</option><option>Americas</option></select>{bbox&&<button className="btn ghost" onClick={()=>setBbox(null)}>Clear map area</button>}<div className="directoryCount">{loading?"Loading…":(data?.total||0)+" matches"}</div></div>
     <div className="preferenceFilters"><span>Known-property preferences</span>{["pool","gym","spa","beach","breakfast","all inclusive"].map(x=><button key={x} className={features.includes(x)?"active":""} onClick={()=>toggleFeature(x)}>{x}</button>)}<small>Known matches rank first; unknown amenities remain visible.</small></div>
-    <div className="mobileResultToggle"><button className={mobileView==="list"?"active":""} onClick={()=>setMobileView("list")}>List</button><button className={mobileView==="map"?"active":""} onClick={()=>setMobileView("map")}>Map · {mapData?.mapped||0}</button></div>
+    <div className="mobileResultToggle"><button className={mobileView==="list"?"active":""} onClick={()=>setMobileView("list")}>List</button><button className={mobileView==="map"?"active":""} onClick={()=>setMobileView("map")}>Map · {data?.mapped||mapData?.mapped||0}</button></div>
     <div className={"hotelExplorer view-"+mobileView}>
       <div className="hotelListPane">
         <div className="hotels realHotelGrid">{hotels.map((h,index)=>{const offer=h.liveOffer;const photo=offer?.photoUrls?.[0]||h.photoUrls?.[0];const facilities=(offer?.facilities?.length?offer.facilities:h.facilities).slice(0,4);return <article id={"hotel-card-"+h.id} className={"hotel realHotelCard "+(selectedId===h.id?"selected":"")} key={h.id} data-hotel-id={h.id} data-position={page*pageSize+index+1} data-state={offer?"verified":"pending"} onMouseEnter={()=>setSelectedId(h.id)}>
@@ -55,7 +57,7 @@ export default function RealHotelDirectory({initialQuery="",initialRegion="All",
         </article>})}</div>
         {!loading&&data&&<div className="directoryPager"><button className="btn ghost" disabled={page===0} onClick={()=>setPage(p=>Math.max(0,p-1))}>← Previous</button><span>{data.total?Math.min(page*pageSize+1,data.total):0}–{Math.min((page+1)*pageSize,data.total)} of {data.total}</span><button className="btn ghost" disabled={(page+1)*pageSize>=data.total} onClick={()=>setPage(p=>p+1)}>Next →</button></div>}
       </div>
-      <aside className="hotelMapPane"><HotelMap hotels={mapped} selectedId={selectedId} onSelect={chooseFromMap} onSearchArea={searchArea}/></aside>
+      <aside ref={mapPaneRef} className="hotelMapPane">{mapEnabled?<HotelMap hotels={mapped} selectedId={selectedId} onSelect={chooseFromMap} onSearchArea={searchArea}/>:<div className="hotelMapLoading">Interactive map loads when you reach the results.</div>}</aside>
     </div>
     <p className="directoryDisclosure">Property identity is not a booking claim. A price is shown only after Atlas has a fresh truth-gated commercial offer.{data?.attribution?" Data: "+data.attribution+".":""}</p>
   </div></section>;
