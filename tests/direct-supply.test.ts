@@ -7,7 +7,7 @@ const valid:DirectPublishRow={
   id:"11111111-1111-4111-8111-111111111111",
   hotel_lead_id:"22222222-2222-4222-8222-222222222222",
   hotel_name:"Example Resort",city:"Antalya",country:"Türkiye",region:"Europe",lat:null,lng:null,
-  min_nights:30,max_nights:180,max_guests:2,monthly_price:1500,currency:"EUR",
+  min_nights:30,max_nights:90,max_guests:2,monthly_price:1500,currency:"EUR",
   valid_from:"2027-01-01",valid_to:"2027-12-31",cancellation:"30 days",
   booking_url:"https://hotel.example/book",contract_reference:"CTR-1",contract_verified:true,
   approved_booking_host:"hotel.example",tracking_query_param:"atlas_click",channel_model:"REFERRAL",hotel_net_monthly:null,merchant_enabled:false,merchant_terms_verified:false,inventory_units:0,
@@ -28,6 +28,7 @@ describe("direct long-stay commercial gates",()=>{
     expect(directPublicationChecks({...valid,contract_verified:false},new Date("2027-06-01T00:00:00Z"))).toContain("contract_not_verified");
     expect(directPublicationChecks({...valid,cancellation:null},new Date("2027-06-01T00:00:00Z"))).toContain("missing_cancellation_terms");
     expect(directPublicationChecks({...valid,tracking_query_param:null},new Date("2027-06-01T00:00:00Z"))).toContain("missing_tracking_query_param");
+    expect(directPublicationChecks({...valid,max_nights:120},new Date("2027-06-01T00:00:00Z"))).toContain("max_nights_above_product_wedge");
   });
 
   it("fails merchant publication until net economics, terms and allocated units exist",()=>{

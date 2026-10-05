@@ -254,7 +254,9 @@ export function directPublicationChecks(row: DirectPublishRow, now = new Date())
   if (row.valid_from && row.valid_to && row.valid_from > row.valid_to) reasons.push("invalid_validity_window");
   if (row.valid_to && new Date(row.valid_to + "T23:59:59Z").getTime() <= now.getTime()) reasons.push("rate_expired");
   if (row.min_nights < 30) reasons.push("min_nights_below_long_stay");
+  if (row.min_nights > 90) reasons.push("min_nights_above_product_wedge");
   if (row.max_nights !== null && row.max_nights < row.min_nights) reasons.push("max_nights_below_min");
+  if (row.max_nights !== null && row.max_nights > 90) reasons.push("max_nights_above_product_wedge");
   if (row.max_guests < 1 || row.max_guests > 2) reasons.push("unsupported_guest_capacity");
   if (!Number.isFinite(row.monthly_price) || row.monthly_price <= 0) reasons.push("invalid_monthly_price");
   if (!/^[A-Z]{3}$/.test(row.currency)) reasons.push("invalid_currency");
