@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { REAL_HOTEL_SNAPSHOT_DATE,REAL_HOTEL_SOURCE_NOTE,realHotelReferenceUrl,realHotels } from "@/src/data/real-hotels";
+import { REAL_HOTEL_SNAPSHOT_DATE,REAL_HOTEL_SOURCE_NOTE } from "@/src/data/real-hotels";
+import { enrichedCuratedHotels } from "@/src/data/curated-enrichment";
 import { overtureHotels } from "@/src/data/overture-hotels";
 import { databaseConfigured } from "@/src/db/client";
 import { fallbackDirectoryReference,listDirectoryHotels } from "@/src/db/directory";
@@ -41,7 +42,7 @@ export async function GET(req:Request){
   const wanted=(parsed.data.features||"").split(",").map(x=>x.trim().toLowerCase()).filter(Boolean).slice(0,8);
   if(parsed.data.bbox&&!bounds)return Response.json({error:"invalid-bbox"},{status:400});
 
-  const curated=realHotels.map(h=>({...h,canonicalId:h.id,lat:null,lng:null,source:"curated_seed",sourceId:h.id,website:null,address:null,confidence:null,description:null,photoUrls:[],facilities:[],referenceUrl:realHotelReferenceUrl(h)}));
+  const curated=enrichedCuratedHotels;
   const overture=overtureHotels.map(h=>({...h,canonicalId:h.id,source:"overture",description:null,photoUrls:[],facilities:[]}));
   const staticRows=[...curated,...overture].filter(h=>(parsed.data.region==="All"||h.region===parsed.data.region)&&matches(h,q)&&inside(h,bounds));
   const curatedOrder=new Map(curated.map((h,i)=>[keyOf(h),i]));
