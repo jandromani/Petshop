@@ -3,7 +3,7 @@ import { CONSENT_COOKIE,CONSENT_VERSION_COOKIE,consentChoiceFromValues } from "@
 
 const YEAR=60*60*24*365;
 const SESSION=60*30;
-const TRACKING_COOKIES=["rv_vid","rv_sid","rv_src","rv_med","rv_campaign","rv_term","rv_content","rv_ref"];
+const TRACKING_COOKIES=["rv_vid","rv_sid","rv_src","rv_med","rv_campaign","rv_term","rv_content","rv_ref","rv_gclid","rv_gbraid","rv_wbraid","rv_msclkid"];
 
 function clean(value:string|null,max=160){
   return value?.trim().slice(0,max)||undefined;
@@ -28,7 +28,9 @@ export function proxy(request:NextRequest){
 
   if(request.nextUrl.pathname.startsWith("/api/"))return NextResponse.next();
 
-  const response=NextResponse.next();
+  const requestHeaders=new Headers(request.headers);
+  requestHeaders.set("x-atlas-lang",request.nextUrl.pathname==="/es"||request.nextUrl.pathname.startsWith("/es/")?"es":"en");
+  const response=NextResponse.next({request:{headers:requestHeaders}});
   const consent=consentChoiceFromValues(
     request.cookies.get(CONSENT_COOKIE)?.value,
     request.cookies.get(CONSENT_VERSION_COOKIE)?.value,
@@ -53,6 +55,10 @@ export function proxy(request:NextRequest){
     rv_campaign:clean(params.get("utm_campaign")),
     rv_term:clean(params.get("utm_term")),
     rv_content:clean(params.get("utm_content")),
+    rv_gclid:clean(params.get("gclid"),200),
+    rv_gbraid:clean(params.get("gbraid"),200),
+    rv_wbraid:clean(params.get("wbraid"),200),
+    rv_msclkid:clean(params.get("msclkid"),200),
   };
 
   const referrer=request.headers.get("referer");

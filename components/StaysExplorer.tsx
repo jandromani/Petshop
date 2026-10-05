@@ -36,7 +36,7 @@ export default function StaysExplorer({initial,initialData}:{initial:StaysInitia
   return <main className="seoPage staysSearchPage">
     <section className="staysSearchHero"><div className="shell">
       <a className="eyebrow" href="/">← ATLAS LONG STAY</a>
-      <div className="staysSearchIntro"><div><div className="eyebrow">30–365 DAY HOTEL SEARCH</div><h1>Search real hotels.<br/>Ask Atlas anything.</h1><p>Map real properties first. Commercial prices appear only when Atlas has verified the requested rate, dates and fulfillment path.</p></div><div className="staysSearchMetric"><b>{count.toLocaleString("en-US")}</b><span>matching real properties</span></div></div>
+      <div className="staysSearchIntro"><div><div className="eyebrow">30–365 DAY STAYS</div><h1>Find somewhere<br/>you could actually live.</h1><p>Search by place and length of stay. If a verified long-stay price exists, we show it. If it doesn’t, you can request one.</p></div><div className="staysSearchMetric"><b>30–365</b><span>days per stay</span></div></div>
       <SilverSearch query={query} setQuery={setQuery} region={region} setRegion={setRegion} checkIn={checkIn} setCheckIn={setCheckIn} flexibleDays={flexibleDays} setFlexibleDays={setFlexibleDays} duration={duration} setDuration={setDuration} party={party} setParty={setParty} budget={budget} setBudget={setBudget} count={count} onSearch={submit}/>
       <AiHotelSearch current={{region,duration,occupancy:party==="couple"?2:1,maxMonthly:budget}} onApply={applyAi}/>
     </div></section>

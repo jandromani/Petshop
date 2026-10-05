@@ -39,6 +39,10 @@ async function liveReferral(url:URL,jar:Awaited<ReturnType<typeof cookies>>){
     expectedCommission:expectedCommission ?? undefined,
     source:jar.get("rv_src")?.value || jar.get("rv_ref")?.value || "direct",
     campaign:jar.get("rv_campaign")?.value,
+    gclid:jar.get("rv_gclid")?.value,
+    gbraid:jar.get("rv_gbraid")?.value,
+    wbraid:jar.get("rv_wbraid")?.value,
+    msclkid:jar.get("rv_msclkid")?.value,
     pagePath:url.searchParams.get("from") || undefined,
     position:Number(url.searchParams.get("pos")) || undefined,
   });
@@ -84,6 +88,10 @@ export async function GET(req: Request) {
     provider,
     source:jar.get("rv_src")?.value || jar.get("rv_ref")?.value || "direct",
     campaign:jar.get("rv_campaign")?.value,
+    gclid:jar.get("rv_gclid")?.value,
+    gbraid:jar.get("rv_gbraid")?.value,
+    wbraid:jar.get("rv_wbraid")?.value,
+    msclkid:jar.get("rv_msclkid")?.value,
     pagePath:url.searchParams.get("from") || undefined,
     position:Number(url.searchParams.get("pos")) || undefined,
   });

@@ -22,10 +22,10 @@ export async function generateMetadata({params}:{params:Promise<{slug:string}>})
     description:page.description,
     alternates:{
       canonical:base+"/es/descubrir/"+page.slug,
-      languages:{en:base+"/discover/"+page.sourceSlug,es:base+"/es/descubrir/"+page.slug},
+      languages:{en:base+"/discover/"+page.sourceSlug,es:base+"/es/descubrir/"+page.slug,"x-default":base+"/discover/"+page.sourceSlug},
     },
     robots:{index:Boolean(result?.gate.index),follow:true},
-    openGraph:{title:page.headline,description:page.description,type:"website"},
+    openGraph:{title:page.title+" | Atlas",description:page.description,url:base+"/es/descubrir/"+page.slug,type:"website"},twitter:{card:"summary_large_image",title:page.title+" | Atlas",description:page.description},
   };
 }
 
@@ -56,14 +56,14 @@ export default async function SpanishDiscovery({params}:{params:Promise<{slug:st
   return <main className="seoPage">{jsonLd&&<script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(jsonLd)}}/>}<div className="shell">
     <a href="/es" className="eyebrow">← ATLAS EN ESPAÑOL</a>
     <section className="seoHero" style={{marginTop:20}}>
-      <div className="eyebrow">LARGA ESTANCIA · INVENTARIO LIVE</div>
+      <div className="eyebrow">LARGA ESTANCIA · PRECIOS VERIFICADOS</div>
       <h1>{page.headline}</h1>
       <p style={{fontSize:20,maxWidth:760}}>{page.description}</p>
       <p style={{fontSize:12,color:"#68738b"}}>{indexed
-        ?"Esta página puede indexarse porque sus ofertas proceden de inventario comercial vigente y verificado."
-        :"La indexación permanece desactivada hasta que exista suficiente evidencia comercial live para esta intención."}</p>
+        ?"Esta página puede indexarse porque sus ofertas tienen precios comerciales vigentes y verificables."
+        :"La indexación permanece desactivada hasta que existan suficientes precios vigentes para esta búsqueda."}</p>
     </section>
     {offers.length?<div className="hotels">{offers.slice(0,12).map((o,index)=><LiveOfferCard key={o.offerId} offer={o} href={"/api/referral?offer="+encodeURIComponent(o.offerId)+"&from="+encodeURIComponent("/es/descubrir/"+slug)+"&pos="+(index+1)}/>)}</div>
-      :<div className="card"><b>SIN OFERTAS LIVE PARA ESTA INTENCIÓN</b><p>No mostramos precios demo como si fueran inventario reservable. Prueba el planificador mientras se activa supply comercial.</p><a className="btn ghost" href="/#planner">Abrir planificador →</a></div>}
+      :<div className="card"><b>SIN PRECIOS VERIFICADOS PARA ESTA BÚSQUEDA</b><p>No mostramos precios demo como si fueran inventario reservable. Prueba el planificador mientras se activa supply comercial.</p><a className="btn ghost" href="/#planner">Abrir planificador →</a></div>}
   </div></main>;
 }

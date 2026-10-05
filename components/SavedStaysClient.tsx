@@ -64,24 +64,24 @@ export default function SavedStaysClient(){
     void fetch("/api/saved?all=1",{method:"DELETE",cache:"no-store"}).catch(()=>{});
   }
 
-  if(!rows.length)return <div className="card"><b>No saved stays yet.</b><p>Save verified offers from the live catalogue and compare them here. With a production database, Atlas also keeps the list in anonymous server-side memory.</p><div className="actions"><a className="btn" href="/#explore">Find stays →</a><a className="btn ghost" href="/api/saved/export">Export anonymous memory</a></div></div>;
+  if(!rows.length)return <div className="card"><b>No saved stays yet.</b><p>Keep the places you like in one private shortlist. Atlas checks the price again when you reopen a stay.</p><div className="actions"><a className="btn" href="/#explore">Find stays →</a><a className="btn ghost" href="/api/saved/export">Download my data</a></div></div>;
 
   return <>
     <div className="savedCompare">
-      <div><b>{rows.length}</b><span>saved references</span></div>
-      <div><b>{liveRows.length}</b><span>still live now</span></div>
-      <div><b>{rows.length-liveRows.length}</b><span>need re-check</span></div>
+      <div><b>{rows.length}</b><span>saved stays</span></div>
+      <div><b>{liveRows.length}</b><span>available now</span></div>
+      <div><b>{rows.length-liveRows.length}</b><span>check again</span></div>
     </div>
     <div className="actions" style={{marginBottom:18}}>
-      <a className="btn ghost" href="/api/saved/export">Export my saved memory</a>
-      <button className="btn ghost" onClick={clearAll}>Clear all saved memory</button>
+      <a className="btn ghost" href="/api/saved/export">Download my data</a>
+      <button className="btn ghost" onClick={clearAll}>Clear saved stays</button>
     </div>
     <div className="savedGrid">
       {rows.map(({saved,live,checked})=><article className="card savedStayCard" key={saved.offerId}>
-        <div className="hotelTopline"><span>{saved.provider}</span><span>{checked?(live?"LIVE NOW":"RE-CHECK REQUIRED"):"CHECKING…"}</span></div>
+        <div className="hotelTopline"><span>{saved.provider}</span><span>{checked?(live?"LIVE NOW":"CHECK AGAIN"):"CHECKING…"}</span></div>
         <h2>{saved.name}</h2>
         <p>{saved.city}, {saved.country}</p>
-        <div className="money">{live?money(live.monthlyEquivalent,live.currency):money(saved.savedMonthly,saved.currency)}<small>/month {live?"current verified":"saved reference only"}</small></div>
+        <div className="money">{live?money(live.monthlyEquivalent,live.currency):money(saved.savedMonthly,saved.currency)}<small>/month {live?"current verified":"saved price reference"}</small></div>
         <div className="budgetBreakdown">
           <div><span>Saved</span><b>{new Date(saved.savedAt).toLocaleDateString()}</b></div>
           <div><span>Offer evidence</span><b>{new Date(saved.verifiedAt).toLocaleString()}</b></div>
