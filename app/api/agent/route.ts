@@ -13,7 +13,7 @@ const Input=z.object({
   prompt:z.string().min(1).max(1200),
   livingBudget:z.number().nonnegative().max(20000),
   party:z.enum(["solo","couple"]),
-  duration:z.union([z.literal(30),z.literal(60),z.literal(90),z.literal(120),z.literal(180)]),
+  duration:z.union([z.literal(30),z.literal(60),z.literal(90),z.literal(120),z.literal(180),z.literal(365)]),
   mode:z.enum(["world","winter","value","slow"]),
   checkIn:z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   flexibleDays:z.union([z.literal(0),z.literal(7),z.literal(30)]),
