@@ -9,15 +9,15 @@ const HotelMap=dynamic(()=>import("@/components/HotelMap"),{ssr:false,loading:()
 
 type Offer={offerId:string;provider:string;monthlyEquivalent:number;displayPrice:number;currency:string;board:string|null;cancellation:string|null;verifiedAt:string;expiresAt:string|null;photoUrls:string[];facilities:string[]};
 type Row=MappedHotel&{canonicalId:string;region:Exclude<SearchRegion,"All">;source:string;sourceId:string;referenceUrl:string;website:string|null;address:string|null;confidence:number|null;description:string|null;photoUrls:string[];facilities:string[];liveOffer:Offer|null};
-type Payload={total:number;mapped:number;hotels:Row[];snapshotDate:string;note:string;attribution?:string|null;source:string};
+export type DirectoryPayload={total:number;mapped:number;hotels:Row[];snapshotDate:string;note:string;attribution?:string|null;source:string};
 const money=(n:number,c="EUR")=>new Intl.NumberFormat("en-US",{style:"currency",currency:c,maximumFractionDigits:0}).format(n);
 
-export default function RealHotelDirectory({initialQuery="",initialRegion="All",duration=90,checkIn,occupancy=1,maxMonthly,onCount,onQueryChange,onRegionChange}:{
+export default function RealHotelDirectory({initialQuery="",initialRegion="All",duration=90,checkIn,occupancy=1,maxMonthly,onCount,onQueryChange,onRegionChange,initialData}:{
   initialQuery?:string;initialRegion?:SearchRegion;duration?:StayDuration;checkIn?:string;occupancy?:1|2;maxMonthly?:number;
-  onCount?:(count:number)=>void;onQueryChange?:(q:string)=>void;onRegionChange?:(r:SearchRegion)=>void;
+  onCount?:(count:number)=>void;onQueryChange?:(q:string)=>void;onRegionChange?:(r:SearchRegion)=>void;initialData?:DirectoryPayload;
 }){
   const[q,setQ]=useState(initialQuery);const[region,setRegion]=useState<SearchRegion>(initialRegion);const[page,setPage]=useState(0);
-  const[data,setData]=useState<Payload|null>(null);const[mapData,setMapData]=useState<Payload|null>(null);const[loading,setLoading]=useState(true);
+  const[data,setData]=useState<DirectoryPayload|null>(initialData||null);const[mapData,setMapData]=useState<DirectoryPayload|null>(null);const[loading,setLoading]=useState(!initialData);
   const[selectedId,setSelectedId]=useState<string|null>(null);const[bbox,setBbox]=useState<string|null>(null);const[mobileView,setMobileView]=useState<"list"|"map">("list");
   const pageSize=24;
   useEffect(()=>{setQ(initialQuery);setPage(0);setBbox(null)},[initialQuery]);useEffect(()=>{setRegion(initialRegion);setPage(0);setBbox(null)},[initialRegion]);
@@ -26,11 +26,11 @@ export default function RealHotelDirectory({initialQuery="",initialRegion="All",
   const mapParams=useMemo(()=>{const p=new URLSearchParams(baseParams);p.set("view","map");return p},[baseParams]);
 
   useEffect(()=>{
-    const c=new AbortController();setLoading(true);const t=setTimeout(()=>fetch("/api/hotels/directory?"+listParams,{signal:c.signal}).then(r=>r.ok?r.json():Promise.reject()).then((payload:Payload)=>{
+    const c=new AbortController();setLoading(true);const t=setTimeout(()=>fetch("/api/hotels/directory?"+listParams,{signal:c.signal}).then(r=>r.ok?r.json():Promise.reject()).then((payload:DirectoryPayload)=>{
       setData(payload);onCount?.(payload.total);growthEvent("results_loaded",{count:payload.total,mapped:payload.mapped,query:q||"all",region,page});
     }).catch(()=>{}).finally(()=>setLoading(false)),120);return()=>{clearTimeout(t);c.abort()};
   },[listParams,onCount,q,region,page]);
-  useEffect(()=>{const c=new AbortController();fetch("/api/hotels/directory?"+mapParams,{signal:c.signal}).then(r=>r.ok?r.json():Promise.reject()).then((payload:Payload)=>setMapData(payload)).catch(()=>{});return()=>c.abort()},[mapParams]);
+  useEffect(()=>{const c=new AbortController();fetch("/api/hotels/directory?"+mapParams,{signal:c.signal}).then(r=>r.ok?r.json():Promise.reject()).then((payload:DirectoryPayload)=>setMapData(payload)).catch(()=>{});return()=>c.abort()},[mapParams]);
 
   function changeQuery(value:string){setQ(value);setPage(0);setBbox(null);onQueryChange?.(value)}
   function changeRegion(value:SearchRegion){setRegion(value);setPage(0);setBbox(null);onRegionChange?.(value);growthEvent("filter_change",{filter:"region",value})}
