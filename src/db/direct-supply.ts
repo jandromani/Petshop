@@ -289,12 +289,16 @@ export type DirectCatalogQuery = {
   limit?: number;
   q?: string;
   slug?: string;
+  minMonthly?: number;
   maxMonthly?: number;
   checkIn?: string;
   flexibleDays?: number;
   nights?: number;
   occupancy?: number;
   region?: string;
+  board?: string;
+  cancellation?: string;
+  provider?: string;
 };
 
 type DirectRow = {
@@ -352,12 +356,15 @@ export async function listSellableDirectOffers(input: DirectCatalogQuery = {}): 
   const limit = Math.max(1, Math.min(50, input.limit ?? 12));
   const q = input.q?.trim() ? "%" + input.q.trim() + "%" : null;
   const slug = input.slug?.trim() || null;
+  const minMonthly = input.minMonthly && input.minMonthly > 0 ? input.minMonthly : null;
   const maxMonthly = input.maxMonthly && input.maxMonthly > 0 ? input.maxMonthly : null;
   const requestedCheckIn = input.checkIn || null;
   const flexibleDays = Math.max(0, Math.min(30, input.flexibleDays ?? 0));
   const requestedNights = input.nights && input.nights > 0 ? input.nights : null;
   const occupancy = input.occupancy && input.occupancy > 0 ? input.occupancy : 1;
   const region = input.region && input.region !== "All" ? input.region : null;
+  const board = input.board?.trim() ? "%" + input.board.trim() + "%" : null;
+  const provider = input.provider?.trim() || null;
 
   const rows = await sql<DirectRow[]>`
     with candidates as (
@@ -396,7 +403,10 @@ export async function listSellableDirectOffers(input: DirectCatalogQuery = {}): 
         and (${q}::text is null or h.name ilike ${q} or h.city ilike ${q} or h.country ilike ${q})
         and (${slug}::text is null or h.slug = ${slug})
         and (${region}::text is null or h.region = ${region})
+        and (${minMonthly}::float is null or r.monthly_price >= ${minMonthly})
         and (${maxMonthly}::float is null or r.monthly_price <= ${maxMonthly})
+        and (${board}::text is null or coalesce(r.board,'') ilike ${board})
+        and (${provider}::text is null or ${provider}='direct')
         and (${requestedNights}::int is null or (
           ${requestedNights}::int >= r.min_nights
           and (r.max_nights is null or ${requestedNights}::int <= r.max_nights)
