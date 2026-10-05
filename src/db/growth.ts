@@ -264,3 +264,23 @@ export async function searchFriction(days=30):Promise<SearchFriction|null>{
     abandonmentRate:trackableSessions?abandonedSessions/trackableSessions:null,
   };
 }
+
+
+export type WebVitalMetric={metric:"LCP"|"INP"|"CLS";p75:number;sample:number;target:number;good:boolean};
+export async function webVitalsSnapshot(days=30):Promise<WebVitalMetric[]>{
+  const sql=getDatabase();if(!sql)return[];
+  const bounded=Math.max(1,Math.min(365,days));
+  const rows=await sql<Array<{metric:"LCP"|"INP"|"CLS";p75:number;sample:number}>>`
+    select properties->>'metric' as metric,
+      percentile_disc(0.75) within group (order by (properties->>'value')::float)::float as p75,
+      count(*)::int as sample
+    from growth_events
+    where event_name='web_vital'
+      and created_at>=now()-make_interval(days => ${bounded})
+      and properties->>'metric' in ('LCP','INP','CLS')
+      and properties->>'value' ~ '^[0-9]+(\\.[0-9]+)?$'
+    group by properties->>'metric'
+  `;
+  const targets={LCP:2500,INP:200,CLS:0.1} as const;
+  return rows.map(row=>({metric:row.metric,p75:Number(row.p75),sample:Number(row.sample),target:targets[row.metric],good:Number(row.p75)<=targets[row.metric]}));
+}
