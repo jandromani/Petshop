@@ -9,7 +9,7 @@ const Durations=[30,60,90,120,180,365] as const;
 const Input=z.object({prompt:z.string().min(2).max(800),current:z.object({region:z.enum(["All","Europe","Asia","Africa","Americas"]).default("All"),duration:z.number().default(90),occupancy:z.number().default(1),maxMonthly:z.number().positive().max(50000).optional()}).optional()});
 const Intent=z.object({query:z.string().max(100).default(""),region:z.enum(["All","Europe","Asia","Africa","Americas"]).default("All"),duration:z.union([z.literal(30),z.literal(60),z.literal(90),z.literal(120),z.literal(180),z.literal(365)]).default(90),occupancy:z.union([z.literal(1),z.literal(2)]).default(1),maxMonthly:z.number().positive().max(50000).nullable().default(null),flexibleDays:z.union([z.literal(0),z.literal(7),z.literal(30)]).default(7),amenities:z.array(z.string().max(40)).max(8).default([]),summary:z.string().max(240).default("Filters applied.")});
 
-const searchable=[...realHotels,...overtureHotels].flatMap(h=>[h.city,h.country]);
+const searchable=[...realHotels.flatMap(h=>[h.city,h.country]),...overtureHotels.flatMap(h=>[h.market,h.city,h.country])];
 const geoTerms=[...new Set(searchable)].sort((a,b)=>b.length-a.length);
 function nearestDuration(days:number){return Durations.reduce((best,d)=>Math.abs(d-days)<Math.abs(best-days)?d:best,90 as typeof Durations[number]);}
 function heuristic(prompt:string,current?:z.infer<typeof Input>["current"]){
