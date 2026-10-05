@@ -8,7 +8,7 @@ export default function robots():MetadataRoute.Robots{
     rules:{
       userAgent:"*",
       allow:"/",
-      disallow:["/api/","/control","/hotel-desk","/ops","/system","/saved","/stays?","/es$"],
+      disallow:["/api/","/control","/hotel-desk","/ops"],
     },
     sitemap:publicSiteConfigured()&&seoAutopilotEnabled()?base+"/sitemap.xml":undefined,
     host:publicSiteConfigured()?base:undefined,
