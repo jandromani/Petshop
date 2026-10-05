@@ -316,6 +316,7 @@ type DirectRow = {
   nights: number;
   occupancy: number;
   board: string | null;
+  cancellation: string | null;
   display_price: number;
   currency: string;
   verified_at: string;
@@ -341,6 +342,7 @@ function normalizeDirectRow(row: DirectRow): LiveCatalogOffer {
     occupancy: Number(row.occupancy),
     board: row.board,
     roomType: null,
+    cancellation: row.cancellation,
     displayPrice: Number(row.display_price),
     currency: row.currency,
     verifiedAt: new Date(row.verified_at).toISOString(),
@@ -364,6 +366,7 @@ export async function listSellableDirectOffers(input: DirectCatalogQuery = {}): 
   const occupancy = input.occupancy && input.occupancy > 0 ? input.occupancy : 1;
   const region = input.region && input.region !== "All" ? input.region : null;
   const board = input.board?.trim() ? "%" + input.board.trim() + "%" : null;
+  const cancellation = input.cancellation?.trim() ? "%" + input.cancellation.trim() + "%" : null;
   const provider = input.provider?.trim() || null;
 
   const rows = await sql<DirectRow[]>`
@@ -386,6 +389,7 @@ export async function listSellableDirectOffers(input: DirectCatalogQuery = {}): 
         coalesce(${requestedNights}::int, r.min_nights)::int as nights,
         ${occupancy}::int as occupancy,
         r.board,
+        r.cancellation,
         (r.monthly_price::float * coalesce(${requestedNights}::int, r.min_nights)::float / 30.0) as display_price,
         r.currency,
         coalesce(r.verified_at, r.updated_at)::text as verified_at,
@@ -406,6 +410,7 @@ export async function listSellableDirectOffers(input: DirectCatalogQuery = {}): 
         and (${minMonthly}::float is null or r.monthly_price >= ${minMonthly})
         and (${maxMonthly}::float is null or r.monthly_price <= ${maxMonthly})
         and (${board}::text is null or coalesce(r.board,'') ilike ${board})
+        and (${cancellation}::text is null or coalesce(r.cancellation,'') ilike ${cancellation})
         and (${provider}::text is null or ${provider}='direct')
         and (${requestedNights}::int is null or (
           ${requestedNights}::int >= r.min_nights
