@@ -66,7 +66,7 @@ The production build command is:
 npm run vercel-build
 ```
 
-It runs idempotent database migrations when `DATABASE_URL` exists and then builds Next.js. The schema currently runs through **`db/022_managed_marketplace.sql`**.
+It runs idempotent database migrations when `DATABASE_URL` exists and then builds Next.js. The schema currently runs through **`db/023_temporal_inventory_webhook_state.sql`**.
 
 ## Commercial proof still outside the repository
 

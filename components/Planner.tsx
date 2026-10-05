@@ -111,20 +111,24 @@ export default function Planner({heroVariant="freedom",initialDirectory}:{heroVa
 
       <RealHotelDirectory initialData={initialDirectory} initialQuery={query} initialRegion={region} duration={duration} checkIn={checkIn} occupancy={party==="couple"?2:1} maxMonthly={searchBudget} flexibleDays={flexibleDays} initialAmenities={searchAmenities} onCount={setDirectoryCount} onQueryChange={setQuery} onRegionChange={setRegion}/>
 
-      <section className="economicsBand"><div className="shell">
-        <div className="economicsGrid"><div><div className="eyebrow">BUSINESS MODEL</div><h2>Affiliate is a bridge.<br/>Managed supply is the destination.</h2></div><div><p>Provider redirects can bootstrap coverage. The higher-control path is direct 30–90 day inventory with a contractual hotel net, an Atlas customer price, allocated units and Atlas Checkout. Search stays free; economics are earned when accommodation converts.</p><a href="/for-hotels">See the hotel model →</a></div></div>
-        <div className="marketModelGrid"><article><span>FALLBACK</span><b>Referral</b><p>External fulfillment. Useful for coverage; exposed to leakage.</p></article><article><span>CORE</span><b>Managed merchant</b><p>Atlas-controlled checkout when contract, inventory and payment gates are active.</p></article><article><span>MOAT</span><b>Exclusive allocation</b><p>Private or exclusive long-stay inventory with observed unit economics—not hypothetical take rate.</p></article></div>
+      <section className="commercialLoop"><div className="shell">
+        <div className="sectionTitle"><h2>Search by the month.<br/>Decide with evidence.</h2><p>Atlas keeps the long-stay journey simple: compare the monthly cost, request a private rate when public inventory is missing, and keep stay-readiness visible before you book.</p></div>
+        <div className="loopGrid">
+          <article><span>01</span><h3>Monthly-first</h3><p>Compare 30, 60 and 90-day stays using the cost that matters for a long stay.</p></article>
+          <article><span>02</span><h3>Private sourcing</h3><p>If a current rate is missing, ask Atlas to source the exact hotel, dates and stay length.</p></article>
+          <article><span>03</span><h3>Stay readiness</h3><p>Immigration and tax-day constraints stay separate from accommodation so a hotel result is never treated as permission to stay.</p></article>
+          <article><span>04</span><h3>Evidence first</h3><p>Prices appear only while the underlying commercial evidence is current. Expired evidence disappears.</p></article>
+        </div>
+        <div className="actions"><a className="btn ghost" href="/about">How Atlas works →</a><a className="btn ghost" href="/for-hotels">For hotels →</a></div>
       </div></section>
 
       <StayReadiness duration={duration}/>
 
-      <section className="moatBand"><div className="shell"><div className="sectionTitle"><div className="eyebrow">WHAT COMPOUNDS</div><h2>The interface can be copied.<br/>The operating graph cannot.</h2><p>Atlas is designed to accumulate proprietary operational evidence rather than defend a search box.</p></div><div className="loopGrid"><article><span>01</span><h3>Supply graph</h3><p>Which hotels allocate 30–90 day inventory, at what net rate, in which seasons and with what conversion.</p></article><article><span>02</span><h3>Demand graph</h3><p>Dates, budgets, amenities, sourcing requests and conversion outcomes by destination and stay length.</p></article><article><span>03</span><h3>Compliance engine</h3><p>Deterministic presence-day calculations and source-backed stay-readiness rules—not LLM legal improvisation.</p></article><article><span>04</span><h3>Owned distribution</h3><p>Field notes, evidence-led destination pages and shareable tools designed to reduce dependency on paid travel keywords.</p><a href="/geographic-arbitrage">Read Field Notes →</a></article></div></div></section>
-
       <section id="agent" className="agentBand"><div className="shell">
-        <div className="sectionTitle"><h2>Need help narrowing it down?<br/>Ask Atlas.</h2><p>The concierge is an interface, not the moat. It turns intent into search filters while hotel facts and prices remain evidence-gated.</p></div>
+        <div className="sectionTitle"><h2>Need help narrowing it down?<br/>Ask Atlas.</h2><p>Describe the stay you want. Atlas turns your intent into search filters while hotel facts, prices and availability remain evidence-gated.</p></div>
         <div className="agentGrid">
           <div className="chat"><div className="chatlog">{chat.map((m,i)=><div className={"msg "+m.role} key={i}>{m.text}</div>)}</div><div className="chatrow"><input aria-label="Ask Atlas" value={draft} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>e.key==="Enter"&&askAgent()} placeholder="e.g. Tenerife, walkable, sea, under €1,800/month…"/><button className="btn lime" onClick={askAgent}>{thinking?"…":"Ask"}</button></div></div>
-          <div className="truth consumerTrustMetrics"><div className="metric"><b>Identity ≠ supply</b><span>a mapped hotel is not counted as commercial inventory</span></div><div className="metric"><b>Current</b><span>prices require fresh evidence</span></div><div className="metric"><b>Private request</b><span>unpriced demand enters the sourcing queue</span></div><div className="metric"><b>Clear</b><span>expired evidence disappears</span></div></div>
+          <div className="truth consumerTrustMetrics"><div className="metric"><b>Real property</b><span>hotel identity is kept separate from availability</span></div><div className="metric"><b>Current price</b><span>prices require fresh commercial evidence</span></div><div className="metric"><b>Private request</b><span>ask Atlas to source an unpriced stay</span></div><div className="metric"><b>Fresh by default</b><span>expired price evidence disappears</span></div></div>
         </div>
       </div></section>
 
