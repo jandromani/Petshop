@@ -69,7 +69,7 @@ export async function liveDiscoveryEvidence(slug:string){
 }
 
 export async function destinationSeoEvidence(page:DestinationSeoPage){
-  const offers=(await listSellableOffers({q:page.market,limit:50})).filter(o=>o.city.toLowerCase()===page.market.toLowerCase()||o.market?.toLowerCase?.()===page.market.toLowerCase());
+  const offers=(await listSellableOffers({q:page.market,limit:50})).filter(o=>o.city.toLowerCase()===page.market.toLowerCase());
   const gate=seoGate({
     liveIndexingEnabled:seoAutopilotEnabled(),
     customDomain:customPublicDomainConfigured(),
