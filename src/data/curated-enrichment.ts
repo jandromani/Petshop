@@ -17,6 +17,7 @@ for(const hotel of realHotels){
   if(candidates.length===1)matches.set(hotel.id,candidates[0]);
 }
 
+export const curatedGeoSourceIds=new Set([...matches.values()].map(h=>h.sourceId));
 export function curatedGeoMatch(id:string){return matches.get(id)||null;}
 export function curatedGeoMatchCount(){return matches.size;}
 
