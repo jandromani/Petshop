@@ -25,6 +25,7 @@ export type BookingLiveWaveInput={
   radiusKm?:number;
   rowsPerDestination?:number;
   persist?:boolean;
+  anchors?:Array<{city:string;country:string;region:DestinationRegion;lat:number;lng:number}>;
 };
 
 export type BookingLiveWaveResult={
@@ -49,7 +50,8 @@ function addDays(date:string,days:number){
   return d.toISOString().slice(0,10);
 }
 
-export function bookingWaveAnchors(input:Pick<BookingLiveWaveInput,"regions"|"maxDestinations">){
+export function bookingWaveAnchors(input:Pick<BookingLiveWaveInput,"regions"|"maxDestinations"|"anchors">){
+  if(input.anchors?.length)return input.anchors.slice(0,input.maxDestinations??8);
   const selected=liveDestinations.filter(destination=>!input.regions?.length||input.regions.includes(destination.region));
   return selected.slice(0,input.maxDestinations??8);
 }
@@ -61,6 +63,7 @@ export async function runBookingLiveWave(input:BookingLiveWaveInput):Promise<Boo
   const client=new BookingDemandClient();
   const status=client.status();
   if(!status.configured) throw new Error("Booking provider disabled: "+status.missingEnv.join(", "));
+  if(!status.commercialReady) throw new Error("Booking provider is not commercial-ready: "+status.blockers.join(", "));
 
   const shouldPersist=input.persist!==false && databaseConfigured();
   const checkOut=addDays(input.checkIn,input.nights);
