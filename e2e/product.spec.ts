@@ -15,9 +15,6 @@ test("money truth is explicit and internally consistent",async({page})=>{
 test("search count and visible real-hotel cards share the same directory contract",async({page})=>{
   await page.goto("/");
   await page.getByRole("button",{name:/Browse .* real hotels/i}).click();
-  const explore=page.locator("#explore");
-  await expect(explore).toBeAttached({timeout:15000});
-  await explore.scrollIntoViewIfNeeded();
   const heading=page.locator("#explore .resultsHeadline h2");
   await expect(heading).toContainText(/real hotels/i,{timeout:15000});
 });
@@ -117,11 +114,12 @@ test("public surfaces keep basic accessibility contracts",async({page})=>{
 test("shared hotel search restores the full deterministic filter state",async({page})=>{
   await page.goto("/stays?q=Madrid&region=Europe&duration=90&occupancy=2&maxMonthly=1800&features=pool%2Cgym&brand=Marriott&brandedOnly=1&sort=name");
   await expect(page.getByRole("heading",{name:/Search real hotels/i})).toBeVisible();
-  await expect(page.getByLabel("Where?")).toHaveValue("Madrid");
-  await expect(page.getByLabel("Region",{exact:true})).toHaveValue("Europe");
-  await expect(page.getByLabel("Stay duration")).toHaveValue("90");
-  await expect(page.getByLabel("Travelling party")).toHaveValue("couple");
-  await expect(page.getByLabel("Maximum monthly hotel budget")).toHaveValue("1800");
+  const search=page.locator(".silverSearch");
+  await expect(search.locator('input[placeholder^="Madrid"]')).toHaveValue("Madrid");
+  await expect(search.locator('select[aria-label="Region"]')).toHaveValue("Europe");
+  await expect(search.locator('select[aria-label="Stay duration"]')).toHaveValue("90");
+  await expect(search.locator('select[aria-label="Travelling party"]')).toHaveValue("couple");
+  await expect(search.locator('input[aria-label="Maximum monthly hotel budget"]')).toHaveValue("1800");
   await page.getByText(/Advanced filters/i).click();
   await expect(page.getByPlaceholder("Hilton, Marriott…")).toHaveValue("Marriott");
   await expect(page.getByText("pool",{exact:true})).toHaveClass(/active/);
