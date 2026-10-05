@@ -84,13 +84,17 @@ test("public surfaces keep basic accessibility contracts",async({page})=>{
 
       const unnamedButtons=await page.locator("button").evaluateAll(nodes=>nodes.filter(node=>{
         const element=node as HTMLElement;
-        return !((element.innerText||"").trim()||element.getAttribute("aria-label")||element.getAttribute("title"));
+        const style=getComputedStyle(element);
+        if(element.hidden||style.display==="none"||style.visibility==="hidden"||element.closest('[aria-hidden="true"]'))return false;
+        return !((element.textContent||"").trim()||element.getAttribute("aria-label")||element.getAttribute("title"));
       }).length);
       expect(unnamedButtons,path+" unnamed buttons").toBe(0);
 
       const unnamedLinks=await page.locator("a").evaluateAll(nodes=>nodes.filter(node=>{
         const element=node as HTMLElement;
-        return !((element.innerText||"").trim()||element.getAttribute("aria-label")||element.getAttribute("title"));
+        const style=getComputedStyle(element);
+        if(element.hidden||style.display==="none"||style.visibility==="hidden"||element.closest('[aria-hidden="true"]'))return false;
+        return !((element.textContent||"").trim()||element.getAttribute("aria-label")||element.getAttribute("title"));
       }).length);
       expect(unnamedLinks,path+" unnamed links").toBe(0);
 
@@ -113,8 +117,8 @@ test("shared hotel search restores the full deterministic filter state",async({p
   await expect(page.getByRole("heading",{name:/Search real hotels/i})).toBeVisible();
   await expect(page.getByLabel("Where?")).toHaveValue("Madrid");
   await expect(page.getByLabel("Region",{exact:true})).toHaveValue("Europe");
-  await expect(page.getByLabel("Stay")).toHaveValue("90");
-  await expect(page.getByLabel("Travelling")).toHaveValue("couple");
+  await expect(page.getByLabel("Stay",{exact:true})).toHaveValue("90");
+  await expect(page.getByLabel("Travelling",{exact:true})).toHaveValue("couple");
   await expect(page.getByLabel("Maximum monthly hotel budget")).toHaveValue("1800");
   await page.getByText(/Advanced filters/i).click();
   await expect(page.getByPlaceholder("Hilton, Marriott…")).toHaveValue("Marriott");
