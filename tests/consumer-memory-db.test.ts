@@ -3,6 +3,7 @@ import { getDatabase } from "@/src/db/client";
 import { deleteSavedProfile,exportSavedProfileData,listSavedHotelsForProfile,listSavedStaysForProfile,removeSavedHotel,removeSavedStay,upsertSavedHotel,upsertSavedStay } from "@/src/db/consumer-memory";
 import type { SavedStay } from "@/src/core/saved-stays";
 import type { SavedHotel } from "@/src/core/saved-hotels";
+import { deleteRateAlert,listRateAlerts,upsertRateAlert } from "@/src/db/rate-alerts";
 
 const dbIt=process.env.DATABASE_URL?it:it.skip;
 const created:string[]=[];
@@ -41,6 +42,21 @@ describe("consumer memory persistence",()=>{
     expect(await removeSavedHotel(saved.profileId,"overture-ci-hotel")).toBe(true);expect(await listSavedHotelsForProfile(saved.profileId)).toEqual([]);
   });
 
+  dbIt("round-trips one anonymous rate alert and keeps it price-truthful",async()=>{
+    const createdAlert=await upsertRateAlert(null,{
+      hotelId:"overture-alert-hotel",hotelName:"Alert Hotel",city:"Madrid",country:"Spain",
+      checkIn:"2027-01-15",nights:90,occupancy:1,targetMonthly:1700,
+    });
+    expect(createdAlert?.profileId).toMatch(/^[0-9a-f-]{36}$/);
+    if(!createdAlert?.alert)throw new Error("rate alert not created");
+    created.push(createdAlert.profileId);
+    const alerts=await listRateAlerts(createdAlert.profileId);
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]).toMatchObject({hotelId:"overture-alert-hotel",status:"ACTIVE",targetMonthly:1700,triggeredOfferId:null,triggeredMonthly:null});
+    expect(await deleteRateAlert(createdAlert.profileId,createdAlert.alert.id)).toBe(true);
+    expect(await listRateAlerts(createdAlert.profileId)).toEqual([]);
+  });
+
   dbIt("deletes an anonymous profile and cascades saved stays",async()=>{
     const stay:SavedStay={
       offerId:"ci-offer-delete",slug:"ci-delete",name:"Delete Me",city:"Madrid",country:"Spain",provider:"direct",
@@ -58,7 +74,8 @@ describe("consumer memory persistence",()=>{
     `;
     const stays=await sql!<{count:number}[]>`select count(*)::int as count from consumer_saved_stays where profile_id=${saved.profileId}::uuid`;
     const hotels=await sql!<{count:number}[]>`select count(*)::int as count from consumer_saved_hotels where profile_id=${saved.profileId}::uuid`;
-    expect(profiles[0]?.count).toBe(0);expect(stays[0]?.count).toBe(0);expect(hotels[0]?.count).toBe(0);
+    const alerts=await sql!<{count:number}[]>`select count(*)::int as count from consumer_rate_alerts where profile_id=${saved.profileId}::uuid`;
+    expect(profiles[0]?.count).toBe(0);expect(stays[0]?.count).toBe(0);expect(hotels[0]?.count).toBe(0);expect(alerts[0]?.count).toBe(0);
   });
 });
 
