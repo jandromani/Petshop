@@ -192,6 +192,20 @@ export default async function ControlTower(){
           <span>{product?.engagementToSourcing===null||product?.engagementToSourcing===undefined?"—":(product.engagementToSourcing*100).toFixed(1)+"%"}</span>
           <span>{product?.referralToConversion===null||product?.referralToConversion===undefined?"—":(product.referralToConversion*100).toFixed(1)+"%"}</span>
         </div>
+        <div className="tr"><b>Card CTR</b><b>Map CTR</b><b>Save rate</b><b>Sourcing completion</b></div>
+        <div className="tr">
+          <span>{product?.cardCtr===null||product?.cardCtr===undefined?"—":(product.cardCtr*100).toFixed(1)+"%"}</span>
+          <span>{product?.mapCtr===null||product?.mapCtr===undefined?"—":(product.mapCtr*100).toFixed(1)+"%"}</span>
+          <span>{product?.saveRate===null||product?.saveRate===undefined?"—":(product.saveRate*100).toFixed(1)+"%"}</span>
+          <span>{product?.sourcingCompletionRate===null||product?.sourcingCompletionRate===undefined?"—":(product.sourcingCompletionRate*100).toFixed(1)+"%"}</span>
+        </div>
+        <div className="tr"><b>AI → hotel action</b><b>Manual → hotel action</b><b>Verified click share</b><b>Sourcing start rate</b></div>
+        <div className="tr">
+          <span>{product?.aiToEngagement===null||product?.aiToEngagement===undefined?"—":(product.aiToEngagement*100).toFixed(1)+"%"} · {product?.aiSearchSessions||0} AI sessions</span>
+          <span>{product?.manualToEngagement===null||product?.manualToEngagement===undefined?"—":(product.manualToEngagement*100).toFixed(1)+"%"} · {product?.manualOnlySearchSessions||0} manual-only</span>
+          <span>{product?.verifiedCardClickShare===null||product?.verifiedCardClickShare===undefined?"—":(product.verifiedCardClickShare*100).toFixed(1)+"%"}</span>
+          <span>{product?.sourcingStartRate===null||product?.sourcingStartRate===undefined?"—":(product.sourcingStartRate*100).toFixed(1)+"%"}</span>
+        </div>
       </div>
 
       <h2 style={{marginTop:36}}>Growth autopilot · 30d</h2>
