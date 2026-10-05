@@ -20,10 +20,14 @@ describe("preproduction reality layer",()=>{
     expect(overtureHotels.length).toBeGreaterThanOrEqual(2000);
     expect(overtureHotels.length).toBeLessThanOrEqual(5000);
     expect(new Set(overtureHotels.map(h=>h.sourceId)).size).toBe(overtureHotels.length);
+    expect(new Set(overtureHotels.map(h=>h.market)).size).toBeGreaterThanOrEqual(30);
+    expect(new Set(overtureHotels.map(h=>h.country)).size).toBeGreaterThanOrEqual(15);
     for(const h of overtureHotels){
       expect(Number.isFinite(h.lat)).toBe(true);
       expect(Number.isFinite(h.lng)).toBe(true);
       expect(h.referenceUrl.startsWith("https://")).toBe(true);
+      expect(h.market.length).toBeGreaterThan(1);
+      if(h.website)expect(h.website.startsWith("https://")).toBe(true);
       expect("monthly" in h).toBe(false);
       expect("price" in h).toBe(false);
     }
