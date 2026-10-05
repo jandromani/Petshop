@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { StayDuration } from "@/src/core/search";
+import { growthEvent } from "@/src/growth/client";
 
 export default function SourceStayForm({hotelId,defaultCheckIn,defaultDuration}:{hotelId:string;defaultCheckIn:string;defaultDuration:StayDuration}){
   const[checkIn,setCheckIn]=useState(defaultCheckIn);
@@ -9,13 +10,13 @@ export default function SourceStayForm({hotelId,defaultCheckIn,defaultDuration}:
   const[budget,setBudget]=useState("");
   const[state,setState]=useState<"idle"|"sending"|"done"|"error">("idle");
   async function submit(){
-    setState("sending");
+    setState("sending");growthEvent("source_rate_start",{hotel_id:hotelId,nights,occupancy,target_monthly:budget?Number(budget):0});
     const res=await fetch("/api/sourcing",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
       hotelId,checkIn,nights,occupancy,
       targetMonthlyEur:budget?Number(budget):undefined,
       sourcePath:location.pathname+location.search,
     })}).catch(()=>null);
-    setState(res?.ok?"done":"error");
+    const ok=Boolean(res?.ok);setState(ok?"done":"error");growthEvent(ok?"source_rate_success":"source_rate_error",{hotel_id:hotelId,nights,occupancy});
   }
   return <div className="sourceStay">
     <div className="eyebrow">ASK ATLAS SUPPLY</div>
