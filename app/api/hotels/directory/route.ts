@@ -19,6 +19,7 @@ const Query=z.object({
   duration:z.coerce.number().int().min(1).max(365).default(90),
   occupancy:z.coerce.number().int().min(1).max(2).default(1),
   maxMonthly:z.coerce.number().positive().max(50000).optional(),
+  features:z.string().max(240).optional(),
 });
 
 function parseBbox(value?:string){
@@ -37,6 +38,7 @@ export async function GET(req:Request){
   const url=new URL(req.url);const parsed=Query.safeParse(Object.fromEntries(url.searchParams.entries()));
   if(!parsed.success)return Response.json({error:"invalid-query",issues:parsed.error.issues},{status:400});
   const q=(parsed.data.q||"").trim().toLowerCase(),bounds=parseBbox(parsed.data.bbox);
+  const wanted=(parsed.data.features||"").split(",").map(x=>x.trim().toLowerCase()).filter(Boolean).slice(0,8);
   if(parsed.data.bbox&&!bounds)return Response.json({error:"invalid-bbox"},{status:400});
 
   const curated=realHotels.map(h=>({...h,canonicalId:h.id,lat:null,lng:null,source:"curated_seed",sourceId:h.id,website:null,address:null,confidence:null,description:null,photoUrls:[],facilities:[],referenceUrl:realHotelReferenceUrl(h)}));
@@ -57,7 +59,7 @@ export async function GET(req:Request){
     live=await listSellableOffers({q:parsed.data.q,region:parsed.data.region,checkIn:parsed.data.checkIn,flexibleDays:parsed.data.flexibleDays,nights:parsed.data.duration,occupancy:parsed.data.occupancy,maxMonthly:parsed.data.maxMonthly,limit:50}).catch(()=>[]);
   }
   const liveById=new Map(live.map(o=>[o.hotelId,o]));const liveByKey=new Map(live.map(o=>[keyOf(o),o]));
-  const enriched=all.map(h=>{const offer=liveById.get(h.canonicalId)||liveByKey.get(keyOf(h));return{...h,entityState:"REAL_PROPERTY" as const,commercialState:offer?"VERIFIED_RATE" as const:"RATE_PENDING" as const,liveOffer:offerSummary(offer)};});
+  const enriched=all.map(h=>{const offer=liveById.get(h.canonicalId)||liveByKey.get(keyOf(h));const summary=offerSummary(offer);const known=[...(h.facilities||[]),...(summary?.facilities||[]),h.description||""].join(" ").toLowerCase();const matched=wanted.filter(x=>known.includes(x));return{...h,entityState:"REAL_PROPERTY" as const,commercialState:offer?"VERIFIED_RATE" as const:"RATE_PENDING" as const,liveOffer:summary,preferenceScore:wanted.length?matched.length/wanted.length:0,matchedPreferences:matched};}).sort((a,b)=>b.preferenceScore-a.preferenceScore+(a.preferenceScore===b.preferenceScore?((b.commercialState==="VERIFIED_RATE"?1:0)-(a.commercialState==="VERIFIED_RATE"?1:0)):0));
 
   const rows=parsed.data.view==="map"?enriched.filter(h=>Number.isFinite(h.lat)&&Number.isFinite(h.lng)).slice(0,5000):enriched.slice(parsed.data.offset,parsed.data.offset+parsed.data.limit);
   const attribution=[
