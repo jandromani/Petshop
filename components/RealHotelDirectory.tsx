@@ -37,7 +37,7 @@ export default function RealHotelDirectory({initialQuery="",initialRegion="All",
 
   function changeQuery(value:string){setQ(value);setPage(0);setBbox(null);onQueryChange?.(value)}
   function changeRegion(value:SearchRegion){setRegion(value);setPage(0);setBbox(null);onRegionChange?.(value);growthEvent("filter_change",{filter:"region",value})}
-  function chooseFromMap(id:string){setSelectedId(id);setMobileView("list");requestAnimationFrame(()=>document.getElementById("hotel-card-"+id)?.scrollIntoView({behavior:"smooth",block:"center"}))}
+  function chooseFromMap(id:string){setSelectedId(id||null);if(!id)return;if(mobileView==="list")requestAnimationFrame(()=>document.getElementById("hotel-card-"+id)?.scrollIntoView({behavior:"smooth",block:"center"}))}
   function searchArea(next:string){setBbox(next);setPage(0)}
   function toggleFeature(value:string){setFeatures(v=>{const next=v.includes(value)?v.filter(x=>x!==value):[...v,value];growthEvent("filter_change",{filter:"preference",value,active:!v.includes(value)});setPage(0);return next})}
   const hotels=data?.hotels||[],mapped=mapData?.hotels||[];
@@ -58,7 +58,7 @@ export default function RealHotelDirectory({initialQuery="",initialRegion="All",
         </article>})}</div>
         {!loading&&data&&<div className="directoryPager"><button className="btn ghost" disabled={page===0} onClick={()=>setPage(p=>Math.max(0,p-1))}>← Previous</button><span>{data.total?Math.min(page*pageSize+1,data.total):0}–{Math.min((page+1)*pageSize,data.total)} of {data.total}</span><button className="btn ghost" disabled={(page+1)*pageSize>=data.total} onClick={()=>setPage(p=>p+1)}>Next →</button></div>}
       </div>
-      <aside ref={mapPaneRef} className="hotelMapPane">{mapEnabled?<HotelMap hotels={mapped} selectedId={selectedId} onSelect={chooseFromMap} onSearchArea={searchArea}/>:<div className="hotelMapLoading">Interactive map loads when you reach the results.</div>}</aside>
+      <aside ref={mapPaneRef} className="hotelMapPane">{mapEnabled?<HotelMap hotels={mapped} selectedId={selectedId} onSelect={chooseFromMap} onSearchArea={searchArea} detailQuery={new URLSearchParams({duration:String(duration),...(checkIn?{checkIn}:{}),occupancy:String(occupancy)}).toString()}/>:<div className="hotelMapLoading">Interactive map loads when you reach the results.</div>}</aside>
     </div>
     <p className="directoryDisclosure">Property identity is not a booking claim. A price is shown only after Atlas has a fresh truth-gated commercial offer.{data?.attribution?" Data: "+data.attribution+".":""}</p>
   </div></section>;
