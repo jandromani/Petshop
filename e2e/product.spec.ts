@@ -113,25 +113,14 @@ test("public surfaces keep basic accessibility contracts",async({page})=>{
 test("shared hotel search restores the full deterministic filter state",async({page})=>{
   await page.goto("/stays?q=Madrid&region=Europe&duration=90&occupancy=2&maxMonthly=1800&features=pool%2Cgym&brand=Marriott&brandedOnly=1&sort=name");
   await expect(page.getByRole("heading",{name:/Find one place/i})).toBeVisible();
-  await expect.poll(()=>page.evaluate(()=>{
-    const root=document.querySelector(".consumerSearch");
-    const value=(selector:string)=>(root?.querySelector(selector) as HTMLInputElement|HTMLSelectElement|null)?.value??null;
-    const brand=(document.querySelector('.advancedHotelFilters input[placeholder="Hilton, Marriott…"]') as HTMLInputElement|null)?.value??null;
-    const active=new Set(Array.from(document.querySelectorAll(".preferenceFilters button.active")).map(node=>(node.textContent||"").trim()));
-    return {
-      query:value('input[aria-label="Destination or hotel"]'),
-      region:value('select[aria-label="Region"]'),
-      duration:value('select[aria-label="Stay duration"]'),
-      party:value('select[aria-label="Travelling party"]'),
-      budget:value('input[aria-label="Maximum monthly hotel budget"]'),
-      brand,
-      pool:active.has("pool"),
-      gym:active.has("gym"),
-      brandedOnly:new URL(window.location.href).searchParams.get("brandedOnly"),
-    };
-  }),{timeout:20000}).toEqual({
-    query:"Madrid",region:"Europe",duration:"90",party:"couple",budget:"1800",brand:"Marriott",pool:true,gym:true,brandedOnly:"1",
-  });
+  await expect(page.getByLabel("Destination or hotel")).toHaveValue("Madrid");
+  await expect(page.getByLabel("Region")).toHaveValue("Europe");
+  await expect(page.getByLabel("Stay duration")).toHaveValue("90");
+  await expect(page.getByLabel("Travelling party")).toHaveValue("couple");
+  await expect(page.getByLabel("Maximum monthly hotel budget")).toHaveValue("1800");
+  await expect(page.locator('.advancedHotelFilters input[placeholder="Hilton, Marriott…"]')).toHaveValue("Marriott");
+  await expect(page.locator(".preferenceFilters button.active")).toContainText(["pool","gym"]);
+  await expect.poll(()=>new URL(page.url()).searchParams.get("brandedOnly")).toBe("1");
 });
 
 test("zero-result search fails honestly and offers deterministic relaxation",async({page})=>{

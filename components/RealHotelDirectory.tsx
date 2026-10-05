@@ -44,6 +44,7 @@ export default function RealHotelDirectory({
   const[brand,setBrand]=useState(initialBrand);const[brandedOnly,setBrandedOnly]=useState(initialBrandedOnly);const[sort,setSort]=useState<"recommended"|"price"|"confidence"|"name">(initialSort);
   const[mapVisible,setMapVisible]=useState(false);const[shareLabel,setShareLabel]=useState("Share search");
   const mapPaneRef=useRef<HTMLElement|null>(null);const seen=useRef(new Set<string>());const zeroSeen=useRef(new Set<string>());const urlMode=useRef<"replace"|"push">("replace");
+  const initialSnapshot=useRef({query:initialQuery,region:initialRegion,duration,occupancy,maxMonthly,flexibleDays,features:[...initialAmenities],featuresMode:initialFeaturesMode,verifiedOnly:initialVerifiedOnly,minMonthly:initialMinMonthly,board:initialBoard,cancellation:initialCancellation,provider:initialProvider,brand:initialBrand,brandedOnly:initialBrandedOnly,sort:initialSort,page:Math.max(0,initialPage),bbox:initialBbox||""});
   const pageSize=24;
 
   useEffect(()=>{setQ(initialQuery);setPage(0);setBbox(null)},[initialQuery]);
@@ -64,6 +65,18 @@ export default function RealHotelDirectory({
   const mapParams=useMemo(()=>{const p=new URLSearchParams(baseParams);p.set("view","map");return p},[baseParams]);
 
   useEffect(()=>{
+    const initial=initialSnapshot.current;
+    const sameAsServerSnapshot=Boolean(initialData)
+      && q===initial.query&&region===initial.region&&duration===initial.duration&&occupancy===initial.occupancy
+      && maxMonthly===initial.maxMonthly&&flexibleDays===initial.flexibleDays
+      && features.join("|")===initial.features.join("|")&&featuresMode===initial.featuresMode
+      && verifiedOnly===initial.verifiedOnly&&minMonthly===initial.minMonthly
+      && board===initial.board&&cancellation===initial.cancellation&&provider===initial.provider
+      && brand===initial.brand&&brandedOnly===initial.brandedOnly&&sort===initial.sort
+      && page===initial.page&&(bbox||"")===initial.bbox;
+    if(sameAsServerSnapshot){
+      setLoading(false);onCount?.(initialData!.total);return;
+    }
     const c=new AbortController();setLoading(true);
     const timer=setTimeout(()=>fetch("/api/hotels/directory?"+listParams,{signal:c.signal})
       .then(r=>r.ok?r.json():Promise.reject()).then((payload:DirectoryPayload)=>{
@@ -74,7 +87,7 @@ export default function RealHotelDirectory({
         }
       }).catch(()=>{}).finally(()=>setLoading(false)),120);
     return()=>{clearTimeout(timer);c.abort()};
-  },[listParams,onCount,q,region,page,verifiedOnly]);
+  },[listParams,onCount,q,region,page,verifiedOnly,initialData,duration,occupancy,maxMonthly,flexibleDays,features,featuresMode,minMonthly,board,cancellation,provider,brand,brandedOnly,sort,bbox]);
 
   const mapEnabled=mapVisible||mobileView==="map";
   useEffect(()=>{const el=mapPaneRef.current;if(!el)return;const io=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)){setMapVisible(true);io.disconnect()}},{rootMargin:"700px"});io.observe(el);return()=>io.disconnect()},[]);
