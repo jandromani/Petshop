@@ -44,6 +44,17 @@ export async function GET(req:Request){
   const curated=realHotels.map(h=>({...h,canonicalId:h.id,lat:null,lng:null,source:"curated_seed",sourceId:h.id,website:null,address:null,confidence:null,description:null,photoUrls:[],facilities:[],referenceUrl:realHotelReferenceUrl(h)}));
   const overture=overtureHotels.map(h=>({...h,canonicalId:h.id,source:"overture",description:null,photoUrls:[],facilities:[]}));
   const staticRows=[...curated,...overture].filter(h=>(parsed.data.region==="All"||h.region===parsed.data.region)&&matches(h,q)&&inside(h,bounds));
+  const curatedOrder=new Map(curated.map((h,i)=>[keyOf(h),i]));
+  const compareIdentity=(a:any,b:any)=>{
+    const ai=curatedOrder.get(keyOf(a)),bi=curatedOrder.get(keyOf(b));
+    if(ai!==undefined||bi!==undefined){
+      if(ai!==undefined&&bi!==undefined)return ai-bi;
+      return ai!==undefined?-1:1;
+    }
+    const website=Number(Boolean(b.website))-Number(Boolean(a.website));if(website)return website;
+    const confidence=Number(b.confidence||0)-Number(a.confidence||0);if(confidence)return confidence;
+    return a.name.localeCompare(b.name)||a.city.localeCompare(b.city);
+  };
 
   let imported:Array<any>=[];
   if(databaseConfigured()){
@@ -52,14 +63,18 @@ export async function GET(req:Request){
   }
 
   const merged=new Map<string,any>();for(const h of staticRows)merged.set(keyOf(h),h);for(const h of imported)merged.set(keyOf(h),h);
-  const all=[...merged.values()].sort((a,b)=>(b.confidence||0)-(a.confidence||0)||a.name.localeCompare(b.name)||a.city.localeCompare(b.city));
+  const all=[...merged.values()].sort(compareIdentity);
 
   let live:Array<any>=[];
   if(databaseConfigured()){
     live=await listSellableOffers({q:parsed.data.q,region:parsed.data.region,checkIn:parsed.data.checkIn,flexibleDays:parsed.data.flexibleDays,nights:parsed.data.duration,occupancy:parsed.data.occupancy,maxMonthly:parsed.data.maxMonthly,limit:50}).catch(()=>[]);
   }
   const liveById=new Map(live.map(o=>[o.hotelId,o]));const liveByKey=new Map(live.map(o=>[keyOf(o),o]));
-  const enriched=all.map(h=>{const offer=liveById.get(h.canonicalId)||liveByKey.get(keyOf(h));const summary=offerSummary(offer);const known=[...(h.facilities||[]),...(summary?.facilities||[]),h.description||""].join(" ").toLowerCase();const matched=wanted.filter(x=>known.includes(x));return{...h,entityState:"REAL_PROPERTY" as const,commercialState:offer?"VERIFIED_RATE" as const:"RATE_PENDING" as const,liveOffer:summary,preferenceScore:wanted.length?matched.length/wanted.length:0,matchedPreferences:matched};}).sort((a,b)=>b.preferenceScore-a.preferenceScore+(a.preferenceScore===b.preferenceScore?((b.commercialState==="VERIFIED_RATE"?1:0)-(a.commercialState==="VERIFIED_RATE"?1:0)):0));
+  const enriched=all.map(h=>{const offer=liveById.get(h.canonicalId)||liveByKey.get(keyOf(h));const summary=offerSummary(offer);const known=[...(h.facilities||[]),...(summary?.facilities||[]),h.description||""].join(" ").toLowerCase();const matched=wanted.filter(x=>known.includes(x));return{...h,entityState:"REAL_PROPERTY" as const,commercialState:offer?"VERIFIED_RATE" as const:"RATE_PENDING" as const,liveOffer:summary,preferenceScore:wanted.length?matched.length/wanted.length:0,matchedPreferences:matched};}).sort((a,b)=>{
+    const preference=b.preferenceScore-a.preferenceScore;if(preference)return preference;
+    const commercial=Number(b.commercialState==="VERIFIED_RATE")-Number(a.commercialState==="VERIFIED_RATE");if(commercial)return commercial;
+    return compareIdentity(a,b);
+  });
 
   const mappedRows=enriched.filter(h=>Number.isFinite(h.lat)&&Number.isFinite(h.lng)).slice(0,5000);
   const attribution=[
