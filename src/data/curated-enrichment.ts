@@ -28,7 +28,7 @@ export function enrichCuratedHotel(hotel:RealHotel){
       ...hotel,canonicalId:hotel.id,lat:null,lng:null,market:hotel.city,
       source:"curated_seed",sourceId:hotel.id,website:null,address:null,confidence:null,
       description:null,photoUrls:[] as string[],facilities:[] as string[],
-      referenceUrl:realHotelReferenceUrl(hotel),geoSource:null,
+      referenceUrl:realHotelReferenceUrl(hotel),geoSource:null,brand:null,category:null,taxonomy:[] as string[],
     };
   }
   return{
@@ -36,6 +36,7 @@ export function enrichCuratedHotel(hotel:RealHotel){
     source:"curated_seed",sourceId:hotel.id,website:match.website,address:match.address,
     confidence:match.confidence,description:null,photoUrls:[] as string[],facilities:[] as string[],
     referenceUrl:match.referenceUrl,geoSource:"overture",geoSourceId:match.sourceId,
+    brand:match.brand||null,category:match.category||null,taxonomy:match.taxonomy||[],
   };
 }
 
