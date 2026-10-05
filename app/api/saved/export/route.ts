@@ -25,7 +25,7 @@ export async function GET(req:Request){
       exportedAt:new Date().toISOString(),
       scope:"anonymous-consumer-memory",
       data,
-      note:"This export contains the anonymous profile and saved-stay references associated with this browser cookie. It does not contain a name, email address or financial profile.",
+      note:"This export contains the anonymous profile and saved hotel identities and saved-offer references associated with this browser cookie. It does not contain a name, email address or financial profile.",
     },null,2);
     return new Response(body,{
       status:200,
