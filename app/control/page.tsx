@@ -6,7 +6,7 @@ import { liveProviderStatuses } from "@/src/providers/live/registry";
 import { databaseHealth } from "@/src/db/client";
 import { getOpsSnapshot } from "@/src/db/ops";
 import { listOpenIncidents } from "@/src/db/governance";
-import { growthFunnel,heroExperimentReadout,searchFriction } from "@/src/db/growth";
+import { growthFunnel,productFunnel,heroExperimentReadout,searchFriction } from "@/src/db/growth";
 import { listAgentTasks } from "@/src/db/agent-tasks";
 import { agentRuntimeCredentialsAvailable,agentRuntimeProvider } from "@/src/agents/llm";
 import { getHeroOverride } from "@/src/growth/autopilot";
@@ -22,10 +22,11 @@ export default async function ControlTower(){
   if(!verifyOpsSession(jar.get(OPS_COOKIE)?.value)) notFound();
 
   const providers=liveProviderStatuses();
-  const [ops,incidents,funnel,heroExperiment,friction,agentTasks,heroOverride,dbHealth,agentCredentials,slo,economics,agentMetrics,providerBudgets,durationMetrics]=await Promise.all([
+  const [ops,incidents,funnel,product,heroExperiment,friction,agentTasks,heroOverride,dbHealth,agentCredentials,slo,economics,agentMetrics,providerBudgets,durationMetrics]=await Promise.all([
     getOpsSnapshot(),
     listOpenIncidents(20),
     growthFunnel(30),
+    productFunnel(30),
     heroExperimentReadout(30),
     searchFriction(30),
     listAgentTasks(30),
@@ -169,6 +170,28 @@ export default async function ControlTower(){
         {incidents.length?incidents.map(i=><div className="tr" key={i.key}>
           <b>{i.key}</b><span className={i.severity==="critical"?"amber":""}>{i.severity.toUpperCase()}</span><span>{i.occurrences}×</span><span>{i.message}</span>
         </div>):<div className="tr"><b>No open incidents</b><span className="green">CLEAR</span><span>0</span><span>Daily Control will reopen a signal if it recurs.</span></div>}
+      </div>
+
+      <h2 style={{marginTop:36}}>Real hotel product funnel · 30d</h2>
+      <div className="metrics">
+        <div className="metricDark"><b>{product?.pageSessions||0}</b><span>consented page sessions</span></div>
+        <div className="metricDark"><b>{product?.searchSessions||0}</b><span>search sessions · {product?.aiSearchSessions||0} AI</span></div>
+        <div className="metricDark"><b>{product?.resultSessions||0}</b><span>sessions with results</span></div>
+        <div className="metricDark"><b>{product?.impressionSessions||0}</b><span>hotel impression sessions</span></div>
+        <div className="metricDark"><b>{product?.hotelEngagementSessions||0}</b><span>card / map / official-site engagement</span></div>
+        <div className="metricDark"><b>{product?.savedSessions||0}</b><span>save sessions</span></div>
+        <div className="metricDark"><b>{product?.sourcingSuccessSessions||0}/{product?.sourcingStartSessions||0}</b><span>successful / started rate sourcing</span></div>
+        <div className="metricDark"><b>{product?.referralSessions||0}</b><span>commercial referral sessions</span></div>
+        <div className="metricDark"><b>{product?.conversionSessions||0}</b><span>converted sessions</span></div>
+      </div>
+      <div className="table">
+        <div className="tr"><b>Search → results</b><b>Results → hotel action</b><b>Hotel action → sourcing</b><b>Referral → conversion</b></div>
+        <div className="tr">
+          <span>{product?.searchToResults===null||product?.searchToResults===undefined?"—":(product.searchToResults*100).toFixed(1)+"%"}</span>
+          <span>{product?.resultsToEngagement===null||product?.resultsToEngagement===undefined?"—":(product.resultsToEngagement*100).toFixed(1)+"%"}</span>
+          <span>{product?.engagementToSourcing===null||product?.engagementToSourcing===undefined?"—":(product.engagementToSourcing*100).toFixed(1)+"%"}</span>
+          <span>{product?.referralToConversion===null||product?.referralToConversion===undefined?"—":(product.referralToConversion*100).toFixed(1)+"%"}</span>
+        </div>
       </div>
 
       <h2 style={{marginTop:36}}>Growth autopilot · 30d</h2>
