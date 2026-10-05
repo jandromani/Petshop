@@ -71,6 +71,7 @@ export async function getDirectoryHotel(id:string):Promise<DirectoryHotel|null>{
     select h.slug as id,h.id::text as "canonicalId",h.name,h.city,h.country,h.region,h.lat,h.lng,
       ds.source,ds.source_id as "sourceId",ds.reference_url as "referenceUrl",ds.website,ds.raw,
       hc.description,coalesce(hc.photo_urls,'[]'::jsonb) as "photoUrls",coalesce(hc.facilities,'[]'::jsonb) as facilities,
+      hc.provider as "contentProvider",hc.license_ref as "contentLicenseRef",hc.source_url as "contentSourceUrl",hc.fetched_at::text as "contentFetchedAt",
       1::int as total
     from canonical_hotels h
     join lateral (
