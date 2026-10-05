@@ -39,7 +39,7 @@ export function publicDirectorySnapshot(limit=24,input:PublicDirectorySnapshotIn
     attribution:overtureHotels.length?"Overture Maps Foundation":null,
     total:all.length,mapped:all.filter(h=>Number.isFinite(h.lat)&&Number.isFinite(h.lng)).length,
     facets:{verified:0,branded:all.filter(h=>Boolean(h.brand)).length,officialWebsite:all.filter(h=>Boolean(h.website)).length,mapped:all.filter(h=>Number.isFinite(h.lat)&&Number.isFinite(h.lng)).length},
-    relaxations:[] as Array<{action:string;label:string}>,
+    relaxations:all.length?[]:[...(q?[{action:"clear_query",label:"Clear destination/name"}]:[]),...(input.region&&input.region!=="All"?[{action:"all_regions",label:"Search all regions"}]:[]),...(brand?[{action:"clear_brand",label:"Any brand"}]:[])],
     hotels:all.slice(0,Math.max(1,Math.min(60,limit))),
   };
 }
