@@ -10,8 +10,8 @@ export async function generateMetadata():Promise<Metadata>{
   return{
     title:"Atlas Long Stay en español — vive temporadas, no escapadas",
     description:"Compara estancias de 30 a 365 días por coste mensual y construye un año flexible alrededor de un presupuesto real.",
-    alternates:{canonical:base+"/es",languages:{en:base,es:base+"/es"}},
-    robots:{index:process.env.SEO_LIVE_INDEXING==="true",follow:true},
+    alternates:{canonical:base+"/es"},
+    robots:{index:false,follow:true},
   };
 }
 
