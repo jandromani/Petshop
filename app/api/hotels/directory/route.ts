@@ -30,7 +30,7 @@ function parseBbox(value?:string){
 const norm=(v:string)=>v.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase();
 const keyOf=(h:{name:string;city:string;country:string})=>[h.name,h.city,h.country].map(norm).join("|");
 function inside(h:{lat:number|null;lng:number|null},b:ReturnType<typeof parseBbox>){return !b||(h.lat!==null&&h.lng!==null&&h.lng>=b.west&&h.lng<=b.east&&h.lat>=b.south&&h.lat<=b.north);}
-function matches(h:{name:string;city:string;country:string;address?:string|null},q:string){return !q||[h.name,h.city,h.country,h.address||""].join(" ").toLowerCase().includes(q);}
+function matches(h:{name:string;city:string;country:string;address?:string|null;market?:string|null},q:string){return !q||[h.name,h.city,h.market||"",h.country,h.address||""].join(" ").toLowerCase().includes(q);}
 function offerSummary(o:any){return o?{offerId:o.offerId,provider:o.provider,monthlyEquivalent:o.monthlyEquivalent,displayPrice:o.displayPrice,currency:o.currency,board:o.board,cancellation:o.cancellation,verifiedAt:o.verifiedAt,expiresAt:o.expiresAt,photoUrls:o.photoUrls||[],facilities:o.facilities||[]}:null;}
 
 export async function GET(req:Request){
