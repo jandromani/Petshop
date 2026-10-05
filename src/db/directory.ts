@@ -51,6 +51,8 @@ export async function listDirectoryHotels(input:{
       limit 1
     ) ds on true
     left join hotel_content hc on hc.hotel_id=h.id
+      and hc.display_allowed=true
+      and (hc.expires_at is null or hc.expires_at>now())
     where h.region in ('Europe','Asia','Africa','Americas')
       and (${region}::text is null or h.region=${region})
       and (${q}::text is null or h.name ilike ${q} or h.city ilike ${q} or h.country ilike ${q})
