@@ -14,7 +14,7 @@ test("money truth is explicit and internally consistent",async({page})=>{
 
 test("search count and visible real-hotel cards share the same directory contract",async({page})=>{
   await page.goto("/");
-  await page.getByRole("button",{name:/Browse .* real hotels/i}).click();
+  await page.getByRole("button",{name:/Search stays/i}).click();
   const heading=page.locator("#explore .resultsHeadline h2");
   await expect(heading).toContainText(/real hotels/i,{timeout:15000});
 });
@@ -113,7 +113,7 @@ test("public surfaces keep basic accessibility contracts",async({page})=>{
 
 test("shared hotel search restores the full deterministic filter state",async({page})=>{
   await page.goto("/stays?q=Madrid&region=Europe&duration=90&occupancy=2&maxMonthly=1800&features=pool%2Cgym&brand=Marriott&brandedOnly=1&sort=name");
-  await expect(page.getByRole("heading",{name:/Search real hotels/i})).toBeVisible();
+  await expect(page.getByRole("heading",{name:/Find somewhere/i})).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>{
     const root=document.querySelector(".silverSearch");
     const value=(selector:string)=>(root?.querySelector(selector) as HTMLInputElement|HTMLSelectElement|null)?.value??null;
@@ -137,7 +137,7 @@ test("shared hotel search restores the full deterministic filter state",async({p
 
 test("zero-result search fails honestly and offers deterministic relaxation",async({page})=>{
   await page.goto("/stays?q=atlas-hotel-that-does-not-exist-zzzz");
-  await expect(page.getByText(/ZERO RESULTS · NO FAKE FALLBACK/i)).toBeVisible();
+  await expect(page.getByText(/NO MATCHES YET/i)).toBeVisible();
   await expect.poll(()=>page.locator(".zeroResults .actions button").allTextContents(),{timeout:15000}).toContain("Clear destination/name");
 });
 
