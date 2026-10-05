@@ -14,6 +14,7 @@ import { getSloSnapshot } from "@/src/system/slo";
 import { getEconomicsSnapshot } from "@/src/system/economics";
 import { agentRoleMetrics,providerErrorBudgets,runtimeDurationMetrics } from "@/src/db/observability";
 import { deriveWeeklyOperatingScorecard } from "@/src/system/scorecard";
+import { seoReadiness } from "@/src/seo/readiness";
 
 export const metadata={title:"Control Tower",robots:{index:false,follow:false}};
 
@@ -22,7 +23,7 @@ export default async function ControlTower(){
   if(!verifyOpsSession(jar.get(OPS_COOKIE)?.value)) notFound();
 
   const providers=liveProviderStatuses();
-  const [ops,incidents,funnel,product,heroExperiment,friction,agentTasks,heroOverride,dbHealth,agentCredentials,slo,economics,agentMetrics,providerBudgets,durationMetrics,webVitals]=await Promise.all([
+  const [ops,incidents,funnel,product,heroExperiment,friction,agentTasks,heroOverride,dbHealth,agentCredentials,slo,economics,agentMetrics,providerBudgets,durationMetrics,webVitals,seo]=await Promise.all([
     getOpsSnapshot(),
     listOpenIncidents(20),
     growthFunnel(30),
@@ -39,6 +40,7 @@ export default async function ControlTower(){
     providerErrorBudgets(30),
     runtimeDurationMetrics(30),
     webVitalsSnapshot(30),
+    seoReadiness(),
   ]);
   const db=dbHealth.reachable;
   const agentConfigured=agentCredentials&&process.env.AGENT_RUNTIME_ENABLED!=="false";
@@ -112,6 +114,16 @@ export default async function ControlTower(){
           <span>commercial evidence</span>
         </div>
       </div>
+
+      <h2 style={{marginTop:36}}>SEO / Search Console readiness</h2>
+      <div className="metrics">
+        <div className="metricDark"><b className={seo.customDomainConfigured?"green":"amber"}>{seo.customDomainConfigured?"CUSTOM DOMAIN":"TEMP DOMAIN"}</b><span>{seo.canonical}</span></div>
+        <div className="metricDark"><b className={seo.googleVerificationConfigured?"green":"amber"}>{seo.googleVerificationConfigured?"VERIFICATION READY":"TOKEN MISSING"}</b><span>Google Search Console meta verification</span></div>
+        <div className="metricDark"><b className={seo.indexingEnabled?"green":"amber"}>{seo.indexingEnabled?"INDEXING OPEN":"FAIL CLOSED"}</b><span>SEO_LIVE_INDEXING gate</span></div>
+        <div className="metricDark"><b>{seo.destinationPagesReady}</b><span>destination pages with evidence gate</span></div>
+        <div className="metricDark"><b>{seo.liveDiscoveryPagesIndexable}</b><span>commercial discovery pages indexable now</span></div>
+      </div>
+      <div className="table"><div className="tr"><b>Sitemap</b><span>{seo.sitemapUrl||"not public"}</span><b>Blockers</b><span>{seo.blockers.length?seo.blockers.join(" · "):"none"}</span></div></div>
 
       <h2 style={{marginTop:36}}>Core Web Vitals · consented field data · 30d</h2>
       <div className="metrics">
