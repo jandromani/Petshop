@@ -1,10 +1,10 @@
 import { REAL_HOTEL_SNAPSHOT_DATE,REAL_HOTEL_SOURCE_NOTE } from "@/src/data/real-hotels";
-import { enrichedCuratedHotels } from "@/src/data/curated-enrichment";
+import { enrichedCuratedHotels,curatedGeoSourceIds } from "@/src/data/curated-enrichment";
 import { overtureHotels } from "@/src/data/overture-hotels";
 
 export function publicDirectorySnapshot(limit=24){
   const curated=enrichedCuratedHotels.map(h=>({...h,commercialState:"RATE_PENDING" as const,entityState:"REAL_PROPERTY" as const,liveOffer:null,preferenceScore:0,matchedPreferences:[] as string[]}));
-  const overture=overtureHotels.map(h=>({...h,canonicalId:h.id,source:"overture",description:null,photoUrls:[] as string[],facilities:[] as string[],commercialState:"RATE_PENDING" as const,entityState:"REAL_PROPERTY" as const,liveOffer:null,preferenceScore:0,matchedPreferences:[] as string[]}));
+  const overture=overtureHotels.filter(h=>!curatedGeoSourceIds.has(h.sourceId)).map(h=>({...h,canonicalId:h.id,source:"overture",description:null,photoUrls:[] as string[],facilities:[] as string[],commercialState:"RATE_PENDING" as const,entityState:"REAL_PROPERTY" as const,liveOffer:null,preferenceScore:0,matchedPreferences:[] as string[]}));
   const key=(h:{name:string;city:string;country:string})=>[h.name,h.city,h.country].join("|").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
   const curatedOrder=new Map(curated.map((h,i)=>[key(h),i]));
   const merged=new Map<string,any>();for(const h of curated)merged.set(key(h),h);for(const h of overture)merged.set(key(h),h);
