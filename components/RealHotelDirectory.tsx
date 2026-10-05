@@ -43,7 +43,7 @@ export default function RealHotelDirectory({
   const[board,setBoard]=useState(initialBoard);const[cancellation,setCancellation]=useState(initialCancellation);const[provider,setProvider]=useState(initialProvider);
   const[brand,setBrand]=useState(initialBrand);const[brandedOnly,setBrandedOnly]=useState(initialBrandedOnly);const[sort,setSort]=useState<"recommended"|"price"|"confidence"|"name">(initialSort);
   const[mapVisible,setMapVisible]=useState(false);const[shareLabel,setShareLabel]=useState("Share search");
-  const mapPaneRef=useRef<HTMLElement|null>(null);const seen=useRef(new Set<string>());const zeroSeen=useRef(new Set<string>());const urlMode=useRef<"replace"|"push">("replace");
+  const mapPaneRef=useRef<HTMLElement|null>(null);const seen=useRef(new Set<string>());const zeroSeen=useRef(new Set<string>());const urlMode=useRef<"replace"|"push">("replace");const historyReady=useRef(false);
   const pageSize=24;
 
   useEffect(()=>{setQ(initialQuery);setPage(0);setBbox(null)},[initialQuery]);
@@ -82,6 +82,10 @@ export default function RealHotelDirectory({
 
   useEffect(()=>{
     if(typeof window==="undefined"||window.location.pathname!=="/stays")return;
+    // The server-rendered URL is already authoritative. Rewriting it during the
+    // first hydration pass can make Next's App Router replace the RSC subtree
+    // while controls are becoming interactive (most visible in Firefox).
+    if(!historyReady.current){historyReady.current=true;return}
     const p=new URLSearchParams(baseParams);if(page)p.set("page",String(page));
     const next="/stays"+(p.size?"?"+p.toString():"");
     if(urlMode.current==="push")window.history.pushState(null,"",next);else window.history.replaceState(null,"",next);
