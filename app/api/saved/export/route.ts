@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { databaseConfigured } from "@/src/db/client";
 import { exportSavedProfileData,SAVED_PROFILE_COOKIE } from "@/src/db/consumer-memory";
 import { enforceRateLimit,requestFingerprint } from "@/src/security/rate-limit";
+import { listRateAlerts } from "@/src/db/rate-alerts";
 
 export const runtime="nodejs";
 
@@ -20,12 +21,13 @@ export async function GET(req:Request){
 
   try{
     const jar=await cookies();
-    const data=await exportSavedProfileData(jar.get(SAVED_PROFILE_COOKIE)?.value);
+    const profileId=jar.get(SAVED_PROFILE_COOKIE)?.value;
+    const [data,rateAlerts]=await Promise.all([exportSavedProfileData(profileId),listRateAlerts(profileId)]);
     const body=JSON.stringify({
       exportedAt:new Date().toISOString(),
       scope:"anonymous-consumer-memory",
-      data,
-      note:"This export contains the anonymous profile and saved hotel identities and saved-offer references associated with this browser cookie. It does not contain a name, email address or financial profile.",
+      data:{...data,rateAlerts},
+      note:"This export contains the anonymous profile, saved hotel identities, saved-offer references and rate alerts associated with this browser cookie. It does not contain a name, email address or financial profile.",
     },null,2);
     return new Response(body,{
       status:200,
