@@ -39,7 +39,7 @@ export async function persistReferralClick(click:ReferralClick):Promise<PersistR
     await sql`
       insert into referral_clicks (
         click_id,provider_tracking_id,visitor_id,session_id,hotel_id,provider,offer_snapshot_id,
-        source,campaign,page_path,position,expected_commission,created_at
+        source,campaign,gclid,gbraid,wbraid,msclkid,page_path,position,expected_commission,created_at
       ) values (
         ${click.clickId},
         ${click.providerTrackingId},
@@ -50,6 +50,10 @@ export async function persistReferralClick(click:ReferralClick):Promise<PersistR
         ${click.offerSnapshotId ?? null}::uuid,
         ${click.source ?? null},
         ${click.campaign ?? null},
+        ${click.gclid ?? null},
+        ${click.gbraid ?? null},
+        ${click.wbraid ?? null},
+        ${click.msclkid ?? null},
         ${click.pagePath ?? null},
         ${click.position ?? null},
         ${click.expectedCommission ?? null},

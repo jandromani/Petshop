@@ -20,8 +20,8 @@ const securityHeaders=[
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
     "style-src 'self' 'unsafe-inline'",
-    "script-src 'self' 'unsafe-inline'",
-    "connect-src 'self' https://openrouter.ai https://*.vercel-insights.com https://tiles.openfreemap.org",
+    "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com",
+    "connect-src 'self' https://openrouter.ai https://*.vercel-insights.com https://tiles.openfreemap.org https://www.google-analytics.com https://region1.google-analytics.com",
     "worker-src 'self' blob:",
   ].join("; ")},
 ];

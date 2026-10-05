@@ -26,9 +26,9 @@ export async function generateMetadata({params}:{params:Promise<{slug:string}>})
   return{
     title:page.title,
     description:page.description,
-    alternates:{canonical,languages:esSlug?{en:canonical,es:base+"/es/descubrir/"+esSlug}:{en:canonical}},
+    alternates:{canonical,languages:esSlug?{en:canonical,es:base+"/es/descubrir/"+esSlug,"x-default":canonical}:{en:canonical,"x-default":canonical}},
     robots:{index:Boolean(result?.gate.index),follow:true},
-    openGraph:{title:page.headline,description:page.description,type:"website"},
+    openGraph:{title:page.title+" | Atlas",description:page.description,url:canonical,type:"website"},twitter:{card:"summary_large_image",title:page.title+" | Atlas",description:page.description},
   };
 }
 
@@ -52,8 +52,8 @@ export default async function Discovery({params}:{params:Promise<{slug:string}>}
       <p style={{fontSize:20,maxWidth:740}}>{page.description}</p>
       <p style={{fontSize:12,color:"#68738b"}}>
         {indexed
-          ? "This page is indexable because every commercial card below comes from current truth-gated live inventory."
-          : "Indexing is disabled. Live evidence is not yet sufficient for this intent; any fallback cards are clearly marked prototype scenarios."}
+          ? "Current verified long-stay offers support this guide."
+          : "This guide stays out of search until enough current long-stay price evidence exists."}
       </p>
     </section>
 

@@ -10,7 +10,7 @@ export async function runDataRetention(){
   if(!sql)return{configured:false};
   const days=boundedDays(process.env.DATA_RETENTION_DAYS,90);
   const leadDays=boundedDays(process.env.HOTEL_LEAD_RETENTION_DAYS,365);
-  const consumerDays=boundedDays(process.env.CONSUMER_MEMORY_RETENTION_DAYS,365);
+  const consumerDays=boundedDays(process.env.CONSUMER_MEMORY_RETENTION_DAYS,365);\n  const sourcingDays=boundedDays(process.env.SOURCING_CONTACT_RETENTION_DAYS,180);
 
   const expiredShares=await sql<{count:number}[]>`
     with deleted as (delete from shared_plans where expires_at<=now() returning 1)
@@ -73,6 +73,6 @@ export async function runDataRetention(){
     scrubbedConversionPayloads:Number(conversions[0]?.count||0),
     deletedAgentRuns:Number(agents[0]?.count||0),
     scrubbedAbandonedLeads:Number(abandonedLeads[0]?.count||0),
-    deletedConsumerProfiles:Number(consumerProfiles[0]?.count||0),
+    deletedConsumerProfiles:Number(consumerProfiles[0]?.count||0),\n    scrubbedSourcingContacts:Number(sourcingContacts[0]?.count||0),
   };
 }

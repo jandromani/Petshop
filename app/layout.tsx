@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import ConsentLayer from "@/components/ConsentLayer";
 import GrowthPageView from "@/components/GrowthPageView";
 import WebVitals from "@/components/WebVitals";
+import SiteStructuredData from "@/components/SiteStructuredData";
 import { seoAutopilotEnabled } from "@/src/seo/live";
+import { canonicalSiteUrl } from "@/src/system/site-url";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 
@@ -15,10 +18,18 @@ function siteUrl(){
 }
 
 export const metadata:Metadata={
-  title:{default:"Atlas Long Stay — Live somewhere better",template:"%s · Atlas Long Stay"},
-  description:"Compare 30–365 day hotel stays by monthly cost and search real hotels with AI, maps and verified commercial rates.",
+  title:{default:"Long-Stay Hotels & Monthly Hotel Rates | Atlas",template:"%s | Atlas"},
+  description:"Find real hotels for 30–90 day stays, compare verified monthly-equivalent rates and request a private long-stay rate when public supply is absent.",
   metadataBase:new URL(siteUrl()),
-  openGraph:{title:"Atlas Long Stay — Live somewhere better",description:"Search real hotels for 30–365 day stays by monthly budget, dates, map and verified availability.",type:"website"},
+  alternates:{canonical:canonicalSiteUrl()},
+  openGraph:{
+    title:"Long-Stay Hotels & Monthly Hotel Rates | Atlas",
+    description:"Find real hotels for 30–90 day stays and compare verified monthly hotel rates.",
+    type:"website",
+    url:canonicalSiteUrl(),
+    siteName:"Atlas Long Stay",
+  },
+  twitter:{card:"summary_large_image",title:"Long-Stay Hotels & Monthly Hotel Rates | Atlas",description:"30–90 day hotel stays: verified monthly rates or private sourcing."},
   robots:{index:seoAutopilotEnabled(),follow:true},
   verification:{
     google:process.env.GOOGLE_SITE_VERIFICATION||undefined,
@@ -26,6 +37,8 @@ export const metadata:Metadata={
   },
 };
 
-export default function RootLayout({children}:Readonly<{children:React.ReactNode}>){
-  return <html lang="en"><body>{children}<GrowthPageView/><WebVitals/><ConsentLayer/></body></html>;
+export default async function RootLayout({children}:Readonly<{children:React.ReactNode}>){
+  const h=await headers();
+  const lang=h.get("x-atlas-lang")==="es"?"es":"en";
+  return <html lang={lang}><body><SiteStructuredData/>{children}<GrowthPageView/><WebVitals/><ConsentLayer/></body></html>;
 }

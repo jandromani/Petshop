@@ -1,22 +1,21 @@
 import { test,expect } from "@playwright/test";
 
-test("money truth is explicit and internally consistent",async({page})=>{
+test("homepage is a focused 30-90 day commercial wedge without synthetic route pricing",async({page})=>{
   await page.goto("/");
   await expect(page.getByRole("heading",{name:/Live somewhere better/i})).toBeVisible();
-  await expect(page.getByTestId("monthly-resources")).toContainText("€3,200");
-  await expect(page.getByTestId("living-budget")).toContainText("€2,050");
-  await expect(page.getByText("365 days",{exact:false}).first()).toBeVisible();
-  const budget=Number((await page.getByTestId("living-budget").innerText()).replace(/[^0-9]/g,""));
-  const costText=await page.getByTestId("route-cost").innerText();
-  const cost=Number(costText.replace(/[^0-9]/g,""));
-  expect(cost).toBeLessThanOrEqual(budget);
+  await expect(page.getByTestId("monthly-budget")).toContainText("€1,800");
+  await expect(page.getByText(/HOTEL LIVING · 30–90 DAYS/i)).toBeVisible();
+  await expect(page.getByText(/Monthly pension/i)).toHaveCount(0);
+  await expect(page.getByText(/World tour/i)).toHaveCount(0);
+  await expect(page.getByText(/Discovery is not supply/i)).toBeVisible();
+  await expect(page.getByText(/Search is free/i)).toBeVisible();
 });
 
 test("search count and visible real-hotel cards share the same directory contract",async({page})=>{
   await page.goto("/");
-  await page.getByRole("button",{name:/Browse .* real hotels/i}).click();
+  await page.getByRole("button",{name:/Find long stays/i}).click();
   const heading=page.locator("#explore .resultsHeadline h2");
-  await expect(heading).toContainText(/real hotels/i,{timeout:15000});
+  await expect(heading).toContainText(/Available now|Choose a hotel/i,{timeout:15000});
 });
 
 test("system proof and health remain reachable",async({page,request})=>{
@@ -63,7 +62,7 @@ test("primary planner path is keyboard reachable",async({page})=>{
       text:(document.activeElement?.textContent||"").trim(),
       aria:document.activeElement?.getAttribute("aria-label")||"",
     }));
-    if(/browse .* real hotels/i.test(focused.text)||/browse .* real hotels/i.test(focused.aria)){found=true;break;}
+    if(/find long stays/i.test(focused.text)||/find long stays/i.test(focused.aria)){found=true;break;}
     await page.keyboard.press("Tab");
   }
   expect(found).toBe(true);
@@ -113,7 +112,7 @@ test("public surfaces keep basic accessibility contracts",async({page})=>{
 
 test("shared hotel search restores the full deterministic filter state",async({page})=>{
   await page.goto("/stays?q=Madrid&region=Europe&duration=90&occupancy=2&maxMonthly=1800&features=pool%2Cgym&brand=Marriott&brandedOnly=1&sort=name");
-  await expect(page.getByRole("heading",{name:/Search real hotels/i})).toBeVisible();
+  await expect(page.getByRole("heading",{name:/Find somewhere/i})).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>{
     const root=document.querySelector(".silverSearch");
     const value=(selector:string)=>(root?.querySelector(selector) as HTMLInputElement|HTMLSelectElement|null)?.value??null;
@@ -137,7 +136,7 @@ test("shared hotel search restores the full deterministic filter state",async({p
 
 test("zero-result search fails honestly and offers deterministic relaxation",async({page})=>{
   await page.goto("/stays?q=atlas-hotel-that-does-not-exist-zzzz");
-  await expect(page.getByText(/ZERO RESULTS · NO FAKE FALLBACK/i)).toBeVisible();
+  await expect(page.getByText(/NO MATCHES YET/i)).toBeVisible();
   await expect.poll(()=>page.locator(".zeroResults .actions button").allTextContents(),{timeout:15000}).toContain("Clear destination/name");
 });
 
