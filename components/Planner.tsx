@@ -119,7 +119,7 @@ export default function Planner({heroVariant="freedom",initialDirectory}:{heroVa
           <article><span>03</span><h3>Stay readiness</h3><p>Immigration and tax-day constraints stay separate from accommodation so a hotel result is never treated as permission to stay.</p></article>
           <article><span>04</span><h3>Evidence first</h3><p>Prices appear only while the underlying commercial evidence is current. Expired evidence disappears.</p></article>
         </div>
-        <div className="actions"><a className="btn ghost" href="/about">How Atlas works →</a><a className="btn ghost" href="/for-hotels">For hotels →</a></div>
+        <p className="directoryDisclosure"><b>Search is free.</b> Private long-stay rate requests are free too; Atlas only earns when an eligible accommodation transaction converts.</p><div className="actions"><a className="btn ghost" href="/about">How Atlas works →</a><a className="btn ghost" href="/for-hotels">For hotels →</a></div>
       </div></section>
 
       <StayReadiness duration={duration}/>
