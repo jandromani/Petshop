@@ -101,34 +101,37 @@ export default function Planner({hotels,heroVariant="freedom",initialDirectory}:
   return <>
     <header className="nav"><div className="shell navin">
       <a className="brand" href="#">ATLAS<span>LONG STAY</span></a>
-      <nav className="navlinks"><a href="/es">ES</a><a href="/saved">Saved</a><a href="/stays">Stays</a><a href="#planner">Build my year</a><a href="#agent">Ask Atlas</a><a className="btn" href="#explore">Find a stay →</a></nav>
+      <nav className="navlinks"><a href="/stays">Explore stays</a><a href="#planner">Build my year</a><a href="/saved">Saved</a><a href="/trust">Trust</a><a className="navPreview" href="/es" title="Spanish experience preview">ES preview</a><a className="btn" href="#explore">Find a stay →</a></nav>
     </div></header>
 
     <main id="main-content">
-    <section className="hero silverHero"><div className="shell">
-      <div className="eyebrow"><i className="dot"/> LONG-STAY HOTEL LIVING · 30–365 DAYS</div>
-      <h1>Live somewhere better.<br/><em>Stay for a season.</em></h1>
-      <p className="heroLead">Compare long-stay hotels by monthly cost, not nightly rate. Build a flexible life around the budget you already have.</p>
+    <section className="hero silverHero consumerHero"><div className="shell consumerHeroGrid"><div className="consumerHeroCopy">
+      <div className="eyebrow"><i className="dot"/> LONG-STAY LIVING · 30–365 DAYS</div>
+      <h1>Live somewhere better.<br/><em>One month at a time.</em></h1>
+      <p className="heroLead">Find real hotels for longer stays, compare by month, and build a year around the life you actually want.</p>
       <SilverSearch query={query} setQuery={setQuery} region={region} setRegion={setRegion} checkIn={checkIn} setCheckIn={setCheckIn} flexibleDays={flexibleDays} setFlexibleDays={setFlexibleDays} duration={duration} setDuration={setDuration} party={party} setParty={setParty} budget={searchBudget} setBudget={v=>{setSearchBudgetCap(v>=livingBudget?null:v);growthEvent("filter_change",{filter:"max_monthly",value:v})}} count={directoryCount} onSearch={jumpToExplore}/>
       <AiHotelSearch current={{region,duration,occupancy:party==="couple"?2:1,maxMonthly:searchBudget}} onApply={(intent:AiSearchIntent)=>{setQuery(intent.query);setRegion(intent.region);setDuration(intent.duration);setParty(intent.occupancy===2?"couple":"solo");setFlexibleDays(intent.flexibleDays);setSearchAmenities(intent.amenities);setSearchBudgetCap(intent.maxMonthly&&intent.maxMonthly<livingBudget?intent.maxMonthly:null);growthEvent("ai_search_navigation",{query:intent.query||"all",region:intent.region,duration:intent.duration});setTimeout(()=>document.getElementById("explore")?.scrollIntoView({behavior:"smooth"}),50);}}/>
-      <div className="proof silverProof">
-        <div className="proofCard"><b>€ / month</b><span>compare living cost, not a weekend</span></div>
-        <div className="proofCard"><b>30–365 days</b><span>one month, one season or a full-year search</span></div>
-        <div className="proofCard"><b>365 days</b><span>the generated annual route covers a full year</span></div>
-        <div className="proofCard"><b>Truth-gated</b><span>verified offers stay separate from demos</span></div>
+      <div className="proof silverProof consumerProof">
+        <div className="proofCard"><b>€ / month</b><span>think in months, not nights</span></div>
+        <div className="proofCard"><b>30–365 days</b><span>one month, one season or a year</span></div>
+        <div className="proofCard"><b>Real hotels</b><span>request any stay we can identify</span></div>
+        <div className="proofCard"><b>No invented prices</b><span>prices only appear when verified</span></div>
       </div>
+      </div><div className="heroPhotoCard" role="img" aria-label="Tenerife coastline"><div><span>TENERIFE · WINTER SUN</span><b>What if three months<br/>looked like this?</b><a href="/stays?q=Tenerife">Explore Tenerife →</a></div></div>
     </div></section>
 
-    <section className="howBand"><div className="shell howGrid">
-      <div><span>01</span><b>Add what comes in every month</b><p>Pension + net home income + other recurring income are summed before anything else.</p></div>
-      <div><span>02</span><b>Choose what you keep untouched</b><p>Your reserve is explicit. Everything left is your maximum monthly living budget.</p></div>
-      <div><span>03</span><b>See only what actually fits</b><p>If a stay or route exceeds that budget, Atlas does not present it as affordable.</p></div>
+    <section className="yearShowcase"><div className="shell yearShowcaseGrid">
+      <div><div className="eyebrow">WHAT IF YOU DIDN'T CHOOSE ONE PLACE?</div><h2>Your year abroad.</h2><p>Build a 365-day route around one monthly budget, then change the rhythm until it feels like your life.</p><div className="yearNumbers"><div><span>Average</span><b>{plan.length?euro(avg):"—"}<small>/month est.</small></b></div><div><span>Full year</span><b>{totals.days||0}<small> nights</small></b></div></div><a className="btn lime" href="#planner">Build my year →</a></div>
+      <div className="yearTimeline">{plan.slice(0,4).map((s,i)=><div className="yearStop" key={s.stopId}><span>{["JAN–MAR","APR–JUN","JUL–SEP","OCT–DEC"][i]||("STOP "+(i+1))}</span><b>{s.hotel.flag} {s.hotel.city}</b><small>{euro(s.monthlyCost)}/month · {s.days} nights</small></div>)}</div>
     </div></section>
+
+    <section className="travelInspiration"><div className="shell"><div className="sectionTitle"><h2>Places you could<br/>live for a season.</h2><p>Start with a place. If a verified long-stay price exists, Atlas shows it. If not, request one.</p></div><div className="travelTiles"><a href="/stays?q=Tenerife"><b>Tenerife</b><span>Winter sun · Atlantic</span></a><a href="/stays?q=Bali"><b>Bali</b><span>Tropical · slow living</span></a><a href="/stays?q=Madeira"><b>Madeira</b><span>Spring all year</span></a><a href="/stays?q=Antalya"><b>Antalya</b><span>Mediterranean · long stays</span></a></div></div></section>
 
     <section id="planner" className="dark"><div className="shell">
-      <div className="sectionTitle"><h2>Build your<br/>living budget.</h2><p>The arithmetic is explicit: resources in, reserve kept, maximum available to live, and actual route cost.</p></div>
+      <div className="sectionTitle"><h2>Build a year<br/>around your budget.</h2><p>Start with the number that matters: what you can comfortably spend each month.</p></div>
       <div className="grid2">
-        <div className="card">
+        <div className="card plannerInputs">
+          <div className="plannerPrimaryBudget"><span>You can spend</span><b>{euro(livingBudget)}<small>/month</small></b><p>Change the assumptions below only if you want Atlas to calculate that number for you.</p></div><details className="calculationDetails"><summary>See or change my calculation</summary><div className="calculationDetailsBody">
           {[
             ["Monthly pension",pension,setPension,0,6000],
             ["Net income from home",homeIncome,setHomeIncome,0,6000],
@@ -148,18 +151,16 @@ export default function Planner({hotels,heroVariant="freedom",initialDirectory}:
           <div className="financeBudget" data-testid="living-budget"><span>MAXIMUM AVAILABLE TO LIVE</span><b>{euro(livingBudget)}<small>/month</small></b></div>
           <div className="control"><div className="label"><span>Travelling as</span><b>{party}</b></div><div className="segment"><button className={party==="solo"?"active":""} onClick={()=>setParty("solo")}>Solo</button><button className={party==="couple"?"active":""} onClick={()=>setParty("couple")}>Couple</button></div></div>
           <div className="control"><div className="label"><span>Stay cadence</span><b>{duration} days</b></div><div className="segment">{([30,60,90,120,180,365] as StayDuration[]).map(d=><button key={d} className={duration===d?"active":""} onClick={()=>setDuration(d)}>{d}d</button>)}</div></div>
+          </div></details>
         </div>
 
         <div className="card">
-          <div className="moneyline">
-            <div data-testid="route-cost"><div className="label"><span>ACTUAL ROUTE COST</span></div><div className="money">{plan.length?euro(avg):"—"}<small>/month est.</small></div></div>
-            <div className="surplus" data-testid="total-headroom"><span>left after route</span><b>{plan.length?euro(headroom.totalMonthlyHeadroom):"—"}</b></div>
+          <div className="plannerThreeNumbers">
+            <div><span>You can spend</span><b>{euro(livingBudget)}<small>/month</small></b></div>
+            <div data-testid="route-cost"><span>This plan costs</span><b>{plan.length?euro(avg):"—"}<small>/month est.</small></b></div>
+            <div data-testid="total-headroom"><span>You stay under budget by</span><b>{plan.length?euro(headroom.livingBudgetHeadroom):"—"}<small>/month</small></b></div>
           </div>
-          <div className="budgetBreakdown">
-            <div><span>Maximum living budget</span><b>{euro(livingBudget)}</b></div>
-            <div><span>Unused inside living budget</span><b>{plan.length?euro(headroom.livingBudgetHeadroom):"—"}</b></div>
-            <div><span>Monthly reserve kept untouched</span><b>{euro(finances.reserve)}</b></div>
-          </div>
+          <details className="budgetDetails"><summary>See calculation</summary><div className="budgetBreakdown"><div><span>Monthly resources</span><b>{euro(finances.monthlyResources)}</b></div><div><span>Reserve kept untouched</span><b>{euro(finances.reserve)}</b></div><div><span>Total monthly headroom</span><b>{plan.length?euro(headroom.totalMonthlyHeadroom):"—"}</b></div></div></details>
           <div className="actions">{([["world","World tour"],["winter","Winter sun"],["value","Max value"],["slow","Slow Europe"]] as [PlanMode,string][]).map(([m,l])=><button className={"btn "+(mode===m?"lime":"ghost")} key={m} onClick={()=>{setMode(m);growthEvent("route_strategy_selected",{mode:m,budget:livingBudget,party,duration});}}>{l}</button>)}</div>
           <div className="actions"><button className="btn lime" onClick={sharePlan} disabled={!plan.length}>{shareLabel}</button></div>
           <div className="route">
@@ -181,16 +182,16 @@ export default function Planner({hotels,heroVariant="freedom",initialDirectory}:
     <RealHotelDirectory initialData={initialDirectory} initialQuery={query} initialRegion={region} duration={duration} checkIn={checkIn} occupancy={party==="couple"?2:1} maxMonthly={searchBudget} flexibleDays={flexibleDays} initialAmenities={searchAmenities} onCount={setDirectoryCount} onQueryChange={setQuery} onRegionChange={setRegion}/>
 
     <section id="agent" className="agentBand"><div className="shell">
-      <div className="sectionTitle"><h2>Ask Atlas.<br/>Your long-stay concierge.</h2><p>The concierge receives only the budget and travel preferences it needs—not your pension or home-income breakdown.</p></div>
+      <div className="sectionTitle"><h2>Need help choosing?<br/>Ask Atlas.</h2><p>Describe the life you want and Atlas will help narrow the options without inventing hotel facts or prices.</p></div>
       <div className="agentGrid">
         <div className="chat"><div className="chatlog">{chat.map((m,i)=><div className={"msg "+m.role} key={i}>{m.text}</div>)}</div><div className="chatrow"><input aria-label="Ask Atlas" value={draft} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>e.key==="Enter"&&askAgent()} placeholder="e.g. warm sea, healthcare, under my budget…"/><button className="btn lime" onClick={askAgent}>{thinking?"…":"Ask"}</button></div></div>
-        <div className="truth"><div className="metric"><b>{directoryCount||"…"}</b><span>real hotel identities</span></div><div className="metric"><b>3</b><span>live provider adapters</span></div><div className="metric"><b>365</b><span>days in generated year</span></div><div className="metric"><b>0</b><span>LLM-written prices allowed</span></div><div className="metric"><b>6</b><span>stay cadences incl. 365d</span></div><div className="metric"><b>1</b><span>budget truth shared across search + route</span></div></div>
+        <div className="truth consumerTrustMetrics"><div className="metric"><b>Real</b><span>hotel identities are checked</span></div><div className="metric"><b>Current</b><span>prices need fresh evidence</span></div><div className="metric"><b>Private</b><span>your finance breakdown stays out of concierge prompts</span></div><div className="metric"><b>Clear</b><span>expired prices disappear instead of lingering</span></div></div>
       </div>
     </div></section>
 
     <AdjacencyRail/>
     <SilverPromise/>
     </main>
-    <footer className="footer"><div className="shell footerGrid"><span>ATLAS · LONG-STAY LIVING</span><span>Prototype and live commercial inventory remain explicitly separated.</span><span><a href="/system">System proof</a> · <a href="/legal">Commercial & data disclosure</a></span></div></footer>
+    <footer className="footer"><div className="shell footerGrid"><span>ATLAS · LONG-STAY LIVING</span><span>Long stays priced by month. No invented hotel rates.</span><span><a href="/trust">Trust Center</a> · <a href="/legal">Legal</a> · <a href="/privacy">Privacy</a></span></div></footer>
   </>;
 }
