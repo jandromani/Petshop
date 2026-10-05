@@ -110,6 +110,7 @@ export default function RealHotelDirectory({
   useEffect(()=>{const io=new IntersectionObserver(entries=>{for(const e of entries){if(!e.isIntersecting)continue;const el=e.target as HTMLElement;const id=el.dataset.hotelId;if(!id||seen.current.has(id))continue;seen.current.add(id);growthEvent("hotel_impression",{hotel_id:id,position:Number(el.dataset.position)||0,state:el.dataset.state||"pending"});io.unobserve(el);}}, {threshold:.35});for(const el of document.querySelectorAll<HTMLElement>("[data-hotel-id]"))io.observe(el);return()=>io.disconnect();},[hotels,page]);
 
   const detailQuery=new URLSearchParams({duration:String(duration),...(checkIn?{checkIn}:{}),occupancy:String(occupancy)}).toString();
+  const mapFitKey=[q,region,duration,occupancy,features.join("|"),featuresMode,verifiedOnly,board,cancellation,provider,brand,brandedOnly,sort].join("~");
 
   return <section id="explore" className="discovery realDirectory"><div className="shell">
     <div className="resultsHeadline"><div><div className="eyebrow">REAL HOTEL SEARCH</div><h2>{loading?"Finding real hotels…":(data?.total||0)+" real hotels"}</h2><p>Identity comes from real-world place data. Commercial filters only become claims when Atlas has verified rate evidence; otherwise the hotel remains visible as <b>rate pending</b>.</p></div><div className="resultStats"><b>{data?.mapped||mapData?.mapped||0}</b><span>mapped properties</span></div></div>
@@ -154,7 +155,7 @@ export default function RealHotelDirectory({
         </article>})}</div>
         {!loading&&data&&data.total>0?<div className="directoryPager"><button className="btn ghost" disabled={page===0} onClick={()=>setPage(p=>Math.max(0,p-1))}>← Previous</button><span>{Math.min(page*pageSize+1,data.total)}–{Math.min((page+1)*pageSize,data.total)} of {data.total}</span><button className="btn ghost" disabled={(page+1)*pageSize>=data.total} onClick={()=>setPage(p=>p+1)}>Next →</button></div>:null}
       </div>
-      <aside ref={mapPaneRef} className="hotelMapPane">{mapEnabled?<HotelMap hotels={mapped} selectedId={selectedId} onSelect={chooseFromMap} onSearchArea={searchArea} detailQuery={detailQuery}/>:<div className="hotelMapLoading">Interactive map loads when you reach the results.</div>}</aside>
+      <aside ref={mapPaneRef} className="hotelMapPane">{mapEnabled?<HotelMap hotels={mapped} selectedId={selectedId} onSelect={chooseFromMap} onSearchArea={searchArea} detailQuery={detailQuery} fitKey={mapFitKey}/>:<div className="hotelMapLoading">Interactive map loads when you reach the results.</div>}</aside>
     </div>
     <p className="directoryDisclosure">Property identity is not a booking claim. A price is shown only after Atlas has a fresh truth-gated commercial offer.{data?.attribution?" Data: "+data.attribution+".":""}</p>
   </div></section>;
