@@ -15,6 +15,7 @@ import { getEconomicsSnapshot } from "@/src/system/economics";
 import { agentRoleMetrics,providerErrorBudgets,runtimeDurationMetrics } from "@/src/db/observability";
 import { deriveWeeklyOperatingScorecard } from "@/src/system/scorecard";
 import { seoReadiness } from "@/src/seo/readiness";
+import { contentEnrichmentSnapshot } from "@/src/system/content-readiness";
 
 export const metadata={title:"Control Tower",robots:{index:false,follow:false}};
 
@@ -23,7 +24,7 @@ export default async function ControlTower(){
   if(!verifyOpsSession(jar.get(OPS_COOKIE)?.value)) notFound();
 
   const providers=liveProviderStatuses();
-  const [ops,incidents,funnel,product,heroExperiment,friction,agentTasks,heroOverride,dbHealth,agentCredentials,slo,economics,agentMetrics,providerBudgets,durationMetrics,webVitals,seo]=await Promise.all([
+  const [ops,incidents,funnel,product,heroExperiment,friction,agentTasks,heroOverride,dbHealth,agentCredentials,slo,economics,agentMetrics,providerBudgets,durationMetrics,webVitals,seo,content]=await Promise.all([
     getOpsSnapshot(),
     listOpenIncidents(20),
     growthFunnel(30),
@@ -41,6 +42,7 @@ export default async function ControlTower(){
     runtimeDurationMetrics(30),
     webVitalsSnapshot(30),
     seoReadiness(),
+    contentEnrichmentSnapshot(),
   ]);
   const db=dbHealth.reachable;
   const agentConfigured=agentCredentials&&process.env.AGENT_RUNTIME_ENABLED!=="false";
@@ -113,6 +115,17 @@ export default async function ControlTower(){
           <b className={economics.proofState==="COMMERCIAL_EVIDENCE_OBSERVED"?"green":"amber"}>{economics.proofState}</b>
           <span>commercial evidence</span>
         </div>
+      </div>
+
+      <h2 style={{marginTop:36}}>Hotel enrichment / licensed content</h2>
+      <div className="metrics">
+        <div className="metricDark"><b>{content.staticCoverage.hotels}</b><span>Overture property identities</span></div>
+        <div className="metricDark"><b>{content.staticCoverage.branded}</b><span>known brand</span></div>
+        <div className="metricDark"><b>{content.staticCoverage.officialSites}</b><span>official website</span></div>
+        <div className="metricDark"><b>{content.staticCoverage.categorized}</b><span>taxonomy/category</span></div>
+        <div className="metricDark"><b>{content.databaseContent.withPhotos}</b><span>licensed/displayable photo sets</span></div>
+        <div className="metricDark"><b>{content.databaseContent.withFacilities}</b><span>displayable facilities sets</span></div>
+        <div className="metricDark"><b className={content.bookingContent.displayAllowed?"green":"amber"}>{content.bookingContent.displayAllowed?"BOOKING CONTENT ON":"BOOKING CONTENT OFF"}</b><span>storage {content.bookingContent.storageAllowed?"allowed":"blocked"} · license {content.bookingContent.licenseRefConfigured?"configured":"missing"}</span></div>
       </div>
 
       <h2 style={{marginTop:36}}>SEO / Search Console readiness</h2>
