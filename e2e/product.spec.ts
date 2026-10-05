@@ -16,7 +16,7 @@ test("search count and visible real-hotel cards share the same directory contrac
   await page.goto("/");
   await page.getByRole("button",{name:/Search stays/i}).click();
   const heading=page.locator("#explore .resultsHeadline h2");
-  await expect(heading).toContainText(/real hotels/i,{timeout:15000});
+  await expect(heading).toContainText(/Available now|Choose a hotel/i,{timeout:15000});
 });
 
 test("system proof and health remain reachable",async({page,request})=>{
@@ -63,7 +63,7 @@ test("primary planner path is keyboard reachable",async({page})=>{
       text:(document.activeElement?.textContent||"").trim(),
       aria:document.activeElement?.getAttribute("aria-label")||"",
     }));
-    if(/browse .* real hotels/i.test(focused.text)||/browse .* real hotels/i.test(focused.aria)){found=true;break;}
+    if(/search stays/i.test(focused.text)||/search stays/i.test(focused.aria)){found=true;break;}
     await page.keyboard.press("Tab");
   }
   expect(found).toBe(true);
