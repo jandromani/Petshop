@@ -9,3 +9,15 @@ export function canonicalSiteUrl(){
 export function publicSiteConfigured(){
   return !canonicalSiteUrl().includes("localhost");
 }
+
+
+export function customPublicDomainConfigured(){
+  try{
+    const host=new URL(canonicalSiteUrl()).hostname.toLowerCase();
+    return host!=="localhost"&&!host.endsWith(".vercel.app");
+  }catch{return false;}
+}
+
+export function searchConsoleVerificationConfigured(){
+  return Boolean(process.env.GOOGLE_SITE_VERIFICATION?.trim());
+}
