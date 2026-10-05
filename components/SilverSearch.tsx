@@ -14,7 +14,7 @@ export default function SilverSearch(props:{
 }){
   return <div className="consumerSearch">
     <div className="consumerSearchPrimary">
-      <label><span>Where for your next season?</span><input value={props.query} onChange={e=>props.setQuery(e.target.value)} placeholder="Tenerife, Gran Canaria, Madeira…"/></label>
+      <label><span>Where for your next season?</span><input aria-label="Destination or hotel" value={props.query} onChange={e=>props.setQuery(e.target.value)} placeholder="Tenerife, Gran Canaria, Madeira…"/></label>
       <label><span>When?</span><input type="date" value={props.checkIn} onChange={e=>{props.setCheckIn(e.target.value);growthEvent("filter_change",{filter:"check_in",value:e.target.value})}}/></label>
       <label><span>How long?</span><select aria-label="Stay duration" value={props.duration} onChange={e=>{const v=Number(e.target.value) as StayDuration;props.setDuration(v);growthEvent("filter_change",{filter:"duration",value:v})}}>{[30,60,90].map(d=><option key={d} value={d}>{d} days</option>)}</select></label>
       <button className="searchCta" onClick={props.onSearch}>Find long stays →</button>

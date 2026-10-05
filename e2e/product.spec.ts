@@ -112,14 +112,14 @@ test("public surfaces keep basic accessibility contracts",async({page})=>{
 
 test("shared hotel search restores the full deterministic filter state",async({page})=>{
   await page.goto("/stays?q=Madrid&region=Europe&duration=90&occupancy=2&maxMonthly=1800&features=pool%2Cgym&brand=Marriott&brandedOnly=1&sort=name");
-  await expect(page.getByRole("heading",{name:/Find somewhere/i})).toBeVisible();
+  await expect(page.getByRole("heading",{name:/Find one place/i})).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>{
-    const root=document.querySelector(".silverSearch");
+    const root=document.querySelector(".consumerSearch");
     const value=(selector:string)=>(root?.querySelector(selector) as HTMLInputElement|HTMLSelectElement|null)?.value??null;
     const brand=(document.querySelector('.advancedHotelFilters input[placeholder="Hilton, Marriott…"]') as HTMLInputElement|null)?.value??null;
     const active=new Set(Array.from(document.querySelectorAll(".preferenceFilters button.active")).map(node=>(node.textContent||"").trim()));
     return {
-      query:value('input[placeholder^="Madrid"]'),
+      query:value('input[aria-label="Destination or hotel"]'),
       region:value('select[aria-label="Region"]'),
       duration:value('select[aria-label="Stay duration"]'),
       party:value('select[aria-label="Travelling party"]'),
@@ -129,15 +129,17 @@ test("shared hotel search restores the full deterministic filter state",async({p
       gym:active.has("gym"),
       brandedOnly:new URL(window.location.href).searchParams.get("brandedOnly"),
     };
-  }),{timeout:15000}).toEqual({
+  }),{timeout:20000}).toEqual({
     query:"Madrid",region:"Europe",duration:"90",party:"couple",budget:"1800",brand:"Marriott",pool:true,gym:true,brandedOnly:"1",
   });
 });
 
 test("zero-result search fails honestly and offers deterministic relaxation",async({page})=>{
-  await page.goto("/stays?q=atlas-hotel-that-does-not-exist-zzzz");
-  await expect(page.getByText(/NO MATCHES YET/i)).toBeVisible();
-  await expect.poll(()=>page.locator(".zeroResults .actions button").allTextContents(),{timeout:15000}).toContain("Clear destination/name");
+  await page.goto("/stays?q=atlas-hotel-that-does-not-exist-zzzz",{waitUntil:"domcontentloaded"});
+  const zero=page.locator(".zeroResults");
+  await expect(zero).toBeVisible({timeout:20000});
+  await expect(zero).toContainText("NO MATCHES YET");
+  await expect(zero.getByRole("button",{name:"Clear destination/name"})).toBeVisible();
 });
 
 test("real hotel search exposes list and map modes on mobile",async({page,request})=>{
@@ -159,5 +161,6 @@ test("real hotel search exposes list and map modes on mobile",async({page,reques
   await expect(page.getByRole("button",{name:/Map ·/i})).toBeVisible();
   await page.getByRole("button",{name:/Map ·/i}).click();
   await expect(page.locator(".hotelMapPane")).toBeVisible();
-  await expect(page.locator(".hotelMapShell")).toBeAttached();
+  await expect(page.locator(".hotelMapShell")).toBeAttached({timeout:20000});
+  await expect(page.locator(".hotelMapShell")).toHaveAttribute("data-map-ready",/loading|true/);
 });

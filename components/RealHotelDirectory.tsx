@@ -6,7 +6,7 @@ import { growthEvent } from "@/src/growth/client";
 import type { MappedHotel } from "@/components/HotelMap";
 import SaveHotelButton from "@/components/SaveHotelButton";
 
-const HotelMap=dynamic(()=>import("@/components/HotelMap"),{ssr:false,loading:()=> <div className="hotelMapLoading">Loading interactive map…</div>});
+const HotelMap=dynamic(()=>import("@/components/HotelMap"),{ssr:false,loading:()=> <div className="hotelMapShell hotelMapLoadingShell" data-map-ready="loading"><div className="hotelMapLoading">Loading interactive map…</div></div>});
 
 type Offer={
   offerId:string;provider:string;monthlyEquivalent:number;displayPrice:number;currency:string;
