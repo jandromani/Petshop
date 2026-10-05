@@ -12,12 +12,12 @@ import VerifiedRoute from "@/components/VerifiedRoute";
 import SilverSearch from "@/components/SilverSearch";
 import SilverPromise from "@/components/SilverPromise";
 import AdjacencyRail from "@/components/AdjacencyRail";
-import RealHotelDirectory from "@/components/RealHotelDirectory";
+import RealHotelDirectory,{type DirectoryPayload} from "@/components/RealHotelDirectory";
 import AiHotelSearch,{type AiSearchIntent} from "@/components/AiHotelSearch";
 
 const euro=(n:number)=>"€"+Math.round(n).toLocaleString("en-US");
 
-export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];heroVariant?:HeroVariant}){
+export default function Planner({hotels,heroVariant="freedom",initialDirectory}:{hotels:Hotel[];heroVariant?:HeroVariant;initialDirectory?:DirectoryPayload}){
   const [pension,setPension]=useState(1700);
   const [homeIncome,setHomeIncome]=useState(1300);
   const [otherIncome,setOtherIncome]=useState(200);
@@ -178,7 +178,7 @@ export default function Planner({hotels,heroVariant="freedom"}:{hotels:Hotel[];h
 
     <LiveOffers/>
 
-    <RealHotelDirectory initialQuery={query} initialRegion={region} duration={duration} checkIn={checkIn} occupancy={party==="couple"?2:1} maxMonthly={searchBudget} flexibleDays={flexibleDays} initialAmenities={searchAmenities} onCount={setDirectoryCount} onQueryChange={setQuery} onRegionChange={setRegion}/>
+    <RealHotelDirectory initialData={initialDirectory} initialQuery={query} initialRegion={region} duration={duration} checkIn={checkIn} occupancy={party==="couple"?2:1} maxMonthly={searchBudget} flexibleDays={flexibleDays} initialAmenities={searchAmenities} onCount={setDirectoryCount} onQueryChange={setQuery} onRegionChange={setRegion}/>
 
     <section id="agent" className="agentBand"><div className="shell">
       <div className="sectionTitle"><h2>Ask Atlas.<br/>Your long-stay concierge.</h2><p>The concierge receives only the budget and travel preferences it needs—not your pension or home-income breakdown.</p></div>
