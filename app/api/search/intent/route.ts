@@ -6,7 +6,7 @@ import { enforceRateLimit,requestFingerprint } from "@/src/security/rate-limit";
 
 export const runtime="nodejs";
 const Durations=[30,60,90,120,180,365] as const;
-const Input=z.object({prompt:z.string().min(2).max(800),current:z.object({region:z.enum(["All","Europe","Asia","Africa","Americas"]).default("All"),duration:z.number().default(90),occupancy:z.number().default(1),maxMonthly:z.number().positive().max(50000).optional()}).optional()});
+const Input=z.object({prompt:z.string().min(2).max(800),current:z.object({region:z.enum(["All","Europe","Asia","Africa","Americas"]).default("All"),duration:z.number().default(90),occupancy:z.union([z.literal(1),z.literal(2)]).default(1),maxMonthly:z.number().positive().max(50000).optional()}).optional()});
 const Intent=z.object({query:z.string().max(100).default(""),region:z.enum(["All","Europe","Asia","Africa","Americas"]).default("All"),duration:z.union([z.literal(30),z.literal(60),z.literal(90),z.literal(120),z.literal(180),z.literal(365)]).default(90),occupancy:z.union([z.literal(1),z.literal(2)]).default(1),maxMonthly:z.number().positive().max(50000).nullable().default(null),flexibleDays:z.union([z.literal(0),z.literal(7),z.literal(30)]).default(7),amenities:z.array(z.string().max(40)).max(12).default([]),summary:z.string().max(240).default("Filters applied.")});
 const SUPPORTED=new Set(["pool","gym","spa","beach","breakfast","all inclusive","kitchen"]);
 const aliases:Record<string,string>={"sea":"beach","fitness":"gym","fitness center":"gym","fitness centre":"gym","swimming pool":"pool","all-inclusive":"all inclusive"};
@@ -27,7 +27,7 @@ function heuristic(prompt:string,current?:z.infer<typeof Input>["current"]){
   if(year)duration=365;else if(day)duration=nearestDuration(Number(day[1]));else if(months)duration=nearestDuration(Number(months[1])*30);
   const budgetMatches=[...prompt.matchAll(/(?:€|eur\s*|euros?\s*)(\d{3,5})|(\d{3,5})\s*(?:€|eur|euros?)/gi)].map(m=>Number(m[1]||m[2])).filter(Number.isFinite);
   const maxMonthly=budgetMatches[0]||current?.maxMonthly||null;
-  const occupancy:1|2=/\b(couple|two adults|2 adults|we are two|for two)\b/i.test(lower)?2:1;
+  const occupancy:1|2=/\b(couple|two adults|2 adults|we are two|for two)\b/i.test(lower)?2:(current?.occupancy===2?2:1);
   const region=/\basia\b/i.test(lower)?"Asia":/\bafrica\b/i.test(lower)?"Africa":/\b(europe|european)\b/i.test(lower)?"Europe":/\b(americas?|latin america|south america|mexico|colombia|peru|argentina)\b/i.test(lower)?"Americas":current?.region||"All";
   const hit=geoTerms.find(x=>lower.includes(x.toLowerCase()));
   const amenities=["pool","gym","spa","beach","sea","hospital","clinic","walkable","breakfast","all inclusive","kitchen","warm winter","car dependency"].filter(x=>lower.includes(x));
