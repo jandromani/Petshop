@@ -7,7 +7,7 @@ import { defaultCheckIn } from "@/src/core/search";
 import { listSellableOffers } from "@/src/db/catalog";
 import ShareSearchButton from "@/components/ShareSearchButton";
 import SaveHotelButton from "@/components/SaveHotelButton";
-export const metadata={title:"Compare hotels",robots:{index:false,follow:true}};
+export async function generateMetadata(){const language=await requestLanguage();return{title:copy(language,"Compare hotels","Comparar hoteles"),robots:{index:false,follow:true}}}
 export default async function Compare({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){
   const p=await searchParams;const value=(key:string)=>Array.isArray(p[key])?p[key][0]:p[key];
   const ids=comparisonIds(value("ids")),language=await requestLanguage();

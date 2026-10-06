@@ -29,7 +29,7 @@ test("shared search fallback removes contact and advertising tokens",async({page
  await page.addInitScript(()=>{Object.defineProperty(navigator,"share",{value:undefined,configurable:true});Object.defineProperty(navigator,"clipboard",{value:{writeText:async(text:string)=>{(window as any).__shareText=text}},configurable:true})});
  await page.route("**/api/share-search",route=>route.fulfill({status:503,json:{error:"unavailable"}}));
  await page.goto("/es/stays?q=Madrid&duration=60&email=private%40example.com&gclid=secret");await page.getByRole("button",{name:"Compartir búsqueda",exact:true}).click();await expect(page.getByText("Enlace copiado",{exact:true})).toBeVisible();
- const shared=await page.evaluate(()=>(window as any).__shareText);expect(shared).toContain("/es/stays?");expect(shared).toContain("duration=60");expect(shared).not.toContain("private");expect(shared).not.toContain("gclid");
+ const shared=await page.evaluate(()=>(window as any).__shareText);expect(shared).toContain("/es/stays?");expect(shared).toContain("duration=60");expect(shared).not.toContain("private");expect(shared).not.toContain("gclid");await expect(page.getByRole("link",{name:"Abrir enlace público →"})).toHaveAttribute("href",shared);
 });
 test("Spanish mobile conversion pages do not overflow horizontally",async({page})=>{
  await page.setViewportSize({width:390,height:844});for(const path of ["/es","/es/monthly-stays/gran-canaria","/es/for-hotels","/es/requests"]){await page.goto(path);const size=await page.evaluate(()=>({actual:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth}));expect(size.actual,path).toBeLessThanOrEqual(size.viewport+2)}

@@ -1,1 +1,1 @@
-export { default,metadata } from "@/app/compare/page";
+export { default,generateMetadata } from "@/app/compare/page";

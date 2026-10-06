@@ -8,9 +8,10 @@ import { growthEvent } from "@/src/growth/client";
 
 export type MappedHotel={id:string;name:string;city:string;country:string;lat:number|null;lng:number|null;brand?:string|null;commercialState:"RATE_PENDING"|"VERIFIED_RATE";liveOffer?:{monthlyEquivalent:number;currency:string}|null};
 
+function MapLoading(){const {t}=useCopy();return <div className="hotelMapLoading" role="status">{t("Loading standard map…")}</div>}
 const RasterHotelMap=dynamic(()=>import("@/components/RasterHotelMap"),{
   ssr:false,
-  loading:()=> <div className="hotelMapLoading" role="status">Loading standard map…</div>,
+  loading:MapLoading,
 });
 
 function geojson(hotels:MappedHotel[]){

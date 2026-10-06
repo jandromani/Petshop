@@ -5,13 +5,14 @@ import { localizedHref,copy } from "@/src/i18n/config";
 import { searchShareTitle,publicSearchQuery } from "@/src/core/shared-search";
 import { growthEvent } from "@/src/growth/client";
 export default function ShareSearchButton({query,hotelIds=[]}:{query:string;hotelIds?:string[]}){
-  const lang=useLanguage();const[busy,setBusy]=useState(false);const[message,setMessage]=useState("");
+  const lang=useLanguage();const[busy,setBusy]=useState(false);const[message,setMessage]=useState("");const[sharedUrl,setSharedUrl]=useState("");
   async function share(){
-    if(busy)return;setBusy(true);setMessage("");
+    if(busy)return;setBusy(true);setMessage("");setSharedUrl("");
     query=publicSearchQuery(query);
     let url=window.location.origin+localizedHref(hotelIds.length?"/compare":"/stays",lang)+"?"+query+(hotelIds.length?"&ids="+hotelIds.join(","):"");
     try{const response=await fetch("/api/share-search",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({query,hotelIds,language:lang})});if(response.ok){const data=await response.json();url=data.url}}
     catch{}
+    setSharedUrl(url);
     try{
       const title=searchShareTitle(query,lang);
       if(navigator.share&&(!navigator.canShare||navigator.canShare({url,title})))await navigator.share({url,title});
@@ -20,5 +21,5 @@ export default function ShareSearchButton({query,hotelIds=[]}:{query:string;hote
     }catch(error){if(!(error instanceof DOMException&&error.name==="AbortError")){window.prompt(copy(lang,"Copy this public link","Copia este enlace público"),url)}}
     finally{setBusy(false)}
   }
-  return <div className="shareControl"><button className="btn ghost" type="button" disabled={busy} onClick={share}>{busy?copy(lang,"Preparing…","Preparando…"):copy(lang,"Share search","Compartir búsqueda")}</button><small role="status">{message||copy(lang,"Anyone with the link can view this selection.","Quien tenga el enlace podrá ver esta selección.")}</small></div>;
+  return <div className="shareControl"><button className="btn ghost" type="button" disabled={busy} onClick={share}>{busy?copy(lang,"Preparing…","Preparando…"):copy(lang,"Share search","Compartir búsqueda")}</button><small role="status">{message||copy(lang,"Anyone with the link can view this selection.","Quien tenga el enlace podrá ver esta selección.")}</small>{sharedUrl&&<a className="sharedSearchLink" href={sharedUrl}>{copy(lang,"Open public link →","Abrir enlace público →")}</a>}</div>;
 }

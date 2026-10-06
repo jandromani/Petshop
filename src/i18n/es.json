@@ -409,5 +409,7 @@
   "Use essential only": "Usar solo esenciales",
   "Allow analytics": "Permitir analítica",
   "Switching to essential-only removes optional analytics and campaign cookies when this page reloads. Consent contract:": "Al elegir solo esenciales se eliminan las cookies opcionales de analítica y campañas cuando se recarga esta página. Versión del consentimiento:",
-  "stays": "estancias"
+  "stays": "estancias",
+  "guests": "huéspedes",
+  "Ask": "Preguntar"
 }
