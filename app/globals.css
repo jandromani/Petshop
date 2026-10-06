@@ -454,3 +454,5 @@ box-shadow:0 30px 80px rgba(10,22,48,.24);display:flex;align-items:flex-end;padd
 /* Keep translated navigation and native forms within narrow viewports. */
 @media(max-width:620px){.navin{height:auto;min-height:70px;flex-wrap:wrap;gap:10px;padding-top:12px;padding-bottom:12px}.brand{flex-shrink:0}.brand span{white-space:nowrap}.navlinks,.consumerNav{width:100%;flex-wrap:wrap;justify-content:flex-start}.sourceStayGrid{grid-template-columns:minmax(0,1fr)}.sourceStayGrid input,.sourceStayGrid select{min-width:0;width:100%}}
 body:has(.consentBanner){padding-bottom:120px}@media(max-width:720px){body:has(.consentBanner){padding-bottom:220px}}
+
+.chatrow{grid-template-columns:minmax(0,1fr) auto}.chatrow input{min-width:0;width:100%}.realHotelCard{content-visibility:visible}.realHotelCard:hover,.realHotelCard.selected{transform:none}

@@ -8,7 +8,8 @@ test("Spanish search compares hotels and preserves dates, guests and budget into
  await expect(page.locator("html")).toHaveAttribute("lang","es");
  await expect(page.getByLabel("Destino u hotel")).toHaveValue("Madrid");
  const cards=page.locator(".realHotelCard");await expect(cards.first()).toBeVisible();
- await cards.nth(0).getByRole("button",{name:"Comparar",exact:true}).click();await expect(cards.nth(0).locator(".compareChoice")).toHaveAttribute("aria-pressed","true");await cards.nth(1).getByRole("button",{name:"Comparar",exact:true}).click();await expect(page.locator(".compareBar b")).toContainText("2/3");
+ const firstId=await cards.nth(0).getAttribute("data-hotel-id"),secondId=await cards.nth(1).getAttribute("data-hotel-id");const first=page.locator(`[data-hotel-id="${firstId}"] .compareChoice`),second=page.locator(`[data-hotel-id="${secondId}"] .compareChoice`);
+ await first.click();await expect(first).toHaveAttribute("aria-pressed","true");await second.click();await expect(page.locator(".compareBar b")).toContainText("2/3");
  await page.getByRole("link",{name:"Comparar hoteles →",exact:true}).click();
  await expect(page.locator(".comparisonCard")).toHaveCount(2);await expect(page.locator(".comparisonCard").first()).toContainText("60 noches · 2 huéspedes");
  await page.locator(".comparisonCard").first().getByRole("link",{name:"Consultar hotel →"}).click();
@@ -34,7 +35,7 @@ test("shared search fallback removes contact and advertising tokens",async({page
  const shared=await page.evaluate(()=>(window as any).__shareText);expect(shared).toContain("/es/stays?");expect(shared).toContain("duration=60");expect(shared).not.toContain("private");expect(shared).not.toContain("gclid");await expect(page.getByRole("link",{name:"Abrir enlace público →"})).toHaveAttribute("href",shared);
 });
 test("Spanish mobile conversion pages do not overflow horizontally",async({page})=>{
- await page.setViewportSize({width:390,height:844});for(const path of ["/es","/es/monthly-stays/gran-canaria","/es/for-hotels","/es/requests"]){await page.goto(path);const size=await page.evaluate(()=>({actual:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth}));expect(size.actual,path).toBeLessThanOrEqual(size.viewport+2)}
+ await page.setViewportSize({width:390,height:844});for(const path of ["/es","/es/monthly-stays/gran-canaria","/es/for-hotels","/es/requests"]){await page.goto(path);const size=await page.evaluate(()=>({actual:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth,overflow:Array.from(document.querySelectorAll("main *,header *")).filter(e=>e.getBoundingClientRect().right>document.documentElement.clientWidth+2).slice(0,8).map(e=>({tag:e.tagName,class:e.className,right:Math.round(e.getBoundingClientRect().right)}))}));expect(size.actual,path+" "+JSON.stringify(size.overflow)).toBeLessThanOrEqual(size.viewport+2)}
 });
 
 test("Spanish essential-only privacy choice persists across navigation",async({page,context})=>{
