@@ -1,4 +1,5 @@
 "use client";
+import { useCopy } from "@/components/useCopy";
 import { useEffect,useState } from "react";
 import SilverSearch from "@/components/SilverSearch";
 import AiHotelSearch,{type AiSearchIntent} from "@/components/AiHotelSearch";
@@ -8,7 +9,7 @@ import type { SearchRegion,StayDuration } from "@/src/core/search";
 import type { Party } from "@/src/core/planner";
 
 export type StaysInitialSearch={
-  searchScope?:"auto"|"destination"|"hotel";query:string;region:SearchRegion;checkIn:string;flexibleDays:0|7|30;duration:StayDuration;
+  selected?:string;view?:"list"|"map";searchScope?:"auto"|"destination"|"hotel";query:string;region:SearchRegion;checkIn:string;flexibleDays:0|7|30;duration:StayDuration;
   occupancy:1|2;budget:number;features:string[];featuresMode:"rank"|"strict";verifiedOnly:boolean;
   minMonthly?:number;board:string;cancellation:string;provider:string;brand:string;brandedOnly:boolean;
   sort:"recommended"|"price"|"confidence"|"name";page:number;bbox:string;
@@ -17,6 +18,7 @@ export type StaysInitialSearch={
 const primaryDuration=(d:StayDuration):StayDuration=>d===30||d===60?d:90;
 
 export default function StaysExplorer({initial,initialData}:{initial:StaysInitialSearch;initialData?:DirectoryPayload}){
+  const {t,local,language}=useCopy();
   const[query,setQuery]=useState(initial.query);const[region,setRegion]=useState<SearchRegion>(initial.region);
   const[checkIn,setCheckIn]=useState(initial.checkIn);const[flexibleDays,setFlexibleDays]=useState<0|7|30>(initial.flexibleDays);
   const[duration,setDuration]=useState<StayDuration>(primaryDuration(initial.duration));const[party,setParty]=useState<Party>(initial.occupancy===2?"couple":"solo");
@@ -37,13 +39,13 @@ export default function StaysExplorer({initial,initialData}:{initial:StaysInitia
 
   return <main className="seoPage staysSearchPage">
     <section className="staysSearchHero"><div className="shell">
-      <a className="eyebrow" href="/">← ATLAS LONG STAY</a>
-      <div className="staysSearchIntro"><div><div className="eyebrow">30–90 DAY HOTEL LIVING</div><h1>Find one place<br/>for a month or a season.</h1><p>Search the hotel universe. If a verified long-stay rate exists, Atlas shows it. If it does not, create a private-rate sourcing case.</p></div><div className="staysSearchMetric"><b>30 / 60 / 90</b><span>days per stay</span></div></div>
+      <a className="eyebrow" href={local("/")}>{t("← ATLAS LONG STAY")}</a>
+      <div className="staysSearchIntro"><div><div className="eyebrow">{t("30–90 DAY HOTEL LIVING")}</div><h1>{t("Find one place")}<br/>{t("for a month or a season.")}</h1><p>{t("Explore real hotels, compare current prices when available and request a rate for your dates.")}</p></div><div className="staysSearchMetric"><b>30 / 60 / 90</b><span>{t("days per stay")}</span></div></div>
       <SilverSearch query={query} setQuery={setQuery} region={region} setRegion={setRegion} checkIn={checkIn} setCheckIn={setCheckIn} flexibleDays={flexibleDays} setFlexibleDays={setFlexibleDays} duration={duration} setDuration={setDuration} party={party} setParty={setParty} budget={budget} setBudget={setBudget} count={count} onSearch={submit}/>
       <AiHotelSearch current={{region,duration,occupancy:party==="couple"?2:1,maxMonthly:budget}} onApply={applyAi}/>
     </div></section>
     <RealHotelDirectory
-      initialQuery={query} initialSearchScope={initial.searchScope} initialRegion={region} duration={duration} checkIn={checkIn} occupancy={party==="couple"?2:1}
+      initialSelected={initial.selected} initialView={initial.view} initialQuery={query} initialSearchScope={initial.searchScope} initialRegion={region} duration={duration} checkIn={checkIn} occupancy={party==="couple"?2:1}
       maxMonthly={budget} flexibleDays={flexibleDays} initialAmenities={amenities}
       initialFeaturesMode={initial.featuresMode} initialVerifiedOnly={initial.verifiedOnly} initialMinMonthly={initial.minMonthly}
       initialBoard={initial.board} initialCancellation={initial.cancellation} initialProvider={initial.provider}

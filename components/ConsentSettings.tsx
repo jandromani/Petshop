@@ -1,9 +1,10 @@
 "use client";
 
+import { useCopy } from "@/components/useCopy";
 import { useEffect,useState } from "react";
 import { ANALYTICS_CONSENT,CONSENT_COOKIE,CONSENT_VERSION,CONSENT_VERSION_COOKIE,ESSENTIAL_CONSENT,consentChoice } from "@/src/privacy/consent";
 
-const OPTIONAL_COOKIES=["rv_vid","rv_sid","rv_src","rv_med","rv_campaign","rv_term","rv_content","rv_ref"];
+const OPTIONAL_COOKIES=["rv_vid","rv_sid","rv_src","rv_med","rv_campaign","rv_term","rv_content","rv_ref","rv_gclid","rv_gbraid","rv_wbraid","rv_msclkid"];
 
 function setCookie(name:string,value:string,maxAge:number){
   const secure=window.location.protocol==="https:"?"; Secure":"";
@@ -15,6 +16,7 @@ function clearOptional(){
 }
 
 export default function ConsentSettings(){
+  const {t}=useCopy();
   const [choice,setChoice]=useState<"analytics"|"essential"|"unknown">("unknown");
 
   useEffect(()=>{
@@ -30,13 +32,13 @@ export default function ConsentSettings(){
   }
 
   return <div className="card" style={{marginTop:24}}>
-    <div className="eyebrow">PRIVACY CONTROLS</div>
-    <h2>Analytics preference</h2>
-    <p>Current choice: <b>{choice==="analytics"?"Analytics allowed":choice==="essential"?"Essential only":"Renewal required"}</b>.</p>
+    <div className="eyebrow">{t("PRIVACY CONTROLS")}</div>
+    <h2>{t("Analytics preference")}</h2>
+    <p>Current choice: <b>{choice==="analytics"?t("Analytics allowed"):choice==="essential"?t("Essential only"):t("Renewal required")}</b>.</p>
     <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
-      <button className="btn ghost" onClick={()=>save("essential")}>Use essential only</button>
-      <button className="btn lime" onClick={()=>save("analytics")}>Allow analytics</button>
+      <button className="btn ghost" onClick={()=>save("essential")}>{t("Use essential only")}</button>
+      <button className="btn lime" onClick={()=>save("analytics")}>{t("Allow analytics")}</button>
     </div>
-    <p style={{fontSize:13,opacity:.75}}>Switching to essential-only removes Atlas optional visitor/session and campaign cookies from this browser immediately. Consent contract: {CONSENT_VERSION}.</p>
+    <p style={{fontSize:13,opacity:.75}}>{t("Switching to essential-only removes optional analytics and campaign cookies when this page reloads. Consent contract:")} {CONSENT_VERSION}.</p>
   </div>;
 }

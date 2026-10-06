@@ -1,4 +1,5 @@
 "use client";
+import { useCopy } from "@/components/useCopy";
 import { useEffect,useMemo,useState } from "react";
 import { SAVED_STAYS_KEY,mergeSavedStays,parseSavedStays,type SavedStay } from "@/src/core/saved-stays";
 import type { LiveCatalogOffer } from "@/src/core/live-offers";
@@ -12,6 +13,7 @@ async function durablePut(stay:SavedStay){
 }
 
 export default function SavedStaysClient(){
+  const {t,local,language}=useCopy();
   const [rows,setRows]=useState<Row[]>([]);
 
   useEffect(()=>{
@@ -64,34 +66,34 @@ export default function SavedStaysClient(){
     void fetch("/api/saved?all=1",{method:"DELETE",cache:"no-store"}).catch(()=>{});
   }
 
-  if(!rows.length)return <div className="card"><b>No saved stays yet.</b><p>Keep the places you like in one private shortlist. Atlas checks the price again when you reopen a stay.</p><div className="actions"><a className="btn" href="/#explore">Find stays →</a><a className="btn ghost" href="/api/saved/export">Download my data</a></div></div>;
+  if(!rows.length)return <div className="card"><b>{t("No saved stays yet.")}</b><p>{t("Keep the places you like in one private shortlist. Atlas checks the price again when you reopen a stay.")}</p><div className="actions"><a className="btn" href={local("/#explore")}>{t("Find stays →")}</a><a className="btn ghost" href="/api/saved/export">{t("Download my data")}</a></div></div>;
 
   return <>
     <div className="savedCompare">
-      <div><b>{rows.length}</b><span>saved stays</span></div>
-      <div><b>{liveRows.length}</b><span>available now</span></div>
-      <div><b>{rows.length-liveRows.length}</b><span>check again</span></div>
+      <div><b>{rows.length}</b><span>{t("saved stays")}</span></div>
+      <div><b>{liveRows.length}</b><span>{t("available now")}</span></div>
+      <div><b>{rows.length-liveRows.length}</b><span>{t("check again")}</span></div>
     </div>
     <div className="actions" style={{marginBottom:18}}>
-      <a className="btn ghost" href="/api/saved/export">Download my data</a>
-      <button className="btn ghost" onClick={clearAll}>Clear saved stays</button>
+      <a className="btn ghost" href="/api/saved/export">{t("Download my data")}</a>
+      <button className="btn ghost" onClick={clearAll}>{t("Clear saved stays")}</button>
     </div>
     <div className="savedGrid">
       {rows.map(({saved,live,checked})=><article className="card savedStayCard" key={saved.offerId}>
-        <div className="hotelTopline"><span>{saved.provider}</span><span>{checked?(live?"LIVE NOW":"CHECK AGAIN"):"CHECKING…"}</span></div>
+        <div className="hotelTopline"><span>{saved.provider}</span><span>{checked?(live?t("LIVE NOW"):t("CHECK AGAIN")):t("CHECKING…")}</span></div>
         <h2>{saved.name}</h2>
         <p>{saved.city}, {saved.country}</p>
-        <div className="money">{live?money(live.monthlyEquivalent,live.currency):money(saved.savedMonthly,saved.currency)}<small>/month {live?"current verified":"saved price reference"}</small></div>
+        <div className="money">{live?money(live.monthlyEquivalent,live.currency):money(saved.savedMonthly,saved.currency)}<small>{t("/month")} {live?t("current verified"):t("saved price reference")}</small></div>
         <div className="budgetBreakdown">
-          <div><span>Saved</span><b>{new Date(saved.savedAt).toLocaleDateString()}</b></div>
-          <div><span>Offer evidence</span><b>{new Date(saved.verifiedAt).toLocaleString()}</b></div>
-          {live&&<div><span>Current stay</span><b>{live.nights} nights · {live.occupancy} adult{live.occupancy===1?"":"s"}</b></div>}
-          {live?.board&&<div><span>Board</span><b>{live.board}</b></div>}
-          {live?.cancellation&&<div><span>Cancellation</span><b>{live.cancellation}</b></div>}
+          <div><span>{t("Saved")}</span><b>{new Date(saved.savedAt).toLocaleDateString()}</b></div>
+          <div><span>{t("Offer evidence")}</span><b>{new Date(saved.verifiedAt).toLocaleString()}</b></div>
+          {live&&<div><span>{t("Current stay")}</span><b>{live.nights} {t("nights ·")} {live.occupancy} {t("adult")}{live.occupancy===1?"":"s"}</b></div>}
+          {live?.board&&<div><span>{t("Board")}</span><b>{live.board}</b></div>}
+          {live?.cancellation&&<div><span>{t("Cancellation")}</span><b>{live.cancellation}</b></div>}
         </div>
         <div className="actions">
-          {live?<a className="btn lime" href={"/api/referral?offer="+encodeURIComponent(live.offerId)+"&from=%2Fsaved"}>Open verified offer →</a>:<a className="btn ghost" href={"/live/"+saved.slug}>Re-check stay →</a>}
-          <button className="btn ghost" onClick={()=>remove(saved.offerId)}>Remove</button>
+          {live?<a className="btn lime" href={"/api/referral?offer="+encodeURIComponent(live.offerId)+"&from=%2Fsaved"}>{t("Open verified offer →")}</a>:<a className="btn ghost" href={"/live/"+saved.slug}>{t("Re-check stay →")}</a>}
+          <button className="btn ghost" onClick={()=>remove(saved.offerId)}>{t("Remove")}</button>
         </div>
       </article>)}
     </div>

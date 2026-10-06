@@ -7,7 +7,7 @@ test("homepage is a focused 30-90 day commercial wedge without synthetic route p
   await expect(page.getByText(/HOTEL LIVING · 30–90 DAYS/i)).toBeVisible();
   await expect(page.getByText(/Monthly pension/i)).toHaveCount(0);
   await expect(page.getByText(/World tour/i)).toHaveCount(0);
-  await expect(page.getByText(/Discovery is not supply/i)).toBeVisible();
+  await expect(page.getByText("supply is never implied by a hotel listing",{exact:true})).toBeVisible();
   await expect(page.getByText(/Search is free/i)).toBeVisible();
 });
 

@@ -1,4 +1,5 @@
 "use client";
+import { useCopy } from "@/components/useCopy";
 import { useEffect,useState } from "react";
 import type { LiveCatalogOffer } from "@/src/core/live-offers";
 import { growthEvent } from "@/src/growth/client";
@@ -16,6 +17,7 @@ async function saveDurably(stay:SavedStay){
 }
 
 export default function SaveStayButton({offer}:{offer:LiveCatalogOffer}){
+  const {t,local,language}=useCopy();
   const [saved,setSaved]=useState(false);
 
   useEffect(()=>{
@@ -57,5 +59,5 @@ export default function SaveStayButton({offer}:{offer:LiveCatalogOffer}){
     }catch{}
   }
 
-  return <button type="button" className={"saveStay "+(saved?"saved":"")} aria-pressed={saved} onClick={toggle}>{saved?"♥ Saved":"♡ Save"}</button>;
+  return <button type="button" className={"saveStay "+(saved?"saved":"")} aria-pressed={saved} onClick={toggle}>{saved?t("♥ Saved"):t("♡ Save")}</button>;
 }

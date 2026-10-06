@@ -1,3 +1,4 @@
+import { exportRequestData,REQUEST_ACCESS_COOKIE } from "@/src/db/customer-requests";
 import { cookies } from "next/headers";
 import { databaseConfigured } from "@/src/db/client";
 import { exportSavedProfileData,SAVED_PROFILE_COOKIE } from "@/src/db/consumer-memory";
@@ -22,12 +23,12 @@ export async function GET(req:Request){
   try{
     const jar=await cookies();
     const profileId=jar.get(SAVED_PROFILE_COOKIE)?.value;
-    const [data,rateAlerts]=await Promise.all([exportSavedProfileData(profileId),listRateAlerts(profileId)]);
+    const [data,rateAlerts,requests]=await Promise.all([exportSavedProfileData(profileId),listRateAlerts(profileId),exportRequestData(profileId,jar.get(REQUEST_ACCESS_COOKIE)?.value)]);
     const body=JSON.stringify({
       exportedAt:new Date().toISOString(),
       scope:"anonymous-consumer-memory",
-      data:{...data,rateAlerts},
-      note:"This export contains the anonymous profile, saved hotel identities, saved-offer references and rate alerts associated with this browser cookie. It does not contain a name, email address or financial profile.",
+      data:{...data,rateAlerts,requests},
+      note:"This export contains saved hotels, offers, rate alerts and private requests accessible from this browser profile or an authenticated request link. Requests include the email and contact consent you provided. Keep this export private.",
     },null,2);
     return new Response(body,{
       status:200,

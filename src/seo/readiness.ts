@@ -1,3 +1,4 @@
+import { informationalIndexingEnabled } from "@/src/seo/public";
 import { destinationSeoPages } from "@/src/seo/destinations";
 import { indexableDiscoveryPages,seoAutopilotEnabled } from "@/src/seo/live";
 import { canonicalSiteUrl,customPublicDomainConfigured,publicSiteConfigured,searchConsoleVerificationConfigured } from "@/src/system/site-url";
@@ -11,6 +12,7 @@ export async function seoReadiness(){
     customDomainConfigured:customPublicDomainConfigured(),
     googleVerificationConfigured:searchConsoleVerificationConfigured(),
     indexingEnabled:seoAutopilotEnabled(),
+    informationalIndexingEnabled:informationalIndexingEnabled(),
     destinationPagesReady:destinations.length,
     liveDiscoveryPagesIndexable:discovery.length,
     sitemapUrl:publicSiteConfigured()?canonicalSiteUrl()+"/sitemap.xml":null,

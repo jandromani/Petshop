@@ -1,4 +1,5 @@
 "use client";
+import { useCopy } from "@/components/useCopy";
 
 import { useEffect,useState } from "react";
 import type { LiveCatalogOffer } from "@/src/core/live-offers";
@@ -6,6 +7,7 @@ import { growthEvent } from "@/src/growth/client";
 import LiveOfferCard from "@/components/LiveOfferCard";
 
 export default function LiveOffers(){
+  const {t,local,language}=useCopy();
   const [offers,setOffers]=useState<LiveCatalogOffer[]>([]);
   const [loaded,setLoaded]=useState(false);
 
@@ -27,11 +29,11 @@ export default function LiveOffers(){
 
   return <section className="discovery liveDiscovery"><div className="shell">
     <div className="sectionTitle">
-      <h2>Available now.</h2>
-      <p>These long-stay prices are currently verified for real hotels. Availability can change, so Atlas checks again before you leave for a booking partner.</p>
+      <h2>{t("Available now.")}</h2>
+      <p>{t("These long-stay prices are currently verified for real hotels. Availability can change, so Atlas checks again before you leave for a booking partner.")}</p>
     </div>
     <div className="hotels">
-      {offers.map((o,index)=><LiveOfferCard key={o.offerId} offer={o} detailHref={"/live/"+encodeURIComponent(o.slug)} href={"/api/referral?offer="+encodeURIComponent(o.offerId)+"&from=%2Flive&pos="+(index+1)}/>)}
+      {offers.map((o,index)=><LiveOfferCard key={o.offerId} offer={o} language={language} detailHref={local("/live/"+encodeURIComponent(o.slug))} href={"/api/referral?offer="+encodeURIComponent(o.offerId)+"&from=%2Flive&pos="+(index+1)}/>)}
     </div>
   </div></section>;
 }

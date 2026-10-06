@@ -23,5 +23,8 @@ export async function runDataRetention(){
   const consumerProfiles=await sql<{count:number}[]>`with deleted as (delete from consumer_profiles where last_seen_at<now()-make_interval(days => ${consumerDays}) returning 1) select count(*)::int from deleted`;
   const sourcingContacts=await sql<{count:number}[]>`with scrubbed as (update sourcing_requests set requester_email=null,contact_consent=false,updated_at=now() where requester_email is not null and updated_at<now()-make_interval(days => ${sourcingDays}) returning 1) select count(*)::int from scrubbed`;
 
+  await sql`delete from shared_searches where expires_at<=now()`;
+  await sql`delete from sourcing_access where expires_at<=now() or request_id in (select id from sourcing_requests where contact_consent=false)`;
+  await sql`update sourcing_requests set acquisition='{}'::jsonb where created_at<now()-make_interval(days=>${days}) and acquisition<>'{}'::jsonb`;
   return{configured:true,days,leadDays,consumerDays,sourcingDays,expiredShares:Number(expiredShares[0]?.count||0),rateBuckets:Number(rateBuckets[0]?.count||0),deletedGrowthEvents:Number(growth[0]?.count||0),anonymizedReferralClicks:Number(referrals[0]?.count||0),scrubbedConversionPayloads:Number(conversions[0]?.count||0),deletedAgentRuns:Number(agents[0]?.count||0),scrubbedAbandonedLeads:Number(abandonedLeads[0]?.count||0),deletedConsumerProfiles:Number(consumerProfiles[0]?.count||0),scrubbedSourcingContacts:Number(sourcingContacts[0]?.count||0)};
 }

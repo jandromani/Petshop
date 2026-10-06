@@ -182,3 +182,9 @@ export async function exportSavedProfileData(profileId:string|undefined|null){
     })),
   };
 }
+
+export async function clearSavedStays(profileId:string|undefined){
+ const sql=getDatabase();if(!sql||!validSavedProfileId(profileId))return false;
+ await sql`delete from consumer_saved_stays where profile_id=${profileId}::uuid`;
+ return true;
+}

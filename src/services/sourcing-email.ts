@@ -1,39 +1,24 @@
 import { canonicalSiteUrl } from "@/src/system/site-url";
 import { legalIdentity } from "@/src/system/legal";
-
-type MailInput={to:string;subject:string;html:string};
-
-export function sourcingEmailStatus(){
-  return{configured:Boolean(process.env.RESEND_API_KEY?.trim()&&process.env.ATLAS_EMAIL_FROM?.trim())};
-}
-
-function esc(value:string){
-  return value.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]||c));
-}
-
+import { copy,type Language } from "@/src/i18n/config";
+type MailInput={to:string;subject:string;html:string;idempotencyKey?:string};
+export function sourcingEmailStatus(){return{configured:Boolean(process.env.RESEND_API_KEY?.trim()&&process.env.ATLAS_EMAIL_FROM?.trim())}}
+function esc(value:string){return value.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]||c))}
 async function sendMail(input:MailInput){
-  const apiKey=process.env.RESEND_API_KEY?.trim();const from=process.env.ATLAS_EMAIL_FROM?.trim();
-  if(!apiKey||!from)return{sent:false,reason:"not-configured" as const};
+  const key=process.env.RESEND_API_KEY?.trim(),from=process.env.ATLAS_EMAIL_FROM?.trim();
+  if(!key||!from)return{sent:false,reason:"not-configured" as const,messageId:null};
   const identity=legalIdentity();
-  const res=await fetch("https://api.resend.com/emails",{method:"POST",headers:{Authorization:"Bearer "+apiKey,"Content-Type":"application/json"},body:JSON.stringify({from,to:[input.to],subject:input.subject,html:input.html,...(identity.email?{reply_to:identity.email}:{})})});
-  if(!res.ok)return{sent:false,reason:"provider-error" as const};
-  return{sent:true,reason:"sent" as const};
+  const response=await fetch("https://api.resend.com/emails",{method:"POST",headers:{Authorization:"Bearer "+key,"Content-Type":"application/json",...(input.idempotencyKey?{"Idempotency-Key":input.idempotencyKey}:{})},signal:AbortSignal.timeout(10000),body:JSON.stringify({from,to:[input.to],subject:input.subject,html:input.html,...(identity.email?{reply_to:identity.email}:{})})});
+  const data=await response.json().catch(()=>null);
+  if(!response.ok||typeof data?.id!=="string")return{sent:false,reason:"provider-error" as const,messageId:null};
+  return{sent:true,reason:"accepted" as const,messageId:data.id as string};
 }
-
-export async function sendSourcingReceipt(input:{to:string;hotelName:string;city:string;checkIn:string;nights:number;requestId:string}){
-  const site=canonicalSiteUrl();
-  return sendMail({
-    to:input.to,
-    subject:"Atlas is sourcing "+input.nights+" days at "+input.hotelName,
-    html:"<h1>Your Atlas sourcing case is active.</h1><p><b>"+esc(input.hotelName)+"</b> · "+esc(input.city)+" · "+esc(input.checkIn)+" · "+input.nights+" days.</p><p>Atlas will only return a price when it has current commercial evidence. A hotel listing by itself is not treated as supply.</p><p>Case: <code>"+esc(input.requestId)+"</code></p><p><a href=\""+site+"/saved\">Open Atlas</a></p>"
-  });
+function trackingUrl(path?:string|null){return canonicalSiteUrl()+(path?.startsWith("/")&&!path.startsWith("//")?path:"/requests")}
+export async function sendSourcingReceipt(input:{to:string;hotelName:string;city:string;checkIn:string;nights:number;requestId:string;language?:Language;path?:string;idempotencyKey?:string}){
+  const l=input.language||"en";
+  return sendMail({to:input.to,idempotencyKey:input.idempotencyKey,subject:copy(l,"Your Atlas stay request","Tu solicitud de estancia en Atlas")+" · "+input.hotelName,html:"<h1>"+copy(l,"Your request is received.","Hemos recibido tu solicitud.")+"</h1><p><b>"+esc(input.hotelName)+"</b> · "+esc(input.city)+" · "+esc(input.checkIn)+" · "+input.nights+copy(l," nights."," noches.")+"</p><p>"+copy(l,"We will check rates for your dates. Your request does not make a reservation or take a payment.","Comprobaremos tarifas para tus fechas. Esta solicitud no crea una reserva ni realiza un cobro.")+"</p><p><a href=\""+esc(trackingUrl(input.path))+"\">"+copy(l,"Follow my request","Seguir mi solicitud")+"</a></p>"});
 }
-
-export async function sendSourcingMatch(input:{to:string;hotelName:string;nights:number;path?:string|null}){
-  const site=canonicalSiteUrl();const path=input.path&&input.path.startsWith("/")?input.path:"/saved";
-  return sendMail({
-    to:input.to,
-    subject:"Atlas found a verified long-stay match",
-    html:"<h1>A verified match is available.</h1><p>Atlas has commercial evidence matching your "+input.nights+"-day request for <b>"+esc(input.hotelName)+"</b>.</p><p>Availability can change. Open Atlas to review the current rate and booking path.</p><p><a href=\""+site+path+"\">Review the match</a></p>"
-  });
+export async function sendSourcingMatch(input:{to:string;hotelName:string;nights:number;path?:string|null;language?:Language;idempotencyKey?:string}){
+  const l=input.language||"en";
+  return sendMail({to:input.to,idempotencyKey:input.idempotencyKey,subject:copy(l,"Your Atlas quote is ready to review","Tu presupuesto de Atlas está listo")+" · "+input.hotelName,html:"<h1>"+copy(l,"Review your stay option.","Revisa tu opción de estancia.")+"</h1><p>"+esc(input.hotelName)+" · "+input.nights+copy(l," nights."," noches.")+"</p><p>"+copy(l,"Check the current price, terms and availability before continuing to booking.","Consulta el precio vigente, las condiciones y la disponibilidad antes de continuar con la reserva.")+"</p><p><a href=\""+esc(trackingUrl(input.path))+"\">"+copy(l,"Review my quote","Revisar mi presupuesto")+"</a></p>"});
 }

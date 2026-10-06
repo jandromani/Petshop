@@ -1,4 +1,5 @@
 "use client";
+import { useCopy } from "@/components/useCopy";
 import dynamic from "next/dynamic";
 import { useEffect,useMemo,useRef,useState } from "react";
 import * as maplibregl from "maplibre-gl";
@@ -7,9 +8,10 @@ import { growthEvent } from "@/src/growth/client";
 
 export type MappedHotel={id:string;name:string;city:string;country:string;lat:number|null;lng:number|null;brand?:string|null;commercialState:"RATE_PENDING"|"VERIFIED_RATE";liveOffer?:{monthlyEquivalent:number;currency:string}|null};
 
+function MapLoading(){const {t}=useCopy();return <div className="hotelMapLoading" role="status">{t("Loading standard map…")}</div>}
 const RasterHotelMap=dynamic(()=>import("@/components/RasterHotelMap"),{
   ssr:false,
-  loading:()=> <div className="hotelMapLoading" role="status">Loading standard map…</div>,
+  loading:MapLoading,
 });
 
 function geojson(hotels:MappedHotel[]){
@@ -21,6 +23,7 @@ function geojson(hotels:MappedHotel[]){
 }
 
 export default function HotelMap({hotels,selectedId,onSelect,onSearchArea,detailQuery="",fitKey=""}:{hotels:MappedHotel[];selectedId?:string|null;onSelect:(id:string)=>void;onSearchArea:(bbox:string)=>void;detailQuery?:string;fitKey?:string}){
+  const {t,local,language}=useCopy();
   const host=useRef<HTMLDivElement|null>(null);
   const mapRef=useRef<MapLibreMap|null>(null);
   const [renderer,setRenderer]=useState<"vector"|"raster">("vector");
@@ -81,17 +84,17 @@ export default function HotelMap({hotels,selectedId,onSelect,onSearchArea,detail
   return <div className={"hotelMapShell "+(expanded?"mapExpanded":"")} data-map-ready={ready?"true":"false"} data-map-renderer={renderer}>
     {renderer==="raster"
       ?<RasterHotelMap hotels={hotels} selectedId={selectedId} onSelect={onSelect} onBoundsChange={setPendingBounds} onReady={setReady} fitKey={fitKey} expanded={expanded}/>
-      :<div ref={host} className="hotelMap" aria-label="Interactive map of real hotels"/>}
-    <div className="mapTruth"><span><i className="mapKey pending"/> real property</span><span><i className="mapKey verified"/> verified rate</span></div>
-    <button className="mapExpand" type="button" onClick={()=>setExpanded(v=>!v)}>{expanded?"Close full map":"Full map"}</button>
-    {pendingBounds&&<button className="searchArea" type="button" onClick={()=>{growthEvent("search_this_area");onSearchArea(pendingBounds)}}>Search this area</button>}
+      :<div ref={host} className="hotelMap" aria-label={t("Interactive map of real hotels")}/>}
+    <div className="mapTruth"><span><i className="mapKey pending"/> {t("real property")}</span><span><i className="mapKey verified"/> {t("verified rate")}</span></div>
+    <button className="mapExpand" type="button" onClick={()=>setExpanded(v=>!v)}>{expanded?t("Close full map"):t("Full map")}</button>
+    {pendingBounds&&<button className="searchArea" type="button" onClick={()=>{growthEvent("search_this_area");onSearchArea(pendingBounds)}}>{t("Search this area")}</button>}
     {selected&&<div className="mapHotelPreview" aria-live="polite">
-      <button className="mapPreviewClose" type="button" aria-label="Close selected hotel" onClick={()=>onSelect("")}>×</button>
-      <span>{selected.commercialState==="VERIFIED_RATE"?"VERIFIED RATE":"REAL HOTEL · RATE PENDING"}</span>
+      <button className="mapPreviewClose" type="button" aria-label={t("Close selected hotel")} onClick={()=>onSelect("")}>×</button>
+      <span>{selected.commercialState==="VERIFIED_RATE"?t("VERIFIED RATE"):t("REAL HOTEL · RATE PENDING")}</span>
       <b>{selected.name}</b>
       <small>{selected.brand?selected.brand+" · ":""}{selected.city}, {selected.country}</small>
-      {selected.liveOffer&&<strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:selected.liveOffer.currency,maximumFractionDigits:0}).format(selected.liveOffer.monthlyEquivalent)} / 30 days</strong>}
-      <a href={"/stays/"+encodeURIComponent(selected.id)+(detailQuery?"?"+detailQuery:"")} onClick={()=>growthEvent("map_hotel_open",{hotel_id:selected.id,state:selected.commercialState})}>Open stay →</a>
+      {selected.liveOffer&&<strong>{new Intl.NumberFormat("en-US",{style:"currency",currency:selected.liveOffer.currency,maximumFractionDigits:0}).format(selected.liveOffer.monthlyEquivalent)} {t("/ 30 days")}</strong>}
+      <a href={local("/stays/"+encodeURIComponent(selected.id))+(detailQuery?"?"+detailQuery:"")} onClick={()=>growthEvent("map_hotel_open",{hotel_id:selected.id,state:selected.commercialState})}>{t("Open stay →")}</a>
     </div>}
   </div>;
 }

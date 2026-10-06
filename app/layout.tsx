@@ -1,3 +1,5 @@
+import ConsumerHeader from "@/components/ConsumerHeader";
+import LanguageProvider from "@/components/LanguageProvider";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import ConsentLayer from "@/components/ConsentLayer";
@@ -21,7 +23,6 @@ export const metadata:Metadata={
   title:{default:"Long-Stay Hotels & Monthly Hotel Rates | Atlas",template:"%s | Atlas"},
   description:"Find real hotels for 30–90 day stays, compare verified monthly-equivalent rates and request a private long-stay rate when public supply is absent.",
   metadataBase:new URL(siteUrl()),
-  alternates:{canonical:canonicalSiteUrl()},
   openGraph:{
     title:"Long-Stay Hotels & Monthly Hotel Rates | Atlas",
     description:"Find real hotels for 30–90 day stays and compare verified monthly hotel rates.",
@@ -40,5 +41,5 @@ export const metadata:Metadata={
 export default async function RootLayout({children}:Readonly<{children:React.ReactNode}>){
   const h=await headers();
   const lang=h.get("x-atlas-lang")==="es"?"es":"en";
-  return <html lang={lang}><body><SiteStructuredData/>{children}<GrowthPageView/><WebVitals/><ConsentLayer/></body></html>;
+  return <html lang={lang}><body><LanguageProvider language={lang}><ConsumerHeader/><SiteStructuredData/>{children}<GrowthPageView/><WebVitals/><ConsentLayer/></LanguageProvider></body></html>;
 }
