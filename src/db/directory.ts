@@ -1,5 +1,6 @@
 import { getDatabase } from "@/src/db/client";
 import { resolveCanonicalHotel } from "@/src/services/identity";
+import { normalizeSearch } from "@/src/core/directory-search";
 
 export type DirectoryRegion="Europe"|"Asia"|"Africa"|"Americas";
 export type DirectoryHotel={
@@ -7,6 +8,7 @@ export type DirectoryHotel={
   lat:number|null;lng:number|null;source:string;sourceId:string;referenceUrl:string|null;website:string|null;
   address:string|null;confidence:number|null;description:string|null;photoUrls:string[];facilities:string[];
   contentProvider?:string|null;contentLicenseRef?:string|null;contentSourceUrl?:string|null;contentFetchedAt?:string|null;
+  market?:string|null;brand?:string|null;
 };
 type DirectoryRow=Omit<DirectoryHotel,"address"|"confidence"|"description"|"photoUrls"|"facilities">&{
   total:number;raw:unknown;description:string|null;photoUrls:unknown;facilities:unknown;
@@ -21,7 +23,7 @@ function enrich(row:DirectoryRow):DirectoryHotel{
   const address=typeof raw.address==="string"?raw.address:typeof first?.freeform==="string"?first.freeform:null;
   const confidence=Number(raw.confidence);
   const {total:_total,raw:_raw,...base}=row;
-  return{...base,address,confidence:Number.isFinite(confidence)?confidence:null,photoUrls:strings(row.photoUrls),facilities:strings(row.facilities)};
+  return{...base,address,market:typeof raw.market==="string"?raw.market:null,brand:typeof raw.brand==="string"?raw.brand:null,confidence:Number.isFinite(confidence)?confidence:null,photoUrls:strings(row.photoUrls),facilities:strings(row.facilities)};
 }
 
 export function fallbackDirectoryReference(hotel:Pick<DirectoryHotel,"name"|"city"|"country">){
@@ -30,10 +32,12 @@ export function fallbackDirectoryReference(hotel:Pick<DirectoryHotel,"name"|"cit
 
 export async function listDirectoryHotels(input:{
   q?:string;region?:"All"|DirectoryRegion;limit?:number;offset?:number;maxRows?:number;
+  searchScope?:"destination"|"hotel";
   bbox?:{west:number;south:number;east:number;north:number}|null;
 }){
   const sql=getDatabase();if(!sql)return null;
-  const q=input.q?.trim()?"%"+input.q.trim()+"%":null;
+  const q=input.q?.trim()?normalizeSearch(input.q):null;
+  const scope=input.searchScope||"all";
   const region=input.region&&input.region!=="All"?input.region:null;
   const limit=Math.max(1,Math.min(input.maxRows??5000,input.limit??24));
   const offset=Math.max(0,Math.min(10000,input.offset??0));
@@ -57,7 +61,17 @@ export async function listDirectoryHotels(input:{
       and (hc.expires_at is null or hc.expires_at>now())
     where h.region in ('Europe','Asia','Africa','Americas')
       and (${region}::text is null or h.region=${region})
-      and (${q}::text is null or h.name ilike ${q} or h.city ilike ${q} or h.country ilike ${q})
+      and (${q}::text is null or
+        (${scope}<>'destination' and (
+          position(${q} in lower(regexp_replace(normalize(h.name,NFD),'[\u0300-\u036f]','','g')))>0
+          or position(${q} in lower(regexp_replace(normalize(coalesce(ds.raw->>'brand',''),NFD),'[\u0300-\u036f]','','g')))>0
+        )) or
+        (${scope}<>'hotel' and (
+          position(${q} in lower(regexp_replace(normalize(h.city,NFD),'[\u0300-\u036f]','','g')))>0
+          or position(${q} in lower(regexp_replace(normalize(h.country,NFD),'[\u0300-\u036f]','','g')))>0
+          or position(${q} in lower(regexp_replace(normalize(coalesce(ds.raw->>'market',''),NFD),'[\u0300-\u036f]','','g')))>0
+        ))
+      )
       and (${west}::float8 is null or (h.lng between ${west} and ${east} and h.lat between ${south} and ${north}))
     order by h.name asc,h.city asc
     limit ${limit} offset ${offset}

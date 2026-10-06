@@ -1,5 +1,6 @@
 import { BookingDemandClient } from "./booking";
 import { RateHawkClient } from "./ratehawk";
+import { LiteApiClient } from "./liteapi";
 import { HbxClient } from "./hbx";
 
 export function liveProviderRegistry(){
@@ -12,5 +13,5 @@ export function liveProviderRegistry(){
 
 export function liveProviderStatuses(){
   const registry=liveProviderRegistry();
-  return Object.values(registry).map(client=>client.status());
+  return [...Object.values(registry).map(client=>client.status()),new LiteApiClient().status()];
 }

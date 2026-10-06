@@ -2,6 +2,32 @@
 
 A hotel is not live because a salesperson or agent says it is. Publication requires deterministic commercial evidence. This is an operational checklist, not a legal agreement.
 
+## Web intake and private proposal portal
+
+`/for-hotels#apply` now accepts a consented hotel application. A submission creates
+a fresh unverified lead, never updates an existing partner, sends no automatic
+outreach and creates no published rate. Operations sees these leads in Hotel Desk.
+The form is protected by same-origin validation, bounded JSON, a honeypot and
+database-backed rate limits. Contact details are operational data covered by the
+privacy notice and must not be exported into public directory content.
+
+After verifying the contact's authority, operations can issue a private code in
+`/hotel-desk`. Deliver it manually through an authorized private channel. The code
+expires after seven days, is stored only as a SHA-256 hash, and is entered via POST
+at `/hotel-portal` rather than placed in a URL. Portal sessions use an HttpOnly,
+SameSite cookie; active access can be revoked in Hotel Desk.
+
+A portal session can read only its hotel's rate proposals and append new DRAFT
+proposals. It cannot choose a hotel ID, change an existing/live rate, mark a
+contract verified, publish, grant operations access, or activate merchant payments.
+Revocation/expiry is checked in the database for every read and write. Browser
+sessions last eight hours and cannot extend the invitation's validity.
+
+Applying is not a paid subscription or a binding distribution agreement. Fees,
+operator identity, contract evidence and publication approval are still governed
+by the checklist below. The portal reduces collection work; it does not replace
+commercial review or create partner revenue.
+
 ## 1. Counterparty identity
 
 - legal hotel / operating company name
