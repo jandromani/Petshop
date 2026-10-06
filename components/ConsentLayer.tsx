@@ -26,7 +26,7 @@ export default function ConsentLayer(){
       <div className="consentActions">
         <button className="btn ghost" onClick={()=>choose("essential")}>{es?"Sólo esencial":"Essential only"}</button>
         <button className="btn lime" onClick={()=>choose("analytics")}>{es?"Permitir analítica":"Allow analytics"}</button>
-        <a href="/cookies">{es?"Más información":"Learn more"}</a>
+        <a href={es?"/es/cookies":"/cookies"}>{es?"Más información":"Learn more"}</a>
       </div>
     </div>}
   </>;

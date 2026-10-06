@@ -1,3 +1,4 @@
+import SourcingOpsAction from "@/components/SourcingOpsAction";
 import HotelAccessControl,{RevokeHotelAccess} from "@/components/HotelAccessControl";
 import LiteApiProbeForm from "@/components/LiteApiProbeForm";
 import { listHotelAccess } from "@/src/db/hotel-portal";
@@ -47,6 +48,7 @@ export default async function HotelDesk(){
         <span>{r.city}, {r.country}</span>
         <span>{r.nights}d · {r.occupancy} guest{r.occupancy===1?"":"s"} · {r.check_in}</span>
         <span className={r.status==="MATCHED"?"green":"amber"}>{r.status}{r.target_monthly_eur?" · €"+Math.round(r.target_monthly_eur)+"/mo target":""}</span>
+        <SourcingOpsAction id={r.id}/>
       </div>):<div className="tr"><b>No customer sourcing requests yet</b><span>Rate-pending hotel pages can create them</span><span>30–90d</span><span className="amber">WAITING</span></div>}
     </div>
 

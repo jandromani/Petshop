@@ -1,13 +1,15 @@
+import { requestLanguage } from "@/src/i18n/server";
+import { localizedMetadata } from "@/src/seo/public";
+import { copy } from "@/src/i18n/config";
 import type { Metadata } from "next";
 import StaysExplorer,{type StaysInitialSearch} from "@/components/StaysExplorer";
 import { publicDirectorySnapshot } from "@/src/data/public-directory";
 import { defaultCheckIn,type SearchRegion,type StayDuration } from "@/src/core/search";
 
-export const metadata:Metadata={
-  title:"Real hotel search",
-  description:"Search real hotels for 30–90 day stays. Prices appear only after commercial verification; unpriced hotels can enter private sourcing.",
-  robots:{index:false,follow:true},
-};
+export async function generateMetadata({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){
+ const p=await searchParams;const lang=await requestLanguage();const q=Array.isArray(p.q)?p.q[0]:p.q;
+ return localizedMetadata("/stays",lang,(q?String(q).slice(0,120)+" · ":"")+copy(lang,"Long-stay hotel search","Buscar hoteles para largas estancias"),copy(lang,"Explore real hotels and request a rate for your dates.","Explora hoteles reales y solicita una tarifa para tus fechas."));
+}
 
 const one=(value:string|string[]|undefined)=>Array.isArray(value)?value[0]:value;
 const allowedRegions=new Set(["All","Europe","Asia","Africa","Americas"]);
@@ -38,7 +40,7 @@ export default async function StaysPage({searchParams}:{searchParams:Promise<Rec
   const bbox=(one(p.bbox)||"").slice(0,120);
 
   const initial:StaysInitialSearch={
-    query,searchScope,region,checkIn,flexibleDays,duration,occupancy,budget,features,featuresMode,verifiedOnly,minMonthly,
+    selected:(one(p.selected)||"").slice(0,180),view:one(p.view)==="map"?"map":"list",query,searchScope,region,checkIn,flexibleDays,duration,occupancy,budget,features,featuresMode,verifiedOnly,minMonthly,
     board,cancellation,provider,brand,brandedOnly,sort,page,bbox,
   };
   const requiresLiveState=verifiedOnly||Boolean(minMonthly)||Boolean(board)||Boolean(cancellation)||Boolean(provider)||featuresMode==="strict"||Boolean(bbox);

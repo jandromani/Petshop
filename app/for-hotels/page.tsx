@@ -1,38 +1,7 @@
 import HotelApplicationForm from "@/components/HotelApplicationForm";
-import type { Metadata } from "next";
-import { canonicalSiteUrl } from "@/src/system/site-url";
-
-export const metadata:Metadata={
-  title:"For Hotels — 30–90 Day Demand | Atlas",
-  description:"Atlas is building a managed distribution channel for 30–90 day hotel demand: private sourcing, allocated inventory, observable contract economics and Atlas Checkout when merchant gates are active.",
-  alternates:{canonical:canonicalSiteUrl()+"/for-hotels"},
-};
-
-export default function ForHotels(){
-  return <main className="seoPage"><div className="shell">
-    <section className="seoHero">
-      <div className="eyebrow">FOR HOTELS · PILOT SUPPLY</div>
-      <h1>Fill a month.<br/>Not another night.</h1>
-      <p>Atlas is building a focused demand channel for guests who want one hotel for 30, 60 or 90 days. The first commercial wedge is winter-sun demand, beginning with the Canary Islands.</p>
-      <div className="actions"><a className="btn" href="#apply">Join the hotel pilot →</a><a className="btn ghost" href="/hotel-portal">Partner portal</a><a className="btn ghost" href="/methodology">How rates are verified</a></div>
-    </section>
-    <div className="seoGrid">
-      <article className="card"><div className="eyebrow">DEMAND</div><h2>Longer intent</h2><p>Atlas captures exact dates, stay length, occupancy and a monthly target before an unpriced request enters the sourcing queue.</p></article>
-      <article className="card"><div className="eyebrow">DISTRIBUTION</div><h2>Private-rate + managed channel</h2><p>A hotel does not need to publish a universal monthly discount on the open web. Atlas can operate a request-and-verify flow and, where the contract allows it, hold allocated long-stay units for Atlas Checkout.</p></article>
-      <article className="card"><div className="eyebrow">ECONOMICS</div><h2>Hotel net ≠ customer price</h2><p>Managed rates store the hotel net and customer-facing price separately. Platform revenue and take rate are calculated from completed orders, so Atlas never needs to present a target margin as if it were observed.</p></article>
-      <article className="card"><div className="eyebrow">TRUTH</div><h2>No fake inventory</h2><p>A directory listing is not called supply. A direct rate is not published until evidence, validity, terms and a valid booking destination clear the publication gate.</p></article>
-      <article className="card"><div className="eyebrow">PILOT</div><h2>Canary Islands first</h2><p>Atlas is narrowing the business-development problem on purpose: prove repeatable 30–90 day demand and partner supply in one winter-sun market before expanding the playbook.</p></article>
-      <article className="card"><div className="eyebrow">SYSTEM</div><h2>Allocated inventory, not a handshake</h2><p>Direct Hotel OS tracks contract evidence, validity, hotel net, customer price, allocated units, reserved units and sold units. Merchant supply is fail-closed if any required evidence is missing.</p></article>
-    </div>
-    <section id="apply" className="partnerIntake">
-      <div><div className="eyebrow">HOTEL PARTNERS</div><h2>One hotel. A whole season.</h2><p>Apply, verify your hotel contact, then propose your 30, 60 or 90 day rates in a private portal. Atlas reviews the agreement and booking terms before your rates go live.</p><p>Applying does not charge your hotel. Commercial fees and distribution terms must be agreed separately.</p></div>
-      <HotelApplicationForm/>
-    </section>
-    <section className="editorialBody">
-      <h2>What Atlas is not claiming yet</h2>
-      <p>Searchable hotel coverage is not the same thing as contracted inventory. Atlas will not present pilot targets as signed partners, a mapped hotel as a live rate, or a requested price as guaranteed availability.</p>
-      <h2>The milestone that matters</h2>
-      <p>The commercial proof is simple: repeatable partner supply, allocated 30–90 day units, completed stays, observed GMV and observed platform revenue in a focused destination. Affiliate redirects can help bootstrap coverage, but they are not the end-state thesis.</p>
-    </section>
-  </div></main>;
-}
+import HotelRevenuePlanner from "@/components/HotelRevenuePlanner";
+import { requestLanguage } from "@/src/i18n/server";
+import { copy,localizedHref } from "@/src/i18n/config";
+import { informationalIndexingEnabled,localizedMetadata } from "@/src/seo/public";
+export async function generateMetadata(){const lang=await requestLanguage();return localizedMetadata("/for-hotels",lang,copy(lang,"Hotel partners · 30–90 night stays | Atlas","Hoteles colaboradores · Estancias de 30–90 noches | Atlas"),copy(lang,"Propose long-stay rates, review hotel enquiries and join the Canary Islands pilot.","Propón tarifas para largas estancias y solicita participar en el piloto de Canarias."),informationalIndexingEnabled())}
+export default async function ForHotels(){const lang=await requestLanguage();const t=(en:string,es:string)=>copy(lang,en,es),local=(p:string)=>localizedHref(p,lang);return <main className="seoPage"><div className="shell"><section className="seoHero"><div className="eyebrow">{t("FOR HOTELS · CANARY ISLANDS PILOT","PARA HOTELES · PILOTO EN CANARIAS")}</div><h1>{t("One hotel.","Un hotel.")}<br/>{t("A whole season.","Toda una temporada.")}</h1><p>{t("Reach travellers looking for 30, 60 or 90 nights. Propose your long-stay rates and review the conditions with Atlas before anything goes live.","Presenta tu hotel a viajeros que buscan 30, 60 o 90 noches. Propón tus tarifas y revisa las condiciones con Atlas antes de publicarlas.")}</p><div className="actions"><a className="btn" href="#apply">{t("Join the hotel pilot →","Solicitar participación →")}</a><a className="btn ghost" href={local("/hotel-portal")}>{t("Partner portal","Portal de hoteles")}</a></div></section><div className="seoGrid">{[[t("Dates before the enquiry","Fechas antes de la consulta"),t("Requests include dates, guests, length of stay and a target budget.","Las solicitudes incluyen fechas, huéspedes, duración y presupuesto objetivo.")],[t("Your rate, your conditions","Tu tarifa, tus condiciones"),t("Propose meal plans, cancellation terms and validity dates in a private portal.","Propón régimen de comidas, cancelación y vigencia desde un portal privado.")],[t("A clear pilot agreement","Un acuerdo de piloto claro"),t("Applying is free. Any distribution fee, payment model and booking responsibility must be agreed separately.","Solicitar participación es gratuito. Las comisiones, los pagos y la responsabilidad de reserva se acuerdan por separado.")]].map(([title,body])=><article className="card" key={title}><h2>{title}</h2><p>{body}</p></article>)}</div><section className="editorialBody"><h2>{t("Three steps to get started.","Tres pasos para empezar.")}</h2><ol><li>{t("Tell us about your hotel and official contact.","Indica tu hotel y su contacto oficial.")}</li><li>{t("After verification, receive a private access code and propose your rates.","Tras la verificación, recibe un código privado y propón tus tarifas.")}</li><li>{t("Agree the conditions and booking process before publication.","Acuerda las condiciones y el proceso de reserva antes de publicar.")}</li></ol><p>{t("The pilot starts with Tenerife and Gran Canaria. Participation does not guarantee enquiries or occupied rooms.","El piloto empieza con Tenerife y Gran Canaria. Participar no garantiza solicitudes ni habitaciones ocupadas.")}</p></section><HotelRevenuePlanner/><section id="apply" className="partnerIntake"><div><div className="eyebrow">{t("HOTEL PARTNERS","HOTELES COLABORADORES")}</div><h2>{t("Let's discuss your next season.","Hablemos de tu próxima temporada.")}</h2><p>{t("This application does not publish rates or charge your hotel. We will review the details before granting private portal access.","La solicitud no publica tarifas ni cobra a tu hotel. Revisaremos los datos antes de facilitar acceso al portal privado.")}</p></div><HotelApplicationForm/></section></div></main>}

@@ -1,3 +1,4 @@
+import { copy } from "@/src/i18n/config";
 import { z } from "zod";
 import { realHotels } from "@/src/data/real-hotels";
 import { overtureHotels } from "@/src/data/overture-hotels";
@@ -11,6 +12,7 @@ import { agentModelConfigured,llmCompletion } from "@/src/agents/llm";
 export const runtime="nodejs";
 
 const Input=z.object({
+  language:z.enum(["en","es"]).default("en"),
   prompt:z.string().min(1).max(1200),
   livingBudget:z.number().nonnegative().max(20000),
   party:z.enum(["solo","couple"]),
@@ -28,7 +30,8 @@ export async function POST(req:Request){
 
   const parsed=Input.safeParse(await req.json().catch(()=>null));
   if(!parsed.success)return Response.json({error:"Invalid request"},{status:400});
-  if(!agentModelConfigured())return Response.json({answer:"The deterministic planner is live, but the concierge model is not configured on this deployment yet."});
+  const lang=parsed.data.language;
+  if(!agentModelConfigured())return Response.json({answer:copy(lang,"The deterministic planner is live, but the concierge model is not configured on this deployment yet.","Puedes utilizar el buscador. El asistente aún no está configurado en esta web.")});
 
   let liveOffers:Awaited<ReturnType<typeof listSellableOffers>>=[];
   if(databaseConfigured()){
@@ -59,6 +62,7 @@ export async function POST(req:Request){
 
   const system=[
     "You are the Atlas long-stay concierge.",
+    lang==="es"?"Respond entirely in Spanish.":"Respond in English.",
     "Recommend only catalogue entries supplied in this request and only within the supplied monthly budget.",
     "Never invent availability, price, visa rules, medical advice, commission, cancellation or execution.",
     "live_verified entries passed deterministic commercial gates. real_identity_rate_pending entries are real hotel identities but have no verified price or availability; label them rate pending and never infer commercial facts.",
@@ -75,11 +79,11 @@ export async function POST(req:Request){
     const checks=[deterministicTruthJudge(answer),deterministicBrandJudge(answer)];
     if(checks.some(x=>x.verdict!=="PASS")){
       console.warn(JSON.stringify({level:"warning",event:"public_agent_judge_block",checks}));
-      return Response.json({answer:"I can suggest destinations and explain trade-offs, but I cannot present an unsupported price or availability claim. Use the verified-offer lane for bookable facts.",catalogueMode:liveOffers.length?"live_verified":"real_identity",judged:true});
+      return Response.json({answer:copy(lang,"I can suggest destinations and explain trade-offs, but I cannot present an unsupported price or availability claim. Use the verified-offer lane for bookable facts.","Puedo sugerir destinos y explicar opciones. Para reservar, consulta precios y disponibilidad en las ofertas verificadas."),catalogueMode:liveOffers.length?"live_verified":"real_identity",judged:true});
     }
-    return Response.json({answer:answer||"No agent response.",catalogueMode:liveOffers.length?"live_verified":"real_identity",judged:true,provider:completion.provider});
+    return Response.json({answer:answer||copy(lang,"No agent response.","El asistente no ha respondido."),catalogueMode:liveOffers.length?"live_verified":"real_identity",judged:true,provider:completion.provider});
   }catch(error){
     console.error(JSON.stringify({level:"error",event:"agent_error",error:String(error)}));
-    return Response.json({answer:"The concierge model is temporarily unavailable. The deterministic planner is unaffected."});
+    return Response.json({answer:copy(lang,"The concierge model is temporarily unavailable. The deterministic planner is unaffected.","El asistente no está disponible temporalmente. Puedes seguir utilizando el buscador.")});
   }
 }

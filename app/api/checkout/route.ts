@@ -6,7 +6,7 @@ import { enforceRateLimit,requestFingerprint } from "@/src/security/rate-limit";
 import { ensureSavedProfile,SAVED_PROFILE_COOKIE } from "@/src/db/consumer-memory";
 
 export const runtime="nodejs";
-const Input=z.object({offerId:z.string().uuid(),checkIn:z.string().regex(/^\d{4}-\d{2}-\d{2}$/),nights:z.union([z.literal(30),z.literal(60),z.literal(90)]),occupancy:z.union([z.literal(1),z.literal(2)]),email:z.string().trim().toLowerCase().email().max(254),sourcingRequestId:z.string().uuid().optional()});
+const Input=z.object({language:z.enum(["en","es"]).default("en"),offerId:z.string().uuid(),checkIn:z.string().regex(/^\d{4}-\d{2}-\d{2}$/),nights:z.union([z.literal(30),z.literal(60),z.literal(90)]),occupancy:z.union([z.literal(1),z.literal(2)]),email:z.string().trim().toLowerCase().email().max(254),sourcingRequestId:z.string().uuid().optional()});
 
 export async function POST(req:Request){
   const gate=await enforceRateLimit({key:requestFingerprint(req,"merchant-checkout"),limit:6,windowSeconds:3600});
@@ -20,7 +20,7 @@ export async function POST(req:Request){
   const order=await createMerchantOrder({offerId:parsed.data.offerId,customerEmail:parsed.data.email,checkIn:parsed.data.checkIn,nights:parsed.data.nights,occupancy:parsed.data.occupancy,sourcingRequestId:parsed.data.sourcingRequestId,consumerProfileId:profileId??undefined});
   if(!order)return Response.json({error:"merchant-offer-unavailable"},{status:409,headers:{"Cache-Control":"no-store"}});
   try{
-    const session=await createStripeCheckoutSession({orderId:order.id,email:parsed.data.email,hotelName:order.quote.hotelName,city:order.quote.city,nights:order.quote.nights,currency:order.quote.currency,amount:order.quote.customerTotal,cancelPath:"/live/"+encodeURIComponent(order.quote.slug)});
+    const session=await createStripeCheckoutSession({orderId:order.id,email:parsed.data.email,hotelName:order.quote.hotelName,city:order.quote.city,nights:order.quote.nights,currency:order.quote.currency,amount:order.quote.customerTotal,language:parsed.data.language,cancelPath:"/live/"+encodeURIComponent(order.quote.slug)});
     const { attachCheckoutSession }=await import("@/src/db/merchant");const attached=await attachCheckoutSession(order.id,session.id);
     if(!attached){await releaseMerchantOrder(order.id,"PAYMENT_FAILED");return Response.json({error:"checkout-state-conflict"},{status:409});}
     return Response.json({ok:true,url:session.url,orderId:order.id,quote:{hotelName:order.quote.hotelName,city:order.quote.city,nights:order.quote.nights,currency:order.quote.currency,total:order.quote.customerTotal}},{status:201,headers:{"Cache-Control":"no-store"}});

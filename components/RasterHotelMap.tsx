@@ -1,4 +1,5 @@
 "use client";
+import { useCopy } from "@/components/useCopy";
 
 import { useEffect,useMemo,useRef } from "react";
 import * as L from "leaflet";
@@ -17,6 +18,7 @@ type Props={
 };
 
 export default function RasterHotelMap({hotels,selectedId,onSelect,onBoundsChange,onReady,fitKey,expanded}:Props){
+  const {t,local,language}=useCopy();
   const host=useRef<HTMLDivElement|null>(null);
   const mapRef=useRef<L.Map|null>(null);
   const pointsRef=useRef<L.LayerGroup|null>(null);
@@ -88,11 +90,11 @@ export default function RasterHotelMap({hotels,selectedId,onSelect,onBoundsChang
   },[expanded]);
 
   return <>
-    <div ref={host} className="hotelMap hotelMapRaster" aria-label="Interactive map of real hotels" data-mapped-hotels={mapped.length}/>
+    <div ref={host} className="hotelMap hotelMapRaster" aria-label={t("Interactive map of real hotels")} data-mapped-hotels={mapped.length}/>
     {choices.length>0&&<label className="mapHotelPicker">
-      <span>Explore a hotel</span>
-      <select aria-label="Select a hotel on the map" value={selectedId||""} onChange={e=>{growthEvent("map_marker_click",{hotel_id:e.target.value});onSelect(e.target.value)}}>
-        <option value="">Choose a hotel…</option>
+      <span>{t("Explore a hotel")}</span>
+      <select aria-label={t("Select a hotel on the map")} value={selectedId||""} onChange={e=>{growthEvent("map_marker_click",{hotel_id:e.target.value});onSelect(e.target.value)}}>
+        <option value="">{t("Choose a hotel…")}</option>
         {choices.map(h=><option key={h.id} value={h.id}>{h.name}</option>)}
       </select>
     </label>}

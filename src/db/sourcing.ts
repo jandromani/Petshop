@@ -14,6 +14,8 @@ export type SourcingRequestInput={
   contactConsent:boolean;
   sourcePath?:string;
   consumerProfileId?:string;
+  language?:"en"|"es";
+  acquisition?:Record<string,string>;
 };
 
 export async function createSourcingRequest(input:SourcingRequestInput){
@@ -21,11 +23,11 @@ export async function createSourcingRequest(input:SourcingRequestInput){
   const rows=await sql<Array<{id:string;status:string;created_at:string}>>`
     insert into sourcing_requests (
       directory_hotel_id,hotel_name,city,country,check_in,nights,occupancy,
-      target_monthly_eur,requester_hash,requester_email,contact_consent,source_path,consumer_profile_id
+      target_monthly_eur,requester_hash,requester_email,contact_consent,source_path,consumer_profile_id,language,acquisition
     ) values (
       ${input.directoryHotelId},${input.hotelName},${input.city},${input.country},
       ${input.checkIn},${input.nights},${input.occupancy},
-      ${input.targetMonthlyEur ?? null},${input.requesterHash},${input.requesterEmail},${input.contactConsent},${input.sourcePath ?? null},${input.consumerProfileId??null}::uuid
+      ${input.targetMonthlyEur ?? null},${input.requesterHash},${input.requesterEmail},${input.contactConsent},${input.sourcePath ?? null},${input.consumerProfileId??null}::uuid,${input.language||"en"},${sql.json(input.acquisition||{})}
     )
     on conflict (requester_hash,directory_hotel_id,check_in,nights,occupancy)
     do update set
@@ -34,6 +36,7 @@ export async function createSourcingRequest(input:SourcingRequestInput){
       contact_consent=excluded.contact_consent,
       source_path=coalesce(excluded.source_path,sourcing_requests.source_path),
       consumer_profile_id=coalesce(excluded.consumer_profile_id,sourcing_requests.consumer_profile_id),
+      language=excluded.language,
       updated_at=now()
     returning id::text,status,created_at::text
   `;
@@ -63,8 +66,8 @@ export async function listSourcingRequests(limit=100){
 
 export async function getSourcingRequest(id:string){
   const sql=getDatabase();if(!sql)return null;
-  const rows=await sql<Array<{id:string;hotel_name:string;nights:number;requester_email:string|null;source_path:string|null;receipt_notified_at:string|null;match_notified_at:string|null;status:string}>>`
-    select id::text,hotel_name,nights,requester_email,source_path,receipt_notified_at::text,match_notified_at::text,status
+  const rows=await sql<Array<{id:string;hotel_name:string;city:string;country:string;check_in:string;nights:number;occupancy:number;requester_email:string|null;contact_consent:boolean;language:"en"|"es";source_path:string|null;receipt_notified_at:string|null;match_notified_at:string|null;status:string;quote_offer_id:string|null}>>`
+    select id::text,hotel_name,city,country,check_in::text,nights,occupancy,requester_email,contact_consent,language,source_path,receipt_notified_at::text,match_notified_at::text,status,quote_offer_id::text
     from sourcing_requests where id=${id}::uuid limit 1
   `;
   return rows[0]??null;

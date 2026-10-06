@@ -65,6 +65,7 @@ export default async function ControlTower(){
     <div className="shell">
       <a href="/" className="eyebrow" style={{color:"#0a1630"}}>← consumer experience</a>
       <h1>CONTROL TOWER 3.0</h1>
+      <div className="actions"><a className="btn lime" href="/growth-desk">Campaigns & acquisition →</a><a className="btn ghost" href="/hotel-desk">Hotel supply & requests →</a></div>
       <p style={{color:"#91a0b8",maxWidth:820}}>Private operating plane. Runtime truth, deterministic autopilots and governed agent actions are separated from external commercial proof.</p>
 
       <div className="metrics">

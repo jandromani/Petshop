@@ -4,10 +4,10 @@ import { canonicalSiteUrl,customPublicDomainConfigured,searchConsoleVerification
 import { seoAutopilotEnabled } from "@/src/seo/live";
 
 function norm(s:string){return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim()}
-function sameHotel(a:string,b:string){const x=norm(a),y=norm(b);return x===y||x.includes(y)||y.includes(x)}
+function sameHotel(a:string,b:string){const x=norm(a),y=norm(b);return x===y}
 
 export async function hotelSeoEvidence(hotel:DirectoryHotel){
-  const offers=(await listSellableOffers({q:hotel.name,limit:20})).filter(o=>o.city.toLowerCase()===hotel.city.toLowerCase()&&sameHotel(o.name,hotel.name));
+  const offers=(await listSellableOffers({q:hotel.name,limit:20})).filter(o=>o.city.toLowerCase()===hotel.city.toLowerCase()&&o.country.toLowerCase()===hotel.country.toLowerCase()&&sameHotel(o.name,hotel.name));
   const fresh=offers.filter(o=>new Date(o.expiresAt||0).getTime()>Date.now());
   const canonical=canonicalSiteUrl()+"/stays/"+encodeURIComponent(hotel.id);
   const reasons:string[]=[];

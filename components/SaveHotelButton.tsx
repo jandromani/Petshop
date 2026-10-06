@@ -1,9 +1,11 @@
 "use client";
+import { useCopy } from "@/components/useCopy";
 import { useEffect,useState } from "react";
 import { growthEvent } from "@/src/growth/client";
 import { SAVED_HOTELS_KEY,mergeSavedHotels,parseSavedHotels,type SavedHotel } from "@/src/core/saved-hotels";
 
 export default function SaveHotelButton({hotel}:{hotel:{id:string;name:string;city:string;country:string;source:string}}){
+  const {t,local,language}=useCopy();
   const[saved,setSaved]=useState(false);
   useEffect(()=>{
     let alive=true;
@@ -32,5 +34,5 @@ export default function SaveHotelButton({hotel}:{hotel:{id:string;name:string;ci
     else void fetch("/api/saved/hotels",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(row),cache:"no-store"}).catch(()=>{});
   }
 
-  return <button type="button" className={"saveStay "+(saved?"saved":"")} aria-label={(saved?"Remove ":"Save ")+hotel.name} aria-pressed={saved} onClick={toggle}>{saved?"♥ Saved":"♡ Save"}</button>;
+  return <button type="button" className={"saveStay "+(saved?"saved":"")} aria-label={(saved?t("Remove "):t("Save "))+hotel.name} aria-pressed={saved} onClick={toggle}>{saved?t("♥ Saved"):t("♡ Save")}</button>;
 }

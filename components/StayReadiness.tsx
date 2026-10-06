@@ -1,4 +1,5 @@
 "use client";
+import { useCopy } from "@/components/useCopy";
 
 import { useMemo,useState } from "react";
 import type { StayDuration } from "@/src/core/search";
@@ -7,6 +8,7 @@ type Citizenship="eu"|"non-eu";
 type Destination="eu"|"schengen"|"other";
 
 export default function StayReadiness({duration=60}:{duration?:StayDuration}){
+  const {t,local,language}=useCopy();
   const[citizenship,setCitizenship]=useState<Citizenship>("eu");
   const[destination,setDestination]=useState<Destination>("eu");
   const finding=useMemo(()=>{
@@ -22,16 +24,16 @@ export default function StayReadiness({duration=60}:{duration?:StayDuration}){
   },[citizenship,destination,duration]);
 
   return <section className="readinessBand"><div className="shell readinessGrid">
-    <div><div className="eyebrow">STAY READINESS · NOT LEGAL OR TAX ADVICE</div><h2>A 60-day hotel stay<br/>is still an immigration decision.</h2><p>Atlas makes the constraint visible before checkout instead of pretending accommodation is the only thing that matters.</p><a href="/stay-readiness">Open the full readiness guide →</a></div>
+    <div><div className="eyebrow">{t("STAY READINESS · NOT LEGAL OR TAX ADVICE")}</div><h2>{t("A 60-day hotel stay")}<br/>{t("is still an immigration decision.")}</h2><p>{t("Atlas makes the constraint visible before checkout instead of pretending accommodation is the only thing that matters.")}</p><a href={local("/stay-readiness")}>{t("Open the full readiness guide →")}</a></div>
     <div className="readinessCard">
       <div className="readinessControls">
-        <label><span>Traveller</span><select value={citizenship} onChange={e=>setCitizenship(e.target.value as Citizenship)}><option value="eu">EU citizen</option><option value="non-eu">Non-EU citizen</option></select></label>
-        <label><span>Destination</span><select value={destination} onChange={e=>setDestination(e.target.value as Destination)}><option value="eu">EU country</option><option value="schengen">Schengen area</option><option value="other">Outside EU/Schengen</option></select></label>
+        <label><span>{t("Traveller")}</span><select value={citizenship} onChange={e=>setCitizenship(e.target.value as Citizenship)}><option value="eu">{t("EU citizen")}</option><option value="non-eu">{t("Non-EU citizen")}</option></select></label>
+        <label><span>{t("Destination")}</span><select value={destination} onChange={e=>setDestination(e.target.value as Destination)}><option value="eu">{t("EU country")}</option><option value="schengen">{t("Schengen area")}</option><option value="other">{t("Outside EU/Schengen")}</option></select></label>
       </div>
-      <div className={"readinessFinding "+finding.tone}><b>{finding.title}</b><p>{finding.body}</p></div>
-      <div className="readinessChecks"><span>✓ Visa / residence window</span><span>✓ Tax-residence implications</span><span>✓ Health coverage</span></div>
-      <p className="readinessNote">Immigration limits and tax residence are different tests. Confirm both with official authorities for your circumstances.</p>
-      <div className="readinessLinks"><a href="https://europa.eu/youreurope/citizens/residence/residence-rights/index_en.htm" target="_blank" rel="noreferrer">EU residence rights ↗</a><a href="https://home-affairs.ec.europa.eu/policies/schengen/border-crossing/short-stay-calculator_en" target="_blank" rel="noreferrer">Official Schengen calculator ↗</a></div>
+      <div className={"readinessFinding "+finding.tone}><b>{t(finding.title)}</b><p>{t(finding.body)}</p></div>
+      <div className="readinessChecks"><span>{t("✓ Visa / residence window")}</span><span>{t("✓ Tax-residence implications")}</span><span>{t("✓ Health coverage")}</span></div>
+      <p className="readinessNote">{t("Immigration limits and tax residence are different tests. Confirm both with official authorities for your circumstances.")}</p>
+      <div className="readinessLinks"><a href="https://europa.eu/youreurope/citizens/residence/residence-rights/index_en.htm" target="_blank" rel="noreferrer">{t("EU residence rights ↗")}</a><a href="https://home-affairs.ec.europa.eu/policies/schengen/border-crossing/short-stay-calculator_en" target="_blank" rel="noreferrer">{t("Official Schengen calculator ↗")}</a></div>
     </div>
   </div></section>;
 }

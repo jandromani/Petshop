@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { databaseConfigured } from "@/src/db/client";
-import { deleteSavedProfile,listSavedStaysForProfile,removeSavedStay,SAVED_PROFILE_COOKIE,upsertSavedStay } from "@/src/db/consumer-memory";
+import { clearSavedStays,listSavedStaysForProfile,removeSavedStay,SAVED_PROFILE_COOKIE,upsertSavedStay } from "@/src/db/consumer-memory";
 import { enforceRateLimit,requestFingerprint } from "@/src/security/rate-limit";
 
 const StayInput=z.object({
@@ -83,9 +83,8 @@ export async function DELETE(req:Request){
     const profileId=jar.get(SAVED_PROFILE_COOKIE)?.value;
 
     if(clearAll){
-      await deleteSavedProfile(profileId);
+      await clearSavedStays(profileId);
       const response=json({removed:true,clearedAll:true,durable:true});
-      response.cookies.set(SAVED_PROFILE_COOKIE,"",{...cookieOptions,maxAge:0});
       return response;
     }
 
