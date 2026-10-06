@@ -28,8 +28,8 @@ export default function SourceStayForm({hotelId,defaultCheckIn,defaultDuration,d
     <p>{t("Tell us where to send your quote. This request is free and makes no reservation or payment.","Indica dónde quieres recibir el presupuesto. La solicitud es gratuita y no crea una reserva ni realiza un cobro.")}</p>
     <div className="sourceStayGrid">
       <label><span>{t("Check-in","Entrada")}</span><input type="date" required value={checkIn} onChange={e=>setCheckIn(e.target.value)}/></label>
-      <label><span>{t("Stay","Estancia")}</span><select value={nights} onChange={e=>setNights(Number(e.target.value) as StayDuration)}>{[30,60,90,120,180,365].map(v=><option value={v} key={v}>{v} {t("nights","noches")}</option>)}</select></label>
-      <label><span>{t("Guests","Huéspedes")}</span><select value={occupancy} onChange={e=>setOccupancy(Number(e.target.value) as 1|2)}><option value={1}>1</option><option value={2}>2</option></select></label>
+      <label><span>{t("Stay","Estancia")}</span><select aria-label={t("Stay","Estancia")} value={nights} onChange={e=>setNights(Number(e.target.value) as StayDuration)}>{[30,60,90,120,180,365].map(v=><option value={v} key={v}>{v} {t("nights","noches")}</option>)}</select></label>
+      <label><span>{t("Guests","Huéspedes")}</span><select aria-label={t("Guests","Huéspedes")} value={occupancy} onChange={e=>setOccupancy(Number(e.target.value) as 1|2)}><option value={1}>1</option><option value={2}>2</option></select></label>
       <label><span>{t("Budget €/30 nights","Presupuesto €/30 noches")}</span><input type="number" min={1} max={50000} step="0.01" value={budget} onChange={e=>setBudget(e.target.value)} placeholder={t("optional","opcional")}/></label>
       <label className="sourceEmail"><span>{t("Email for the quote","Email para el presupuesto")}</span><input type="email" required maxLength={254} autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com"/></label>
     </div>

@@ -1,4 +1,6 @@
 import { test,expect } from "@playwright/test";
+import { CONSENT_COOKIE,CONSENT_VERSION_COOKIE,CONSENT_VERSION } from "../src/privacy/consent";
+test.beforeEach(async({context,baseURL})=>{await context.addCookies([{name:CONSENT_COOKIE,value:"essential",url:baseURL!},{name:CONSENT_VERSION_COOKIE,value:CONSENT_VERSION,url:baseURL!}])});
 
 test("hotel application submits to review and portal requires a private code",async({page})=>{
   let submitted:any;

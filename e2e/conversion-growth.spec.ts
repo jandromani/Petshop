@@ -1,4 +1,6 @@
 import { test,expect } from "@playwright/test";
+import { CONSENT_COOKIE,CONSENT_VERSION_COOKIE,CONSENT_VERSION } from "../src/privacy/consent";
+test.beforeEach(async({context,baseURL})=>{await context.addCookies([{name:CONSENT_COOKIE,value:"essential",url:baseURL!},{name:CONSENT_VERSION_COOKIE,value:CONSENT_VERSION,url:baseURL!}])});
 test("Spanish search compares hotels and preserves dates, guests and budget into a request",async({page})=>{
  let submission:any;
  await page.route("**/api/sourcing",async route=>{submission=route.request().postDataJSON();await route.fulfill({status:202,json:{ok:true,id:"11111111-1111-4111-8111-111111111111",status:"SOURCING",notification:"ops-queue"}})});
@@ -6,7 +8,7 @@ test("Spanish search compares hotels and preserves dates, guests and budget into
  await expect(page.locator("html")).toHaveAttribute("lang","es");
  await expect(page.getByLabel("Destino u hotel")).toHaveValue("Madrid");
  const cards=page.locator(".realHotelCard");await expect(cards.first()).toBeVisible();
- await cards.nth(0).getByRole("button",{name:"Comparar",exact:true}).click();await cards.nth(1).getByRole("button",{name:"Comparar",exact:true}).click();
+ await cards.nth(0).getByRole("button",{name:"Comparar",exact:true}).click();await expect(cards.nth(0).locator(".compareChoice")).toHaveAttribute("aria-pressed","true");await cards.nth(1).getByRole("button",{name:"Comparar",exact:true}).click();await expect(page.locator(".compareBar b")).toContainText("2/3");
  await page.getByRole("link",{name:"Comparar hoteles →",exact:true}).click();
  await expect(page.locator(".comparisonCard")).toHaveCount(2);await expect(page.locator(".comparisonCard").first()).toContainText("60 noches · 2 huéspedes");
  await page.locator(".comparisonCard").first().getByRole("link",{name:"Consultar hotel →"}).click();
@@ -33,4 +35,8 @@ test("shared search fallback removes contact and advertising tokens",async({page
 });
 test("Spanish mobile conversion pages do not overflow horizontally",async({page})=>{
  await page.setViewportSize({width:390,height:844});for(const path of ["/es","/es/monthly-stays/gran-canaria","/es/for-hotels","/es/requests"]){await page.goto(path);const size=await page.evaluate(()=>({actual:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth}));expect(size.actual,path).toBeLessThanOrEqual(size.viewport+2)}
+});
+
+test("Spanish essential-only privacy choice persists across navigation",async({page,context})=>{
+ await context.clearCookies();await page.goto("/es");await expect(page.locator(".compareChoice").first()).toBeEnabled();await page.getByRole("button",{name:"Sólo esencial",exact:true}).click();await expect(page.getByRole("dialog",{name:"Preferencias de privacidad"})).toHaveCount(0);await page.goto("/es/for-hotels");await expect(page.getByRole("dialog",{name:"Preferencias de privacidad"})).toHaveCount(0);const cookies=await context.cookies();expect(cookies.find(c=>c.name===CONSENT_COOKIE)?.value).toBe("essential");expect(cookies.find(c=>c.name===CONSENT_VERSION_COOKIE)?.value).toBe(CONSENT_VERSION);
 });
