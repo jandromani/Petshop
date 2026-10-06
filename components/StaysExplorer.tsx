@@ -8,7 +8,7 @@ import type { SearchRegion,StayDuration } from "@/src/core/search";
 import type { Party } from "@/src/core/planner";
 
 export type StaysInitialSearch={
-  query:string;region:SearchRegion;checkIn:string;flexibleDays:0|7|30;duration:StayDuration;
+  searchScope?:"auto"|"destination"|"hotel";query:string;region:SearchRegion;checkIn:string;flexibleDays:0|7|30;duration:StayDuration;
   occupancy:1|2;budget:number;features:string[];featuresMode:"rank"|"strict";verifiedOnly:boolean;
   minMonthly?:number;board:string;cancellation:string;provider:string;brand:string;brandedOnly:boolean;
   sort:"recommended"|"price"|"confidence"|"name";page:number;bbox:string;
@@ -43,7 +43,7 @@ export default function StaysExplorer({initial,initialData}:{initial:StaysInitia
       <AiHotelSearch current={{region,duration,occupancy:party==="couple"?2:1,maxMonthly:budget}} onApply={applyAi}/>
     </div></section>
     <RealHotelDirectory
-      initialQuery={query} initialRegion={region} duration={duration} checkIn={checkIn} occupancy={party==="couple"?2:1}
+      initialQuery={query} initialSearchScope={initial.searchScope} initialRegion={region} duration={duration} checkIn={checkIn} occupancy={party==="couple"?2:1}
       maxMonthly={budget} flexibleDays={flexibleDays} initialAmenities={amenities}
       initialFeaturesMode={initial.featuresMode} initialVerifiedOnly={initial.verifiedOnly} initialMinMonthly={initial.minMonthly}
       initialBoard={initial.board} initialCancellation={initial.cancellation} initialProvider={initial.provider}

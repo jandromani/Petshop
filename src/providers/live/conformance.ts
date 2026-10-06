@@ -1,4 +1,4 @@
-import { liveProviderRegistry } from "@/src/providers/live/registry";
+import { liveProviderStatuses } from "@/src/providers/live/registry";
 import type { LiveProviderStatus } from "@/src/providers/live/common";
 
 export type ProviderReadiness={
@@ -25,6 +25,5 @@ export function readinessFromStatus(status:LiveProviderStatus):ProviderReadiness
 }
 
 export function providerReadinessReport(){
-  const registry=liveProviderRegistry();
-  return Object.values(registry).map(provider=>readinessFromStatus(provider.status()));
+  return liveProviderStatuses().map(readinessFromStatus);
 }

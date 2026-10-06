@@ -1,3 +1,7 @@
+import HotelAccessControl,{RevokeHotelAccess} from "@/components/HotelAccessControl";
+import LiteApiProbeForm from "@/components/LiteApiProbeForm";
+import { listHotelAccess } from "@/src/db/hotel-portal";
+import { LiteApiClient } from "@/src/providers/live/liteapi";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { OPS_COOKIE,verifyOpsSession } from "@/src/security/ops-session";
@@ -10,7 +14,7 @@ export const metadata={title:"Hotel Desk",robots:{index:false,follow:false}};
 export default async function HotelDesk(){
   const jar=await cookies();
   if(!verifyOpsSession(jar.get(OPS_COOKIE)?.value)) notFound();
-  const [desk,sourcing]=await Promise.all([listHotelDesk(),listSourcingRequests(100)]);
+  const [desk,sourcing,accesses]=await Promise.all([listHotelDesk(),listSourcingRequests(100),listHotelAccess()]);
   const providers=providerReadinessReport();
 
   return <main className="controlPage"><div className="shell">
@@ -35,6 +39,7 @@ export default async function HotelDesk(){
       <div className="tr"><b>Direct Hotel OS</b><span className="green">ARMED</span><span>contract evidence</span><span>30–90d · customer sourcing always routes here as fallback</span></div>
     </div>
 
+    <LiteApiProbeForm configured={new LiteApiClient().status().configured}/>
     <h2 style={{marginTop:36}}>Customer sourcing queue</h2>
     <div className="table">
       {sourcing.length?sourcing.map(r=><div className="tr" key={r.id}>
@@ -49,6 +54,11 @@ export default async function HotelDesk(){
     <div className="table">
       {desk.leads.length?desk.leads.map((l:any)=><div className="tr" key={l.id}><b>{l.hotel_name}</b><span>{l.city}, {l.country}</span><span>{l.contact_role||"—"}</span><span>{l.status}</span></div>):<div className="tr"><b>No leads yet</b><span>Use /api/hotel-desk/leads</span><span>—</span><span className="amber">WAITING</span></div>}
     </div>
+
+    <h2 style={{marginTop:36}}>Partner access</h2>
+    <p>Verify the official contact before issuing a code. Codes grant hotel-specific proposal access for 7 days; they never grant Atlas operations access.</p>
+    <div className="partnerProposals">{desk.leads.map((l:any)=><article key={l.id} className="partnerOpsCard"><h3>{l.hotel_name}</h3><p>{l.city}, {l.country} · {l.contact_email||"Contact email missing"}</p><HotelAccessControl leadId={l.id}/></article>)}</div>
+    <h3>Active access codes</h3><div className="table">{accesses.map(a=><div className="tr" key={String(a.id)}><b>{a.hotel_name}</b><span>Expires {a.expires_at}</span><RevokeHotelAccess id={String(a.id)}/></div>)}</div>
 
     <h2 style={{marginTop:36}}>LONG rates</h2>
     <div className="table">

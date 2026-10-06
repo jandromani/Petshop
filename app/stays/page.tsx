@@ -19,6 +19,7 @@ const allowedSort=new Set(["recommended","price","confidence","name"]);
 export default async function StaysPage({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){
   const p=await searchParams;
   const query=(one(p.q)||"").slice(0,120);
+  const searchScope=one(p.searchScope)==="hotel"?"hotel":one(p.searchScope)==="destination"?"destination":"auto";
   const region=(allowedRegions.has(one(p.region)||"")?one(p.region):"All") as SearchRegion;
   const durationRaw=Number(one(p.duration)||90);const duration=(allowedDurations.has(durationRaw)?durationRaw:90) as StayDuration;
   const flexRaw=Number(one(p.flexibleDays)||7);const flexibleDays=(allowedFlex.has(flexRaw)?flexRaw:7) as 0|7|30;
@@ -37,11 +38,11 @@ export default async function StaysPage({searchParams}:{searchParams:Promise<Rec
   const bbox=(one(p.bbox)||"").slice(0,120);
 
   const initial:StaysInitialSearch={
-    query,region,checkIn,flexibleDays,duration,occupancy,budget,features,featuresMode,verifiedOnly,minMonthly,
+    query,searchScope,region,checkIn,flexibleDays,duration,occupancy,budget,features,featuresMode,verifiedOnly,minMonthly,
     board,cancellation,provider,brand,brandedOnly,sort,page,bbox,
   };
   const requiresLiveState=verifiedOnly||Boolean(minMonthly)||Boolean(board)||Boolean(cancellation)||Boolean(provider)||featuresMode==="strict"||Boolean(bbox);
-  const initialData=requiresLiveState?undefined:publicDirectorySnapshot(24,{q:query,region,brand,brandedOnly});
+  const initialData=requiresLiveState?undefined:publicDirectorySnapshot(24,{q:query,searchScope,region,brand,brandedOnly});
 
   return <StaysExplorer initial={initial} initialData={initialData}/>;
 }

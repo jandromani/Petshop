@@ -2,7 +2,10 @@ import { REAL_HOTEL_SNAPSHOT_DATE,REAL_HOTEL_SOURCE_NOTE } from "@/src/data/real
 import { enrichedCuratedHotels,curatedGeoSourceIds } from "@/src/data/curated-enrichment";
 import { overtureHotels } from "@/src/data/overture-hotels";
 
+import { matchesDirectorySearch,resolveSearchScope,type SearchScope } from "@/src/core/directory-search";
+
 export type PublicDirectorySnapshotInput={
+  searchScope?:SearchScope;
   q?:string;
   region?:"All"|"Europe"|"Asia"|"Africa"|"Americas";
   brand?:string;
@@ -17,12 +20,13 @@ export function publicDirectorySnapshot(limit=24,input:PublicDirectorySnapshotIn
   const key=(h:{name:string;city:string;country:string})=>[h.name,h.city,h.country].join("|").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
   const curatedOrder=new Map(curated.map((h,i)=>[key(h),i]));
   const q=norm(input.q||"");
+  const scope=resolveSearchScope(q,input.searchScope||"auto",[...curated,...overture]);
   const brand=norm(input.brand||"");
   const rows=[...curated,...overture].filter((h:any)=>{
     if(input.region&&input.region!=="All"&&h.region!==input.region)return false;
     if(input.brandedOnly&&!h.brand)return false;
     if(brand&&!norm(h.brand||"").includes(brand))return false;
-    if(q&&!norm([h.name,h.city,h.market||"",h.country,h.address||"",h.brand||""].join(" ")).includes(q))return false;
+    if(!matchesDirectorySearch(h,q,scope))return false;
     return true;
   });
   const merged=new Map<string,any>();for(const h of rows)merged.set(key(h),h);
@@ -34,6 +38,7 @@ export function publicDirectorySnapshot(limit=24,input:PublicDirectorySnapshotIn
     return a.name.localeCompare(b.name)||a.city.localeCompare(b.city);
   });
   return{
+    search:{scope,query:input.q||""},
     source:overtureHotels.length?"overture-snapshot+curated":"public-entity-seed",
     snapshotDate:REAL_HOTEL_SNAPSHOT_DATE,note:REAL_HOTEL_SOURCE_NOTE,
     attribution:overtureHotels.length?"Overture Maps Foundation":null,

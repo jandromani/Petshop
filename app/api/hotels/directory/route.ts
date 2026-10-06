@@ -1,3 +1,4 @@
+import { matchesDirectorySearch,resolveSearchScope } from "@/src/core/directory-search";
 import { z } from "zod";
 import { REAL_HOTEL_SNAPSHOT_DATE,REAL_HOTEL_SOURCE_NOTE } from "@/src/data/real-hotels";
 import { enrichedCuratedHotels,curatedGeoSourceIds } from "@/src/data/curated-enrichment";
@@ -11,6 +12,7 @@ export const runtime="nodejs";
 
 const Query=z.object({
   q:z.string().max(120).optional(),
+  searchScope:z.enum(["auto","destination","hotel"]).default("auto"),
   region:z.enum(["All","Europe","Asia","Africa","Americas"]).default("All"),
   limit:z.coerce.number().int().min(1).max(60).default(24),
   offset:z.coerce.number().int().min(0).max(10000).default(0),
@@ -49,9 +51,6 @@ const contains=(value:string|null|undefined,needle:string|undefined)=>!needle||B
 function inside(h:{lat:number|null;lng:number|null},b:ReturnType<typeof parseBbox>){
   return !b||(h.lat!==null&&h.lng!==null&&h.lng>=b.west&&h.lng<=b.east&&h.lat>=b.south&&h.lat<=b.north);
 }
-function matches(h:{name:string;city:string;country:string;address?:string|null;market?:string|null;brand?:string|null},q:string){
-  return !q||[h.name,h.city,h.market||"",h.country,h.address||"",h.brand||""].join(" ").toLowerCase().includes(q);
-}
 function offerSummary(o:any){
   return o?{
     offerId:o.offerId,provider:o.provider,monthlyEquivalent:o.monthlyEquivalent,displayPrice:o.displayPrice,
@@ -83,9 +82,10 @@ export async function GET(req:Request){
     .filter(h=>!curatedGeoSourceIds.has(h.sourceId))
     .map(h=>({...h,canonicalId:h.id,source:"overture",description:null,photoUrls:[],facilities:[]}));
 
+  let scope=resolveSearchScope(q,parsed.data.searchScope,[...curated,...overture]);
   const staticRows=[...curated,...overture].filter(h=>
     (parsed.data.region==="All"||h.region===parsed.data.region)&&
-    matches(h,q)&&inside(h,bounds)
+    inside(h,bounds)
   );
 
   const curatedOrder=new Map(curated.map((h,i)=>[keyOf(h),i]));
@@ -103,15 +103,19 @@ export async function GET(req:Request){
   let imported:Array<any>=[];
   if(databaseConfigured()){
     const db=await listDirectoryHotels({
-      q:parsed.data.q,region:parsed.data.region,limit:5000,offset:0,maxRows:5000,bbox:bounds,
+      q:parsed.data.q,searchScope:parsed.data.searchScope==="auto"?undefined:scope,region:parsed.data.region,limit:5000,offset:0,maxRows:5000,bbox:bounds,
     }).catch(()=>null);
     imported=(db?.hotels||[]).map(h=>({...h,referenceUrl:h.referenceUrl||fallbackDirectoryReference(h)}));
   }
 
   const merged=new Map<string,any>();
   for(const h of staticRows)merged.set(keyOf(h),h);
-  for(const h of imported)merged.set(keyOf(h),h);
-  const all=[...merged.values()].sort(compareIdentity);
+  scope=resolveSearchScope(q,parsed.data.searchScope,[...curated,...overture,...imported]);
+  for(const h of imported){
+    const previous=merged.get(keyOf(h));
+    merged.set(keyOf(h),{...previous,...h,market:h.market||previous?.market,brand:h.brand||previous?.brand});
+  }
+  const all=[...merged.values()].filter(h=>matchesDirectorySearch(h,q,scope)).sort(compareIdentity);
 
   let live:Array<any>=[];
   if(databaseConfigured()){
@@ -203,6 +207,7 @@ export async function GET(req:Request){
     : enriched.slice(parsed.data.offset,parsed.data.offset+parsed.data.limit);
 
   return Response.json({
+    search:{scope,query:parsed.data.q||""},
     source:imported.length?"merged-directory":overtureHotels.length?"overture-snapshot+curated":"public-entity-seed",
     snapshotDate:REAL_HOTEL_SNAPSHOT_DATE,note:REAL_HOTEL_SOURCE_NOTE,attribution,total:enriched.length,
     mapped:mappedAll.length,facets,relaxations,

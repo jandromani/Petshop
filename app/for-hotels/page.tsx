@@ -1,3 +1,4 @@
+import HotelApplicationForm from "@/components/HotelApplicationForm";
 import type { Metadata } from "next";
 import { canonicalSiteUrl } from "@/src/system/site-url";
 
@@ -13,7 +14,7 @@ export default function ForHotels(){
       <div className="eyebrow">FOR HOTELS · PILOT SUPPLY</div>
       <h1>Fill a month.<br/>Not another night.</h1>
       <p>Atlas is building a focused demand channel for guests who want one hotel for 30, 60 or 90 days. The first commercial wedge is winter-sun demand, beginning with the Canary Islands.</p>
-      <div className="actions"><a className="btn" href="/contact">Talk to Atlas →</a><a className="btn ghost" href="/methodology">How rates are verified</a></div>
+      <div className="actions"><a className="btn" href="#apply">Join the hotel pilot →</a><a className="btn ghost" href="/hotel-portal">Partner portal</a><a className="btn ghost" href="/methodology">How rates are verified</a></div>
     </section>
     <div className="seoGrid">
       <article className="card"><div className="eyebrow">DEMAND</div><h2>Longer intent</h2><p>Atlas captures exact dates, stay length, occupancy and a monthly target before an unpriced request enters the sourcing queue.</p></article>
@@ -23,6 +24,10 @@ export default function ForHotels(){
       <article className="card"><div className="eyebrow">PILOT</div><h2>Canary Islands first</h2><p>Atlas is narrowing the business-development problem on purpose: prove repeatable 30–90 day demand and partner supply in one winter-sun market before expanding the playbook.</p></article>
       <article className="card"><div className="eyebrow">SYSTEM</div><h2>Allocated inventory, not a handshake</h2><p>Direct Hotel OS tracks contract evidence, validity, hotel net, customer price, allocated units, reserved units and sold units. Merchant supply is fail-closed if any required evidence is missing.</p></article>
     </div>
+    <section id="apply" className="partnerIntake">
+      <div><div className="eyebrow">HOTEL PARTNERS</div><h2>One hotel. A whole season.</h2><p>Apply, verify your hotel contact, then propose your 30, 60 or 90 day rates in a private portal. Atlas reviews the agreement and booking terms before your rates go live.</p><p>Applying does not charge your hotel. Commercial fees and distribution terms must be agreed separately.</p></div>
+      <HotelApplicationForm/>
+    </section>
     <section className="editorialBody">
       <h2>What Atlas is not claiming yet</h2>
       <p>Searchable hotel coverage is not the same thing as contracted inventory. Atlas will not present pilot targets as signed partners, a mapped hotel as a live rate, or a requested price as guaranteed availability.</p>

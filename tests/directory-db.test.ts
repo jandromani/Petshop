@@ -10,6 +10,17 @@ describe.skipIf(!enabled)("directory database",()=>{
     const rows=await sql<Array<{exists:boolean}>>`select to_regclass('public.hotel_directory_sources') is not null as exists`;
     expect(rows[0].exists).toBe(true);
   });
+  it("filters destinations and hotel names consistently with accents and imported market evidence",async()=>{
+    const sourceId="search-scope-fixture";
+    await importDirectoryHotels("manual-search-test",[{sourceId,name:"Átlas Madrid Fixture",city:"Lisboa",country:"Portugal",region:"Europe",raw:{market:"Lisbon",brand:"Átlas"}}]);
+    const destination=await listDirectoryHotels({q:"Madrid",searchScope:"destination",limit:5000});
+    expect(destination?.hotels.some(h=>h.sourceId===sourceId)).toBe(false);
+    const name=await listDirectoryHotels({q:"Atlas Madrid Fixture",searchScope:"hotel",limit:10});
+    expect(name?.hotels.some(h=>h.sourceId===sourceId)).toBe(true);
+    expect(name?.hotels.find(h=>h.sourceId===sourceId)?.market).toBe("Lisbon");
+    const brand=await listDirectoryHotels({q:"Atlas",searchScope:"hotel",limit:5000});
+    expect(brand?.hotels.some(h=>h.sourceId===sourceId)).toBe(true);
+  });
   it("hides provider content until display rights are explicitly enabled",async()=>{
     const result=await importDirectoryHotels("manual-content-test",[{sourceId:"fixture-content-1",name:"Atlas Licensed Content Hotel",city:"Madrid",country:"Spain",region:"Europe",lat:40.42,lng:-3.69,referenceUrl:"https://example.com/content-hotel"}]);
     expect(result?.failed).toBe(0);
