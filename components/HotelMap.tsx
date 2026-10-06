@@ -1,10 +1,16 @@
 "use client";
+import dynamic from "next/dynamic";
 import { useEffect,useMemo,useRef,useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import type { GeoJSONSource,Map as MapLibreMap } from "maplibre-gl";
 import { growthEvent } from "@/src/growth/client";
 
 export type MappedHotel={id:string;name:string;city:string;country:string;lat:number|null;lng:number|null;brand?:string|null;commercialState:"RATE_PENDING"|"VERIFIED_RATE";liveOffer?:{monthlyEquivalent:number;currency:string}|null};
+
+const RasterHotelMap=dynamic(()=>import("@/components/RasterHotelMap"),{
+  ssr:false,
+  loading:()=> <div className="hotelMapLoading" role="status">Loading standard map…</div>,
+});
 
 function geojson(hotels:MappedHotel[]){
   return{type:"FeatureCollection" as const,features:hotels.filter(h=>Number.isFinite(h.lat)&&Number.isFinite(h.lng)).map(h=>({
@@ -17,19 +23,35 @@ function geojson(hotels:MappedHotel[]){
 export default function HotelMap({hotels,selectedId,onSelect,onSearchArea,detailQuery="",fitKey=""}:{hotels:MappedHotel[];selectedId?:string|null;onSelect:(id:string)=>void;onSearchArea:(bbox:string)=>void;detailQuery?:string;fitKey?:string}){
   const host=useRef<HTMLDivElement|null>(null);
   const mapRef=useRef<MapLibreMap|null>(null);
+  const [renderer,setRenderer]=useState<"vector"|"raster">("vector");
   const [pendingBounds,setPendingBounds]=useState<string|null>(null);const[expanded,setExpanded]=useState(false);const[ready,setReady]=useState(false);
   const data=useMemo(()=>geojson(hotels),[hotels]);
   const dataRef=useRef(data);
   dataRef.current=data;
+  const onSelectRef=useRef(onSelect);
+  onSelectRef.current=onSelect;
   const selected=useMemo(()=>hotels.find(h=>h.id===selectedId)||null,[hotels,selectedId]);
 
   useEffect(()=>{
-    if(!host.current||mapRef.current)return;
-    const map=new maplibregl.Map({container:host.current,style:"https://tiles.openfreemap.org/styles/bright",center:[8,28],zoom:1.35,minZoom:1,maxZoom:17,attributionControl:false});
+    if(renderer!=="vector"||!host.current||mapRef.current)return;
+    let map:MapLibreMap;
+    // GPU/context initialization can throw before any MapLibre error event.
+    // Keep this failure inside the map rather than crashing hotel discovery.
+    try{
+      map=new maplibregl.Map({container:host.current,style:"https://tiles.openfreemap.org/styles/bright",center:[8,28],zoom:1.35,minZoom:1,maxZoom:17,attributionControl:false});
+    }catch{
+      setRenderer("raster");
+      return;
+    }
     mapRef.current=map;
+    const useStandardMap=()=>{setReady(false);setRenderer("raster")};
+    const loadTimeout=window.setTimeout(()=>{if(!map.isStyleLoaded())useStandardMap()},12_000);
+    map.on("webglcontextlost",useStandardMap);
+    map.on("error",()=>{if(!map.isStyleLoaded())useStandardMap()});
     map.addControl(new maplibregl.NavigationControl({showCompass:false}),"top-right");
     map.addControl(new maplibregl.AttributionControl({compact:true,customAttribution:"Overture Maps · OpenFreeMap"}),"bottom-right");
     map.on("load",()=>{
+      window.clearTimeout(loadTimeout);
       map.addSource("atlas-hotels",{type:"geojson",data:dataRef.current,cluster:true,clusterMaxZoom:12,clusterRadius:48});
       map.addLayer({id:"hotel-clusters",type:"circle",source:"atlas-hotels",filter:["has","point_count"],paint:{"circle-color":"#0a1630","circle-radius":["step",["get","point_count"],18,25,24,100,31],"circle-stroke-width":3,"circle-stroke-color":"#ffffff"}});
       map.addLayer({id:"hotel-cluster-count",type:"symbol",source:"atlas-hotels",filter:["has","point_count"],layout:{"text-field":["get","point_count_abbreviated"],"text-size":12},paint:{"text-color":"#ffffff"}});
@@ -45,19 +67,21 @@ export default function HotelMap({hotels,selectedId,onSelect,onSearchArea,detail
       const source=map.getSource("atlas-hotels") as GeoJSONSource;const zoom=await source.getClusterExpansionZoom(clusterId);
       const coordinates=(feature?.geometry as any)?.coordinates;if(coordinates)map.easeTo({center:coordinates,zoom});
     });
-    map.on("click","hotel-points",(e:any)=>{const f=map.queryRenderedFeatures(e.point,{layers:["hotel-points"]})[0];const id=String(f?.properties?.id||"");if(id){growthEvent("map_marker_click",{hotel_id:id});onSelect(id);}});
+    map.on("click","hotel-points",(e:any)=>{const f=map.queryRenderedFeatures(e.point,{layers:["hotel-points"]})[0];const id=String(f?.properties?.id||"");if(id){growthEvent("map_marker_click",{hotel_id:id});onSelectRef.current(id);}});
     for(const layer of ["hotel-clusters","hotel-points"]){map.on("mouseenter",layer,()=>{map.getCanvas().style.cursor="pointer"});map.on("mouseleave",layer,()=>{map.getCanvas().style.cursor=""});}
     map.on("moveend",()=>{const b=map.getBounds();setPendingBounds([b.getWest(),b.getSouth(),b.getEast(),b.getNorth()].map(v=>v.toFixed(5)).join(","));});
-    return()=>{setReady(false);map.remove();mapRef.current=null;};
-  },[]);
+    return()=>{window.clearTimeout(loadTimeout);map.remove();mapRef.current=null;};
+  },[renderer]);
 
   useEffect(()=>{const map=mapRef.current;if(!map||!map.isStyleLoaded())return;const source=map.getSource("atlas-hotels") as GeoJSONSource|undefined;source?.setData(data as any);},[data]);
   useEffect(()=>{const map=mapRef.current;if(!map||!map.isStyleLoaded())return;map.setFilter("hotel-selected",["==",["get","id"],selectedId||""]);const h=hotels.find(x=>x.id===selectedId);if(h&&Number.isFinite(h.lat)&&Number.isFinite(h.lng))map.easeTo({center:[Number(h.lng),Number(h.lat)],duration:350});},[selectedId,hotels]);
   useEffect(()=>{const map=mapRef.current;if(!map||!map.isStyleLoaded()||!fitKey)return;const coords=hotels.filter(h=>Number.isFinite(h.lat)&&Number.isFinite(h.lng)).map(h=>[Number(h.lng),Number(h.lat)] as [number,number]);if(!coords.length)return;const b=new maplibregl.LngLatBounds(coords[0],coords[0]);for(const p of coords.slice(1))b.extend(p);map.fitBounds(b,{padding:50,maxZoom:11,duration:450});},[fitKey]);
   useEffect(()=>{const map=mapRef.current;if(!map)return;requestAnimationFrame(()=>map.resize());},[expanded]);
 
-  return <div className={"hotelMapShell "+(expanded?"mapExpanded":"")} data-map-ready={ready?"true":"false"}>
-    <div ref={host} className="hotelMap" aria-label="Interactive map of real hotels"/>
+  return <div className={"hotelMapShell "+(expanded?"mapExpanded":"")} data-map-ready={ready?"true":"false"} data-map-renderer={renderer}>
+    {renderer==="raster"
+      ?<RasterHotelMap hotels={hotels} selectedId={selectedId} onSelect={onSelect} onBoundsChange={setPendingBounds} onReady={setReady} fitKey={fitKey} expanded={expanded}/>
+      :<div ref={host} className="hotelMap" aria-label="Interactive map of real hotels"/>}
     <div className="mapTruth"><span><i className="mapKey pending"/> real property</span><span><i className="mapKey verified"/> verified rate</span></div>
     <button className="mapExpand" type="button" onClick={()=>setExpanded(v=>!v)}>{expanded?"Close full map":"Full map"}</button>
     {pendingBounds&&<button className="searchArea" type="button" onClick={()=>{growthEvent("search_this_area");onSearchArea(pendingBounds)}}>Search this area</button>}
