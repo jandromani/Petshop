@@ -38,6 +38,15 @@ test("Spanish mobile conversion pages do not overflow horizontally",async({page}
  await page.setViewportSize({width:390,height:844});for(const path of ["/es","/es/monthly-stays/gran-canaria","/es/for-hotels","/es/requests"]){await page.goto(path);const size=await page.evaluate(()=>({actual:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth,overflow:Array.from(document.querySelectorAll("main *,header *")).filter(e=>e.getBoundingClientRect().right>document.documentElement.clientWidth+2).slice(0,8).map(e=>({tag:e.tagName,class:e.className,right:Math.round(e.getBoundingClientRect().right)}))}));expect(size.actual,path+" "+JSON.stringify(size.overflow)).toBeLessThanOrEqual(size.viewport+2)}
 });
 
+test("desktop search buttons stay inside the form and clear of the hero image",async({page})=>{
+ for(const width of [1080,1349,1440])for(const path of ["/","/es"]){
+  await page.setViewportSize({width,height:1000});await page.goto(path);
+  const button=page.locator(".consumerSearchPrimary .searchCta");await expect(button).toBeVisible();await button.scrollIntoViewIfNeeded();
+  const layout=await button.evaluate(el=>{const rect=el.getBoundingClientRect(),form=el.closest(".consumerSearchPrimary")!.getBoundingClientRect();const hit=document.elementFromPoint(rect.right-5,rect.top+rect.height/2);return {contained:rect.left>=form.left&&rect.right<=form.right,unobstructed:!!hit&&el.contains(hit)}});
+  expect(layout,`${path} at ${width}px`).toEqual({contained:true,unobstructed:true});
+ }
+});
+
 test("Spanish essential-only privacy choice persists across navigation",async({page,context})=>{
  await context.clearCookies();await page.goto("/es");await expect(page.locator(".compareChoice").first()).toBeEnabled();await page.getByRole("button",{name:"Sólo esencial",exact:true}).click();await expect(page.getByRole("dialog",{name:"Preferencias de privacidad"})).toHaveCount(0);await page.goto("/es/for-hotels");await expect(page.getByRole("dialog",{name:"Preferencias de privacidad"})).toHaveCount(0);const cookies=await context.cookies();expect(cookies.find(c=>c.name===CONSENT_COOKIE)?.value).toBe("essential");expect(cookies.find(c=>c.name===CONSENT_VERSION_COOKIE)?.value).toBe(CONSENT_VERSION);
 });

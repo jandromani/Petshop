@@ -344,12 +344,13 @@ url("https://images.unsplash.com/photo-1750063507260-6afb01371cf7?auto=format&fi
 box-shadow:0 30px 80px rgba(10,22,48,.24);display:flex;align-items:flex-end;padding:28px;color:white}
 .heroPhotoCard:after{content:"Photo: Tenerife · Unsplash";position:absolute;right:16px;top:14px;font-size:9px;opacity:.72}
 .heroPhotoCard>div{position:relative;z-index:1}.heroPhotoCard span{font-size:10px;font-weight:900;letter-spacing:.13em}.heroPhotoCard b{display:block;font-size:37px;line-height:1;letter-spacing:-.045em;margin:9px 0 17px}.heroPhotoCard a{font-weight:900;text-decoration:underline;text-underline-offset:4px}
-.consumerSearch{margin-top:28px}
+.consumerSearch{margin-top:28px;container-type:inline-size}
 .consumerSearchPrimary{display:grid;grid-template-columns:minmax(220px,1.5fr) minmax(155px,.7fr) minmax(150px,.65fr) auto;gap:8px;background:rgba(255,255,255,.94);padding:8px;border:1px solid rgba(10,22,48,.12);border-radius:20px;box-shadow:0 18px 45px rgba(10,22,48,.12)}
-.consumerSearchPrimary label{display:grid;gap:4px;padding:9px 12px;border-right:1px solid var(--line)}
+.consumerSearchPrimary label{display:grid;gap:4px;padding:9px 12px;border-right:1px solid var(--line);min-width:0}
 .consumerSearchPrimary label span,.searchMoreGrid label span{font-size:9px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#68738b}
-.consumerSearchPrimary input,.consumerSearchPrimary select{border:0;outline:0;background:transparent;color:var(--ink);font-weight:800;min-width:0}
+.consumerSearchPrimary input,.consumerSearchPrimary select{border:0;outline:0;background:transparent;color:var(--ink);font-weight:800;min-width:0;width:100%}
 .consumerSearchPrimary .searchCta{border:0;border-radius:14px;padding:0 20px;background:var(--ink);color:white;font-weight:900;cursor:pointer;white-space:nowrap}
+@container(max-width:850px){.consumerSearchPrimary{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr)}.consumerSearchPrimary .searchCta{grid-column:1/-1;min-height:50px;white-space:normal}}
 .searchMore{margin:10px 4px 0}.searchMore summary{cursor:pointer;font-size:11px;font-weight:850;color:#53617a;list-style:none}.searchMore summary::-webkit-details-marker{display:none}.searchMore summary span{font-weight:600;color:#9099aa;margin-left:5px}
 .searchMoreGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:9px;background:rgba(255,255,255,.8);border:1px solid var(--line);border-radius:15px;padding:10px}
 .searchMoreGrid label{display:grid;gap:5px}.searchMoreGrid input,.searchMoreGrid select{width:100%;border:1px solid var(--line);border-radius:10px;background:#fff;padding:9px 10px;color:var(--ink)}
