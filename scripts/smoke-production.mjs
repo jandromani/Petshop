@@ -11,7 +11,7 @@ async function get(path,expected=200){
 
 const home=await get("/");
 const homeText=await home.text();
-for(const marker of ["Live somewhere better","MONTHLY RESOURCES","MAXIMUM AVAILABLE TO LIVE","365 days"]){
+for(const marker of ["Live somewhere better.","HOTEL LIVING · 30–90 DAYS","MAX ACCOMMODATION BUDGET","30 / 60 / 90"]){
   if(!homeText.includes(marker))throw new Error("home contract missing: "+marker);
 }
 
