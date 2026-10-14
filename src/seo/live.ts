@@ -4,15 +4,10 @@ import { destinationSeoPages,type DestinationSeoPage } from "@/src/seo/destinati
 import { seoGate } from "@/src/seo/gate";
 import type { LiveCatalogOffer } from "@/src/core/live-offers";
 import { canonicalSiteUrl,customPublicDomainConfigured,searchConsoleVerificationConfigured } from "@/src/system/site-url";
+import { seoAutopilotEnabled } from "@/src/seo/runtime-config";
+export { seoAutopilotEnabled };
 
 export type LiveDiscoveryMode="budget"|"board"|"region"|"unsupported";
-
-export function seoAutopilotEnabled(){
-  const mode=(process.env.SEO_LIVE_INDEXING||"auto").toLowerCase();
-  if(mode==="false")return false;
-  const externalReady=customPublicDomainConfigured()&&searchConsoleVerificationConfigured();
-  return mode==="true"?externalReady:externalReady;
-}
 
 export function liveDiscoveryMode(slug:string):LiveDiscoveryMode{
   if(slug==="under-1500-month")return"budget";

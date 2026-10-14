@@ -6,7 +6,7 @@ import ConsentLayer from "@/components/ConsentLayer";
 import GrowthPageView from "@/components/GrowthPageView";
 import WebVitals from "@/components/WebVitals";
 import SiteStructuredData from "@/components/SiteStructuredData";
-import { seoAutopilotEnabled } from "@/src/seo/live";
+import { seoAutopilotEnabled } from "@/src/seo/runtime-config";
 import { canonicalSiteUrl } from "@/src/system/site-url";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
