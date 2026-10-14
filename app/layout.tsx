@@ -1,7 +1,6 @@
 import ConsumerHeader from "@/components/ConsumerHeader";
 import LanguageProvider from "@/components/LanguageProvider";
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import ConsentLayer from "@/components/ConsentLayer";
 import GrowthPageView from "@/components/GrowthPageView";
 import WebVitals from "@/components/WebVitals";
@@ -38,8 +37,6 @@ export const metadata:Metadata={
   },
 };
 
-export default async function RootLayout({children}:Readonly<{children:React.ReactNode}>){
-  const h=await headers();
-  const lang=h.get("x-atlas-lang")==="es"?"es":"en";
-  return <html lang={lang}><body><LanguageProvider language={lang}><ConsumerHeader/><SiteStructuredData/>{children}<GrowthPageView/><WebVitals/><ConsentLayer/></LanguageProvider></body></html>;
+export default function RootLayout({children}:Readonly<{children:React.ReactNode}>){
+  return <html lang="en"><body><LanguageProvider><ConsumerHeader/><SiteStructuredData/>{children}<GrowthPageView/><WebVitals/><ConsentLayer/></LanguageProvider></body></html>;
 }
